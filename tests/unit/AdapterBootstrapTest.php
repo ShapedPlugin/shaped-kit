@@ -95,6 +95,27 @@ $check(
 );
 $check( 'non-string values are skipped', AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => array( 'x' ) ), $plugins, $adapter_fs ), false );
 
+echo "-- is_cli_adapter_activation\n";
+$cli = function ( $args, $assoc = array(), $any_installed = false ) use ( $plugins, $adapter_fs ) {
+	return AdapterBootstrap::is_cli_adapter_activation( $args, $assoc, $plugins, $adapter_fs, $any_installed );
+};
+$check( 'wp plugin activate mcp-adapter', $cli( array( 'plugin', 'activate', 'mcp-adapter' ) ), true );
+$check( 'wp plugin activate mcp-adapter/mcp-adapter.php', $cli( array( 'plugin', 'activate', 'mcp-adapter/mcp-adapter.php' ) ), true );
+$check( 'wp plugin activate akismet mcp-adapter (several)', $cli( array( 'plugin', 'activate', 'akismet', 'mcp-adapter' ) ), true );
+$check( 'wp plugin activate mcp-adapter --network', $cli( array( 'plugin', 'activate', 'mcp-adapter' ), array( 'network' => true ) ), true );
+$check( 'wp plugin toggle mcp-adapter', $cli( array( 'plugin', 'toggle', 'mcp-adapter' ) ), true );
+$check( 'wp plugin activate akismet', $cli( array( 'plugin', 'activate', 'akismet' ) ), false );
+$check( 'wp plugin activate --all, an adapter is installed', $cli( array( 'plugin', 'activate' ), array( 'all' => true ), true ), true );
+$check( 'wp plugin activate --all, no adapter installed', $cli( array( 'plugin', 'activate' ), array( 'all' => true ), false ), false );
+$check( 'wp plugin install mcp-adapter --activate', $cli( array( 'plugin', 'install', 'mcp-adapter' ), array( 'activate' => true ) ), true );
+$check( 'wp plugin install from a zip URL --activate-network', $cli( array( 'plugin', 'install', 'https://github.com/WordPress/mcp-adapter/releases/download/v0.7.0/mcp-adapter.zip' ), array( 'activate-network' => true ) ), true );
+$check( 'wp plugin install mcp-adapter (no --activate)', $cli( array( 'plugin', 'install', 'mcp-adapter' ) ), false );
+$check( 'wp plugin deactivate mcp-adapter', $cli( array( 'plugin', 'deactivate', 'mcp-adapter' ) ), false );
+$check( 'wp plugin list', $cli( array( 'plugin', 'list' ) ), false );
+$check( 'wp cache flush', $cli( array( 'cache', 'flush' ) ), false );
+$check( 'no command', $cli( array() ), false );
+$check( 'path traversal is ignored', $cli( array( 'plugin', 'activate', '../mcp-adapter' ) ), false );
+
 echo "-- classify_source\n";
 $check( 'our bundled copy', AdapterBootstrap::classify_source( $bundled . 'includes/Core/McpAdapter.php', $bundled, $plugins ), 'shaped-kit' );
 $check( 'Rank Math vendor copy', AdapterBootstrap::classify_source( $plugins . '/seo-by-rank-math/vendor/wordpress/mcp-adapter' . $class, $bundled, $plugins ), 'seo-by-rank-math' );

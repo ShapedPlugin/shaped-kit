@@ -76,6 +76,15 @@ final class AdapterBootstrap {
 			return false;
 		}
 
+		// The same, from WP-CLI, which has no $_REQUEST.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			list( $args, $assoc_args ) = self::cli_arguments();
+
+			if ( self::is_cli_adapter_activation( $args, $assoc_args, WP_PLUGIN_DIR, $file_exists, self::adapter_plugin_installed() ) ) {
+				return false;
+			}
+		}
+
 		$entry = self::bundled_dir() . 'mcp-adapter.php';
 
 		if ( ! is_readable( $entry ) ) {
@@ -233,6 +242,73 @@ final class AdapterBootstrap {
 	}
 
 	/**
+	 * Whether a WP-CLI command will activate a plugin that is itself an MCP Adapter.
+	 *
+	 * Covers `plugin activate <name|path>…`, `plugin activate --all`, `plugin toggle`, and
+	 * `plugin install … --activate[-network]`. An install's plugin is not on disk yet, so it is
+	 * matched by name instead.
+	 *
+	 * @param string[] $args                  Positional arguments, e.g. [ 'plugin', 'activate', 'mcp-adapter' ].
+	 * @param array    $assoc_args            Flags, e.g. [ 'all' => true ].
+	 * @param string   $plugins_dir           The plugins directory.
+	 * @param callable $file_exists           file_exists, or a stand-in in tests.
+	 * @param bool     $any_adapter_installed Whether any installed plugin, other than the Kit, is an adapter.
+	 * @return bool
+	 */
+	public static function is_cli_adapter_activation( $args, $assoc_args, $plugins_dir, $file_exists, $any_adapter_installed ) {
+		$args       = array_values( (array) $args );
+		$assoc_args = (array) $assoc_args;
+
+		if ( ! isset( $args[0], $args[1] ) || 'plugin' !== $args[0] ) {
+			return false;
+		}
+
+		$names = array_slice( $args, 2 );
+
+		if ( 'install' === $args[1] ) {
+			if ( empty( $assoc_args['activate'] ) && empty( $assoc_args['activate-network'] ) ) {
+				return false;
+			}
+
+			foreach ( $names as $name ) {
+				if ( is_string( $name ) && false !== stripos( $name, 'mcp-adapter' ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		if ( ! in_array( $args[1], array( 'activate', 'toggle' ), true ) ) {
+			return false;
+		}
+
+		if ( ! empty( $assoc_args['all'] ) ) {
+			return (bool) $any_adapter_installed;
+		}
+
+		$plugins_dir = self::normalize( $plugins_dir, true );
+
+		foreach ( $names as $name ) {
+			if ( ! is_string( $name ) ) {
+				continue;
+			}
+
+			$folder = strtok( ltrim( self::normalize( trim( $name ) ), '/' ), '/' );
+
+			if ( false === $folder || '' === $folder || false !== strpos( $folder, '..' ) ) {
+				continue;
+			}
+
+			if ( call_user_func( $file_exists, $plugins_dir . $folder . '/' . self::ADAPTER_MARKER ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Which plugin supplied the adapter, judged from the file its class was loaded from.
 	 *
 	 * @param string $class_file  Absolute path of the loaded adapter class.
@@ -275,6 +351,57 @@ final class AdapterBootstrap {
 		}
 
 		return $files;
+	}
+
+	/**
+	 * The command WP-CLI is running, already parsed before WordPress loads.
+	 *
+	 * @return array{0: string[], 1: array} Positional arguments and flags.
+	 */
+	private static function cli_arguments() {
+		if ( class_exists( 'WP_CLI' ) && method_exists( 'WP_CLI', 'get_runner' ) ) {
+			$runner = \WP_CLI::get_runner();
+
+			return array( (array) $runner->arguments, (array) $runner->assoc_args );
+		}
+
+		// Fallback: the raw command line, minus the script name.
+		$args  = array();
+		$assoc = array();
+
+		foreach ( array_slice( isset( $GLOBALS['argv'] ) ? (array) $GLOBALS['argv'] : array(), 1 ) as $arg ) {
+			if ( 0 === strpos( $arg, '--' ) ) {
+				$parts              = explode( '=', substr( $arg, 2 ), 2 );
+				$assoc[ $parts[0] ] = isset( $parts[1] ) ? $parts[1] : true;
+				continue;
+			}
+
+			$args[] = $arg;
+		}
+
+		return array( $args, $assoc );
+	}
+
+	/**
+	 * Whether any installed plugin, other than the Kit, is itself an MCP Adapter (for `activate --all`).
+	 *
+	 * @return bool
+	 */
+	private static function adapter_plugin_installed() {
+		$kit_dir = self::normalize( SHAPED_KIT_DIR, true );
+		$markers = glob( self::normalize( WP_PLUGIN_DIR, true ) . '*/' . self::ADAPTER_MARKER );
+
+		if ( ! is_array( $markers ) ) {
+			return false;
+		}
+
+		foreach ( $markers as $marker ) {
+			if ( 0 !== strpos( self::normalize( $marker ), $kit_dir ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
