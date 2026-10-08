@@ -17,30 +17,62 @@ final class AdapterBootstrap {
 	const ADAPTER_CLASS = 'WP\MCP\Core\McpAdapter';
 
 	/**
+	 * Relative to a plugin folder: present only in a plugin that is itself an MCP Adapter.
+	 */
+	const ADAPTER_MARKER = 'includes/Core/McpAdapter.php';
+
+	/**
+	 * Adapter 0.6+ supports only the Abilities API in core, which arrived in WordPress 6.9.
+	 */
+	const MIN_WP_VERSION = '6.9';
+
+	/**
 	 * Oldest adapter verified to have everything ShapedPlugin products use.
 	 */
 	const MIN_COMPATIBLE_VERSION = '0.4.1';
+
+	/**
+	 * Define as true in wp-config.php to stop the Kit from ever loading its bundled copy.
+	 */
+	const DISABLE_CONSTANT = 'SHAPED_KIT_DISABLE_BUNDLED_MCP_ADAPTER';
 
 	const SOURCE_KIT     = 'shaped-kit';
 	const SOURCE_NONE    = 'none';
 	const SOURCE_UNKNOWN = 'unknown';
 
 	/**
-	 * Load the bundled adapter if WordPress can run it and nothing else has supplied one.
+	 * Load the bundled adapter if WordPress can run it and no other copy is present or coming.
 	 *
-	 * Any other copy wins, including the standalone MCP Adapter plugin and libraries bundled by other
-	 * plugins such as Rank Math. Loading ours on top would make the adapter raise an "outdated plugin"
-	 * notice on every such site.
+	 * Runs at plugin include time, not plugins_loaded: by plugins_loaded, a plugin that bundles an
+	 * unstarted adapter library (WooCommerce) has registered its autoloader, and the adapter's own
+	 * duplicate check would then step aside for that library while nothing runs.
 	 *
 	 * @return bool Whether this call loaded the bundled copy.
 	 */
 	public static function maybe_load() {
-		if ( ! function_exists( 'wp_register_ability' ) ) {
+		if ( defined( self::DISABLE_CONSTANT ) && constant( self::DISABLE_CONSTANT ) ) {
+			return false;
+		}
+
+		if ( ! self::wordpress_supported( isset( $GLOBALS['wp_version'] ) ? $GLOBALS['wp_version'] : '' ) ) {
 			return false;
 		}
 
 		// Autoloads too, so a copy another plugin has registered but not yet used still counts.
 		if ( class_exists( self::ADAPTER_CLASS ) ) {
+			return false;
+		}
+
+		$file_exists = 'file_exists';
+
+		// An adapter plugin that loads after us would redeclare the adapter's classes: fatal.
+		if ( '' !== self::find_adapter_plugin( self::active_plugin_files(), SHAPED_KIT_DIR, WP_PLUGIN_DIR, $file_exists ) ) {
+			return false;
+		}
+
+		// WordPress includes the plugin being activated after us, with the same fatal.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only check, never acted on.
+		if ( self::is_adapter_activation_request( $_REQUEST, WP_PLUGIN_DIR, $file_exists ) ) {
 			return false;
 		}
 
@@ -50,11 +82,35 @@ final class AdapterBootstrap {
 			return false;
 		}
 
+		// Installing the Kit must enable nothing by itself, including the adapter's shared default server.
+		add_filter( 'mcp_adapter_create_default_server', array( __CLASS__, 'filter_default_server' ), 5 );
+
 		// The plugin entry file, not the library: it defines WP_MCP_VERSION, which keeps the adapter
 		// from flagging itself as a deprecated bundled dependency.
 		require_once $entry;
 
-		return class_exists( self::ADAPTER_CLASS, false );
+		if ( class_exists( self::ADAPTER_CLASS, false ) ) {
+			return true;
+		}
+
+		remove_filter( 'mcp_adapter_create_default_server', array( __CLASS__, 'filter_default_server' ), 5 );
+
+		return false;
+	}
+
+	/**
+	 * Keeps the adapter's shared default server off while the Kit supplies the adapter.
+	 *
+	 * @param bool $enabled Whether the adapter would create its default server.
+	 * @return bool
+	 */
+	public static function filter_default_server( $enabled ) {
+		/**
+		 * Whether the Kit's bundled adapter may create its shared default MCP server.
+		 *
+		 * @param bool $allow Default false.
+		 */
+		return $enabled && (bool) apply_filters( 'shaped_kit/allow_default_mcp_server', false );
 	}
 
 	/**
@@ -82,9 +138,98 @@ final class AdapterBootstrap {
 		$status['loaded']     = true;
 		$status['version']    = $version;
 		$status['compatible'] = null !== $version && version_compare( $version, self::MIN_COMPATIBLE_VERSION, '>=' );
-		$status['source']     = self::classify_source( (string) $reflection->getFileName(), self::bundled_dir(), WP_PLUGIN_DIR );
+		$status['source']     = self::classify_source(
+			self::real_path( (string) $reflection->getFileName() ),
+			self::real_path( self::bundled_dir() ),
+			self::real_path( WP_PLUGIN_DIR )
+		);
 
 		return $status;
+	}
+
+	/**
+	 * Whether this WordPress version can run the bundled adapter. Read from $wp_version rather than
+	 * get_bloginfo(), whose filter another plugin could use to switch MCP off.
+	 *
+	 * @param string $version A WordPress version string, e.g. "7.1.3" or "6.9-beta1".
+	 * @return bool
+	 */
+	public static function wordpress_supported( $version ) {
+		$version = trim( (string) preg_replace( '/[^0-9.].*$/', '', (string) $version ), '.' );
+
+		return '' !== $version && version_compare( $version, self::MIN_WP_VERSION, '>=' );
+	}
+
+	/**
+	 * The first active plugin, other than the Kit, that is itself an MCP Adapter.
+	 *
+	 * @param string[] $plugin_files Absolute paths of active plugin main files.
+	 * @param string   $kit_dir      The Kit's own directory.
+	 * @param string   $plugins_dir  The plugins directory.
+	 * @param callable $file_exists  file_exists, or a stand-in in tests.
+	 * @return string The plugin's directory, or '' if there is none.
+	 */
+	public static function find_adapter_plugin( $plugin_files, $kit_dir, $plugins_dir, $file_exists ) {
+		$kit_dir     = self::normalize( $kit_dir, true );
+		$plugins_dir = self::normalize( $plugins_dir, true );
+
+		foreach ( (array) $plugin_files as $plugin_file ) {
+			$dir = self::normalize( dirname( self::normalize( $plugin_file ) ), true );
+
+			if ( $dir === $kit_dir || $dir === $plugins_dir ) {
+				continue;
+			}
+
+			if ( call_user_func( $file_exists, $dir . self::ADAPTER_MARKER ) ) {
+				return $dir;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Whether this request activates a plugin that is itself an MCP Adapter (single or bulk activation).
+	 *
+	 * @param array    $request     The request parameters ($_REQUEST).
+	 * @param string   $plugins_dir The plugins directory.
+	 * @param callable $file_exists file_exists, or a stand-in in tests.
+	 * @return bool
+	 */
+	public static function is_adapter_activation_request( $request, $plugins_dir, $file_exists ) {
+		$actions = array(
+			isset( $request['action'] ) ? $request['action'] : '',
+			isset( $request['action2'] ) ? $request['action2'] : '',
+		);
+
+		if ( ! array_intersect( $actions, array( 'activate', 'activate-selected' ) ) ) {
+			return false;
+		}
+
+		$plugins   = isset( $request['checked'] ) && is_array( $request['checked'] ) ? $request['checked'] : array();
+		$plugins[] = isset( $request['plugin'] ) ? $request['plugin'] : '';
+
+		$plugins_dir = self::normalize( $plugins_dir, true );
+
+		foreach ( $plugins as $plugin ) {
+			if ( ! is_string( $plugin ) ) {
+				continue;
+			}
+
+			$plugin = function_exists( 'wp_unslash' ) ? wp_unslash( $plugin ) : $plugin;
+			$plugin = ltrim( self::normalize( trim( $plugin ) ), '/' );
+			$folder = dirname( $plugin );
+
+			if ( '' === $plugin || '.' === $folder || false !== strpos( $folder, '..' ) ) {
+				continue;
+			}
+
+			if ( call_user_func( $file_exists, $plugins_dir . $folder . '/' . self::ADAPTER_MARKER ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -118,10 +263,37 @@ final class AdapterBootstrap {
 	}
 
 	/**
+	 * Absolute paths of every active plugin main file, network-wide ones included.
+	 *
+	 * @return string[]
+	 */
+	private static function active_plugin_files() {
+		$files = function_exists( 'wp_get_active_and_valid_plugins' ) ? wp_get_active_and_valid_plugins() : array();
+
+		if ( is_multisite() && function_exists( 'wp_get_active_network_plugins' ) ) {
+			$files = array_merge( $files, wp_get_active_network_plugins() );
+		}
+
+		return $files;
+	}
+
+	/**
+	 * Resolves symlinks so a symlinked plugins directory still matches the class file's real path.
+	 *
+	 * @param string $path A filesystem path.
+	 * @return string
+	 */
+	private static function real_path( $path ) {
+		$real = '' === $path ? false : realpath( $path );
+
+		return false === $real ? $path : $real;
+	}
+
+	/**
 	 * Forward slashes, and an optional single trailing slash so a prefix match stops at a folder boundary.
 	 *
-	 * @param string $path     A filesystem path.
-	 * @param bool   $is_dir   Whether to end it with a slash.
+	 * @param string $path   A filesystem path.
+	 * @param bool   $is_dir Whether to end it with a slash.
 	 * @return string
 	 */
 	private static function normalize( $path, $is_dir = false ) {
