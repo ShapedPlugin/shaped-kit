@@ -1,0 +1,19 @@
+# Planning docs stay local
+/docs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Dependencies and build output (root only — libs/mcp-adapter/vendor/ is part of the bundled adapter and must stay)
+/node_modules/
+/vendor/
+/build/
+
+# Logs and local env
+*.log
+.env
+.phpunit.result.cache
