@@ -21,7 +21,7 @@ Shaped Kit runs no AI model, calls no AI provider, and sends nothing to ShapedPl
 | Audit log of agent actions | Planned |
 | Write tools with server-side confirmation | Planned |
 
-Nothing is exposed to AI agents by Shaped Kit on its own today. See [Roadmap](#roadmap).
+Nothing is exposed to AI agents by Shaped Kit on its own today.
 
 ---
 
@@ -248,21 +248,6 @@ php tests/unit/AdapterLoadTest.php        # whole-loader scenarios (15), each in
 - WordPress Coding Standards: escape output, sanitise input, `$wpdb->prepare()` always.
 - Every new endpoint is a REST route with an explicit `permission_callback`; no new `admin-ajax` actions.
 - Admin screens are React mount points; PHP renders no UI markup.
-
----
-
-## Roadmap
-
-| Step | Deliverable |
-|---|---|
-| ✅ 1 | Kit skeleton, bundled adapter, conflict-proof loader, tests |
-| 2 | Location Weather (free) — read-only tools; becomes the module template |
-| 3 | Location Weather Pro — a Pro-only tool joining the same endpoint |
-| 4 | Real Testimonials (free + Pro) |
-| 5 | Dashboard — products, adapter status, connection snippets, per-product switches |
-| 6 | Audit log |
-| 7 | First write tools, with server-side confirmation |
-| 8 | Other ShapedPlugin products, from the module template |
 
 ---
 
