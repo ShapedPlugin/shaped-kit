@@ -392,25 +392,111 @@
 		margin-top: 12px;
 	}
 
+	// The dark code box: the connect snippet and a tool's answer look alike.
+	.shaped-kit-snippet pre,
+	.shaped-kit-tester-result pre {
+		box-sizing: border-box;
+		width: 100%;
+		max-height: 360px;
+		margin: 0;
+		padding: 16px;
+		overflow: auto;
+		border-radius: 8px;
+		background: #1d2327;
+		color: #f0f0f1;
+		font-size: 12.5px;
+		line-height: 1.6;
+		white-space: pre;
+	}
+
 	.shaped-kit-snippet {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 10px;
+	}
 
-		pre {
-			box-sizing: border-box;
-			width: 100%;
-			max-height: 360px;
+	// "Try a tool" sits under the connect panel and is built the same way:
+	// a header with a divider, then the controls.
+	.shaped-kit-tester {
+		margin-top: 28px;
+
+		h2 {
+			margin: 0 0 4px;
+			padding: 0;
+			font-size: 17px;
+			font-weight: 600;
+		}
+	}
+
+	.shaped-kit-tester-head {
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--sk-border);
+
+		.shaped-kit-card-note {
+			max-width: 640px;
+			margin: 4px 0 0;
+			line-height: 1.5;
+		}
+	}
+
+	.shaped-kit-tester-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px 16px;
+		margin-top: 20px;
+
+		label {
+			flex: 1 1 240px;
+			max-width: 420px;
+		}
+	}
+
+	.shaped-kit-tester-body {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		margin-top: 20px;
+
+		.shaped-kit-card-note {
 			margin: 0;
-			padding: 16px;
-			overflow: auto;
-			border-radius: 8px;
-			background: #1d2327;
-			color: #f0f0f1;
-			font-size: 12.5px;
-			line-height: 1.6;
-			white-space: pre;
+		}
+	}
+
+	.shaped-kit-tester label {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-weight: 600;
+	}
+
+	.shaped-kit-tester select,
+	.shaped-kit-tester textarea {
+		box-sizing: border-box;
+		width: 100%;
+		max-width: none;
+		font-weight: 400;
+	}
+
+	.shaped-kit-tester textarea {
+		font-family: monospace;
+		font-size: 12.5px;
+		line-height: 1.5;
+	}
+
+	.shaped-kit-tester-result {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 20px;
+
+		.shaped-kit-card-note {
+			margin: 0;
+		}
+
+		.shaped-kit-notice {
+			margin: 0;
 		}
 	}
 
