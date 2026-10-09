@@ -1,0 +1,20 @@
+{
+	"name": "shaped-kit",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Shaped Kit admin dashboard (React).",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build assets/admin/index.js --output-path=build/admin",
+		"start": "wp-scripts start assets/admin/index.js --output-path=build/admin",
+		"test:js": "wp-scripts test-unit-js --testMatch '**/assets/admin/**/*.test.js'",
+		"format": "wp-scripts format assets/admin"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.25.0"
+	},
+	"dependencies": {
+		"@wordpress/api-fetch": "^7.30.0",
+		"@wordpress/element": "^6.32.0"
+	}
+}
