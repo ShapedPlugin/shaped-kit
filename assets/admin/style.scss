@@ -1,0 +1,59 @@
+// Shaped Kit dashboard. Everything sits under .shaped-kit-app so nothing
+// leaks into the rest of wp-admin. The colours are tokens here so the screens
+// that follow (metric tiles, pills, notices, cards) share one set.
+
+.shaped-kit-app {
+	--sk-text: #1d2327;
+	--sk-muted: #646970;
+	--sk-border: #dcdcde;
+	--sk-surface: #fff;
+	--sk-accent: #3858e9;
+
+	// One soft/strong pair per tone: the soft one is the background, the
+	// strong one the text and border.
+	--sk-good-soft: #e6f4ea;
+	--sk-good: #14532d;
+	--sk-off-soft: #f0f0f1;
+	--sk-off: #50575e;
+	--sk-warn-soft: #fff8e5;
+	--sk-warn: #6b3e00;
+	--sk-bad-soft: #fcf0f1;
+	--sk-bad: #8a2424;
+
+	max-width: 960px;
+	color: var(--sk-text);
+
+	.shaped-kit-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		margin: 0 0 20px;
+
+		h1 {
+			margin: 0;
+			padding: 0;
+			font-size: 23px;
+			font-weight: 600;
+			line-height: 1.3;
+		}
+	}
+
+	.shaped-kit-error {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		margin: 0 0 16px;
+		padding: 12px 16px;
+		border: 1px solid var(--sk-bad);
+		border-radius: 8px;
+		background: var(--sk-bad-soft);
+		color: var(--sk-bad);
+	}
+
+	.shaped-kit-loading {
+		margin: 24px 0;
+		color: var(--sk-muted);
+	}
+}
