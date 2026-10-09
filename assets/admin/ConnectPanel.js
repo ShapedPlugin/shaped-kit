@@ -147,7 +147,10 @@ const ConnectPanel = ( { overview } ) => {
 						<input
 							type={ showPassword ? 'text' : 'password' }
 							value={ password }
-							autoComplete="off"
+							// "off" is ignored by password managers. "new-password" is not: it stops
+							// a saved login being dropped into the field without React hearing of it,
+							// which left the field and the text below it disagreeing.
+							autoComplete="new-password"
 							onChange={ ( event ) =>
 								setPassword( event.target.value )
 							}

@@ -288,3 +288,11 @@ test( 'a second try that fails does not leave the first try\'s "created" notice 
 	expect( container.querySelector( '[role="status"]' ) ).toBeNull();
 	expect( container.querySelector( '[role="alert"]' ) ).not.toBeNull();
 } );
+
+test( 'the password field asks the browser not to fill in a saved login', async () => {
+	await render( overview() );
+
+	expect( passwordInput().getAttribute( 'autocomplete' ) ).toBe(
+		'new-password'
+	);
+} );
