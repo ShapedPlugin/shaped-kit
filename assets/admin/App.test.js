@@ -40,10 +40,10 @@ const mount = async () => {
 };
 
 const settle = async () => act( async () => {} );
+// An icon button has no text; it is found, as a screen reader finds it, by its label.
 const refreshButton = () =>
-	[ ...container.querySelectorAll( 'button' ) ].find( ( b ) =>
-		/Refresh/.test( b.textContent )
-	);
+	container.querySelector( 'button[aria-label^="Refresh"]' );
+const refreshLabel = () => refreshButton().getAttribute( 'aria-label' );
 const loaded = () => container.querySelector( '[data-loaded="true"]' );
 
 beforeEach( () => {
@@ -244,7 +244,7 @@ test( 'a refresh that answers after a newer switch is dropped, and Refresh does 
 	await settle();
 
 	await act( async () => refreshButton().click() );
-	expect( refreshButton().textContent ).toBe( 'Refreshing…' );
+	expect( refreshLabel() ).toBe( 'Refreshing…' );
 
 	// The switch starts while the refresh is still out, and finishes first.
 	await act( async () => switchInput().click() );
@@ -258,7 +258,7 @@ test( 'a refresh that answers after a newer switch is dropped, and Refresh does 
 	await settle();
 
 	expect( switchInput().checked ).toBe( false );
-	expect( refreshButton().textContent ).toBe( 'Refresh' );
+	expect( refreshLabel() ).toBe( 'Refresh' );
 	expect( refreshButton().disabled ).toBe( false );
 } );
 

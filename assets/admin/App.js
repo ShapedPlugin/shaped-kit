@@ -93,13 +93,34 @@ const App = () => {
 				<h1>{ __( 'AI & MCP', 'shaped-kit' ) }</h1>
 				<button
 					type="button"
-					className="button"
+					className="shaped-kit-iconbtn"
 					onClick={ load }
 					disabled={ isLoading }
+					aria-label={
+						isLoading
+							? __( 'Refreshing…', 'shaped-kit' )
+							: __( 'Refresh', 'shaped-kit' )
+					}
+					title={ __( 'Refresh', 'shaped-kit' ) }
 				>
-					{ isLoading
-						? __( 'Refreshing…', 'shaped-kit' )
-						: __( 'Refresh', 'shaped-kit' ) }
+					<svg
+						className={ isLoading ? 'is-spinning' : undefined }
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+						focusable="false"
+					>
+						<path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+						<path d="M21 3v5h-5" />
+						<path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+						<path d="M3 21v-5h5" />
+					</svg>
 				</button>
 			</div>
 
