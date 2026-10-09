@@ -109,7 +109,105 @@ final class McpControllerTest extends WP_UnitTestCase {
 		$this->assertSame( '', $products[0]['endpoint_url'], 'A script address is not passed on.' );
 	}
 
-	public function test_the_route_only_reads(): void {
+	/**
+	 * Register a product whose state lives in a plain option, as a real product's would.
+	 *
+	 * @return void
+	 */
+	private function register_switchable_product(): void {
+		add_filter(
+			'shaped_kit/products',
+			static function ( $products ) {
+				$products[] = array(
+					'slug' => 'location-weather',
+					'name' => 'Location Weather',
+				);
+
+				return $products;
+			}
+		);
+		add_filter(
+			'shaped_kit/mcp_toggle_handlers',
+			static function ( $handlers ) {
+				$handlers['location-weather'] = array(
+					'get_enabled' => static function () {
+						return 'yes' === get_option( 'test_kit_product_on', 'no' );
+					},
+					'set_enabled' => static function ( $enabled ) {
+						update_option( 'test_kit_product_on', $enabled ? 'yes' : 'no' );
+
+						return true;
+					},
+				);
+
+				return $handlers;
+			}
+		);
+	}
+
+	/**
+	 * Dispatch a product switch.
+	 *
+	 * @param string $slug Product slug.
+	 * @param mixed  $body The `enabled` value, or null to send none.
+	 *
+	 * @return WP_REST_Response
+	 */
+	private function switch_product( string $slug, $body ): WP_REST_Response {
+		$request = new WP_REST_Request( 'POST', '/shaped-kit/v1/mcp/products/' . $slug );
+
+		if ( null !== $body ) {
+			$request->set_body_params( array( 'enabled' => $body ) );
+		}
+
+		return rest_do_request( $request );
+	}
+
+	public function test_an_administrator_switches_a_product_and_gets_the_new_state_back(): void {
+		$this->register_switchable_product();
+		$this->sign_in_as( 'administrator' );
+
+		$response = $this->switch_product( 'location-weather', true );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $response->get_data()['products'][0]['enabled'] );
+		$this->assertSame( 'yes', get_option( 'test_kit_product_on' ) );
+
+		$response = $this->switch_product( 'location-weather', false );
+
+		$this->assertFalse( $response->get_data()['products'][0]['enabled'] );
+		$this->assertSame( 'no', get_option( 'test_kit_product_on' ) );
+	}
+
+	public function test_switching_is_for_administrators_only(): void {
+		$this->register_switchable_product();
+
+		$this->sign_in_as( 'editor' );
+		$this->assertSame( 403, $this->switch_product( 'location-weather', true )->get_status() );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( 401, $this->switch_product( 'location-weather', true )->get_status() );
+
+		$this->assertSame( 'no', get_option( 'test_kit_product_on', 'no' ), 'Nothing was switched.' );
+	}
+
+	public function test_a_missing_or_unclear_value_is_refused_before_anything_is_called(): void {
+		$this->register_switchable_product();
+		$this->sign_in_as( 'administrator' );
+
+		$this->assertSame( 400, $this->switch_product( 'location-weather', null )->get_status() );
+		$this->assertSame( 400, $this->switch_product( 'location-weather', 'maybe' )->get_status() );
+		$this->assertSame( 'no', get_option( 'test_kit_product_on', 'no' ) );
+	}
+
+	public function test_an_unknown_product_is_a_404_not_a_server_error(): void {
+		$this->register_switchable_product();
+		$this->sign_in_as( 'administrator' );
+
+		$this->assertSame( 404, $this->switch_product( 'made-up', true )->get_status() );
+	}
+
+	public function test_the_overview_route_only_reads(): void {
 		$this->sign_in_as( 'administrator' );
 
 		$response = rest_do_request( new WP_REST_Request( 'POST', '/shaped-kit/v1/mcp' ) );

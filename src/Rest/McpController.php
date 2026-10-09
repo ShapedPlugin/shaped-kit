@@ -9,6 +9,7 @@ namespace ShapedKit\Rest;
 
 use ShapedKit\Mcp\AdapterBootstrap;
 use ShapedKit\Mcp\ProductRegistry;
+use ShapedKit\Mcp\ProductSwitch;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -17,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * `GET /wp-json/shaped-kit/v1/mcp` needs `manage_options`. For a browser, WordPress itself checks the
  * REST nonce on cookie authentication and treats a request without one as signed out, so the one
- * permission check here covers both. The route is read-only: switching a product is a separate route.
+ * permission check here covers both. Switching a product is a second route on the same permission.
  */
 class McpController {
 
@@ -55,6 +56,42 @@ class McpController {
 				'permission_callback' => array( __CLASS__, 'can_manage' ),
 			)
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::ROUTE . '/products/(?P<slug>[a-z0-9][a-z0-9_-]*)',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'set_product' ),
+				'permission_callback' => array( __CLASS__, 'can_manage' ),
+				'args'                => array(
+					'enabled' => array(
+						'type'     => 'boolean',
+						'required' => true,
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * `POST`: switch one product on or off, and return the new overview.
+	 *
+	 * The product's own handler does the switching (the Kit never writes its option). The reply is the
+	 * whole overview, read again after the switch, so the dashboard shows what is true, not what it asked for.
+	 *
+	 * @param \WP_REST_Request $request The request, holding `slug` and `enabled`.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function set_product( $request ) {
+		$result = ProductSwitch::apply( (string) $request['slug'], rest_sanitize_boolean( $request['enabled'] ) );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( self::overview() );
 	}
 
 	/**
