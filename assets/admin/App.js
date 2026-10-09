@@ -1,29 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { describeError, fetchOverview } from './api';
+import { describeError, fetchOverview, switchProduct } from './api';
 import OverviewStrip from './OverviewStrip';
+import ProductCard from './ProductCard';
 
 /**
- * The "AI & MCP" dashboard. This step owns getting the overview and its three states (loading, failed,
- * loaded) and the refresh button; what the loaded overview looks like is added by the steps after it.
+ * The "AI & MCP" dashboard: the overview strip, a card per product, and the refresh button.
  *
- * A refresh that fails keeps the last good overview on screen with the error above it, so one bad
- * request never blanks a dashboard that was working.
+ * Two rules keep the screen true to the site:
+ *
+ * - Only the newest request may change what is shown. A slow older answer, whether from a refresh or a
+ *   switch, is dropped, so the dashboard never goes back to a state the site has left.
+ * - A switch changes the screen only by the overview the server sends back. A switch that fails shows
+ *   the error, then reads the site again, so a card never claims a state nobody confirmed.
+ *
+ * A failed read keeps the last good overview on screen with the error above it.
  */
 const App = () => {
 	const [ overview, setOverview ] = useState( null );
 	const [ error, setError ] = useState( '' );
-	const [ isLoading, setIsLoading ] = useState( true );
+	const [ pendingLoads, setPendingLoads ] = useState( 0 );
+	const [ busy, setBusy ] = useState( {} );
 	const latest = useRef( 0 );
 
-	/**
-	 * Read the overview. Only the newest request is allowed to change the screen, so a slow older answer
-	 * can never overwrite a newer one (the dashboard would then show a state the site is no longer in).
-	 */
+	// Counted, not flagged: a read whose answer is dropped as old must still end its own "loading".
+	const isLoading = pendingLoads > 0;
+
 	const load = useCallback( () => {
 		const request = ++latest.current;
 
-		setIsLoading( true );
+		setPendingLoads( ( count ) => count + 1 );
 		setError( '' );
 
 		return fetchOverview()
@@ -37,11 +43,43 @@ const App = () => {
 					setError( describeError( failure ) );
 				}
 			} )
-			.finally( () => {
+			.finally( () => setPendingLoads( ( count ) => count - 1 ) );
+	}, [] );
+
+	const handleSwitch = useCallback( ( slug, enabled ) => {
+		const request = ++latest.current;
+
+		setError( '' );
+		setBusy( ( current ) => ( { ...current, [ slug ]: true } ) );
+
+		return switchProduct( slug, enabled )
+			.then( ( data ) => {
 				if ( request === latest.current ) {
-					setIsLoading( false );
+					setOverview( data );
 				}
-			} );
+			} )
+			.catch( ( failure ) => {
+				if ( request !== latest.current ) {
+					return undefined;
+				}
+
+				setError( describeError( failure ) );
+
+				// Whatever happened, show the site as it is now, not as the card was.
+				return fetchOverview()
+					.then( ( data ) => {
+						if ( request === latest.current ) {
+							setOverview( data );
+						}
+					} )
+					.catch( () => {} );
+			} )
+			.finally( () =>
+				setBusy( ( current ) => {
+					const { [ slug ]: finished, ...rest } = current;
+					return rest;
+				} )
+			);
 	}, [] );
 
 	useEffect( () => {
@@ -73,7 +111,7 @@ const App = () => {
 				</div>
 			) }
 
-			{ ! overview && isLoading && (
+			{ ! overview && ! error && (
 				<p className="shaped-kit-loading">
 					{ __( 'Loading…', 'shaped-kit' ) }
 				</p>
@@ -82,6 +120,17 @@ const App = () => {
 			{ overview && (
 				<div className="shaped-kit-body" data-loaded="true">
 					<OverviewStrip overview={ overview } />
+
+					<div className="shaped-kit-cards">
+						{ ( overview.products || [] ).map( ( product ) => (
+							<ProductCard
+								key={ product.slug }
+								product={ product }
+								busy={ Boolean( busy[ product.slug ] ) }
+								onSwitch={ handleSwitch }
+							/>
+						) ) }
+					</div>
 				</div>
 			) }
 		</div>

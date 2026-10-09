@@ -7,13 +7,14 @@
 import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 import App from './App';
-import { fetchOverview } from './api';
+import { fetchOverview, switchProduct } from './api';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock( './api', () => ( {
 	describeError: jest.fn( ( error ) => `described: ${ error.message }` ),
 	fetchOverview: jest.fn(),
+	switchProduct: jest.fn(),
 } ) );
 
 let container;
@@ -47,7 +48,33 @@ const loaded = () => container.querySelector( '[data-loaded="true"]' );
 
 beforeEach( () => {
 	fetchOverview.mockReset();
+	switchProduct.mockReset();
 } );
+
+/** An overview with one product that is on or off, as the server would report it. */
+const site = ( on ) => ( {
+	wordpress_supported: true,
+	abilities_api: true,
+	adapter: {
+		loaded: true,
+		compatible: true,
+		version: '0.7.0',
+		source: { type: 'shaped-kit' },
+	},
+	products: [
+		{
+			slug: 'location-weather',
+			name: 'Location Weather',
+			enabled: on,
+			toggleable: true,
+			status: on ? 'ready' : 'disabled',
+			tools_count: 5,
+			endpoint_url: 'https://site.test/mcp',
+		},
+	],
+} );
+
+const switchInput = () => container.querySelector( 'input[role="switch"]' );
 
 afterEach( () => {
 	act( () => root.unmount() );
@@ -148,4 +175,114 @@ test( 'a refresh that fails keeps the last good dashboard and shows the error ab
 	expect( container.querySelector( '[role="alert"]' ).textContent ).toContain(
 		'described: timeout'
 	);
+} );
+
+test( 'there is a card for each product', async () => {
+	fetchOverview.mockResolvedValueOnce( site( true ) );
+
+	await mount();
+	await settle();
+
+	expect( container.querySelectorAll( '.shaped-kit-card' ) ).toHaveLength(
+		1
+	);
+	expect( container.querySelector( 'h2' ).textContent ).toBe(
+		'Location Weather'
+	);
+} );
+
+test( 'a switch asks for the opposite state, is locked meanwhile, and ends on the answer the server sent', async () => {
+	const pending = deferred();
+	fetchOverview.mockResolvedValueOnce( site( true ) );
+	switchProduct.mockReturnValueOnce( pending.promise );
+
+	await mount();
+	await settle();
+	await act( async () => switchInput().click() );
+
+	expect( switchProduct ).toHaveBeenCalledWith( 'location-weather', false );
+	expect( switchInput().disabled ).toBe( true );
+	expect( switchInput().checked ).toBe( true );
+
+	await act( async () => {
+		pending.resolve( site( false ) );
+	} );
+	await settle();
+
+	expect( switchInput().disabled ).toBe( false );
+	expect( switchInput().checked ).toBe( false );
+	expect( container.textContent ).toContain( '0 of 1' );
+} );
+
+test( 'a switch that fails shows the error and reads the site again instead of trusting the card', async () => {
+	fetchOverview
+		.mockResolvedValueOnce( site( true ) )
+		.mockResolvedValueOnce( site( true ) );
+	switchProduct.mockRejectedValueOnce( new Error( 'refused' ) );
+
+	await mount();
+	await settle();
+	await act( async () => switchInput().click() );
+	await settle();
+
+	expect( container.querySelector( '[role="alert"]' ).textContent ).toContain(
+		'described: refused'
+	);
+	expect( fetchOverview ).toHaveBeenCalledTimes( 2 );
+	expect( switchInput().checked ).toBe( true );
+	expect( switchInput().disabled ).toBe( false );
+} );
+
+test( 'a refresh that answers after a newer switch is dropped, and Refresh does not stay stuck', async () => {
+	const slowRefresh = deferred();
+	fetchOverview
+		.mockResolvedValueOnce( site( true ) )
+		.mockReturnValueOnce( slowRefresh.promise );
+	switchProduct.mockResolvedValueOnce( site( false ) );
+
+	await mount();
+	await settle();
+
+	await act( async () => refreshButton().click() );
+	expect( refreshButton().textContent ).toBe( 'Refreshing…' );
+
+	// The switch starts while the refresh is still out, and finishes first.
+	await act( async () => switchInput().click() );
+	await settle();
+	expect( switchInput().checked ).toBe( false );
+
+	// The old refresh answers last, with the state from before the switch.
+	await act( async () => {
+		slowRefresh.resolve( site( true ) );
+	} );
+	await settle();
+
+	expect( switchInput().checked ).toBe( false );
+	expect( refreshButton().textContent ).toBe( 'Refresh' );
+	expect( refreshButton().disabled ).toBe( false );
+} );
+
+test( 'a switch that answers after a newer refresh is dropped', async () => {
+	const slowSwitch = deferred();
+	fetchOverview
+		.mockResolvedValueOnce( site( true ) )
+		.mockResolvedValueOnce( site( false ) );
+	switchProduct.mockReturnValueOnce( slowSwitch.promise );
+
+	await mount();
+	await settle();
+
+	await act( async () => switchInput().click() );
+	await act( async () => refreshButton().click() );
+	await settle();
+	expect( switchInput().checked ).toBe( false );
+
+	// The switch's own, older answer arrives last and must not undo what the refresh found.
+	await act( async () => {
+		slowSwitch.resolve( site( true ) );
+	} );
+	await settle();
+
+	expect( switchInput().checked ).toBe( false );
+	expect( switchInput().disabled ).toBe( false );
 } );
