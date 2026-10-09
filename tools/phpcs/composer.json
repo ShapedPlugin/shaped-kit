@@ -1,0 +1,18 @@
+{
+    "name": "shapedplugin/shaped-kit-phpcs-tools",
+    "description": "Isolated PHPCS toolchain for Shaped Kit development. Separate from tools/phpunit so a PHPUnit upgrade cannot drag the sniff versions with it.",
+    "type": "project",
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.9",
+        "wp-coding-standards/wpcs": "^3.1",
+        "phpcompatibility/phpcompatibility-wp": "3.0.0-alpha2"
+    },
+    "minimum-stability": "alpha",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+	bootstrap="tests/phpunit/bootstrap.php"
+	colors="true"
+	beStrictAboutTestsThatDoNotTestAnything="true"
+	failOnRisky="true"
+	failOnWarning="true"
+>
+	<testsuites>
+		<!--
+			unit        classes under src/ tested without WordPress. The
+			            bootstrap registers the ShapedKit\ autoloader only; it
+			            never includes shaped-kit.php, which needs WordPress.
+			integration anything reaching WordPress (abilities, the MCP
+			            server, REST routes, options). Needs the WordPress
+			            test library; skips cleanly without it.
+			            Select with SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration.
+
+			tests/unit/*.php are separate: dependency-free scripts that run
+			the loader in fresh PHP processes (`composer test:scripts`).
+		-->
+		<testsuite name="unit">
+			<directory>tests/phpunit/unit</directory>
+		</testsuite>
+		<testsuite name="integration">
+			<directory>tests/phpunit/integration</directory>
+		</testsuite>
+	</testsuites>
+</phpunit>

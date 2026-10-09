@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<ruleset name="Shaped Kit">
+	<description>WordPress coding standards for Shaped Kit (PSR-4 under src/).</description>
+
+	<!--
+		Scanned paths, stated explicitly so a bare `phpcs` works. libs/ is not
+		listed: libs/mcp-adapter/ is the upstream WordPress MCP Adapter, bundled
+		unmodified and replaced wholesale on upgrade (PRD FR-K1), so its style
+		is not ours to fix.
+	-->
+	<file>shaped-kit.php</file>
+	<file>src</file>
+	<file>tests</file>
+
+	<rule ref="WordPress" />
+	<rule ref="WordPress-Docs" />
+
+	<!--
+		PSR-4: one class per file named for the class (AdapterBootstrap.php),
+		which the autoloader in shaped-kit.php depends on.
+	-->
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+		</properties>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName" />
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase" />
+	</rule>
+
+	<rule ref="Squiz.Commenting.FileComment">
+		<exclude name="Squiz.Commenting.FileComment.MissingAuthorTag" />
+	</rule>
+
+	<!-- "Text Domain: shaped-kit" in shaped-kit.php's header. -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="shaped-kit"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		Constants SHAPED_KIT_*, options and hooks shaped_kit*, namespace
+		ShapedKit\ (PRD §7).
+	-->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="shaped_kit"/>
+				<element value="SHAPED_KIT"/>
+				<element value="ShapedKit"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		Hook names use "/" as a separator by design (PRD §7: shaped_kit/products,
+		{prefix}/mcp_loaded), the same convention as FluentCRM's fluent_crm/...
+		Allowed through the sniff's own option (WPCS 3.3.0), not by excluding it,
+		so other naming mistakes in hook names are still caught.
+	-->
+	<rule ref="WordPress.NamingConventions.ValidHookName">
+		<properties>
+			<property name="additionalWordDelimiters" value="/"/>
+		</properties>
+	</rule>
+
+	<!--
+		TESTS. tests/unit runs the loader in a fresh PHP process against a
+		throwaway site tree, with no WordPress loaded. That harness has to
+		stand in for WordPress functions under their real names, set
+		$wp_version, write and remove temp files, spawn PHP with shell_exec()
+		and print raw results. Each exclusion below matches that, and applies
+		to tests/ only. All were confirmed by running phpcs on the tests, not
+		added speculatively.
+	-->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.EscapeOutput">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.DevelopmentFunctions">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.DiscouragedPHPFunctions">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.Files.OneObjectStructurePerFile">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+
+	<!--
+		Header: "Requires at least: 6.9", "Requires PHP: 7.4".
+		PHPCompatibilityWP checks the 7.4 floor without a PHP 7.4 binary. It
+		comes from the isolated toolchain in tools/phpcs: run `composer lint`,
+		not a global phpcs, which may lack the standard and then refuses to
+		run at all.
+	-->
+	<config name="minimum_wp_version" value="6.9"/>
+	<config name="testVersion" value="7.4-"/>
+	<rule ref="PHPCompatibilityWP" />
+
+	<arg name="basepath" value="."/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/libs/*</exclude-pattern>
+	<exclude-pattern>*/docs/*</exclude-pattern>
+</ruleset>
