@@ -44,10 +44,27 @@ if ( $shaped_kit_wp_tests_dir ) {
 
 	require_once $shaped_kit_wp_tests_dir . '/includes/functions.php';
 
+	/*
+	 * Normally the plugin under test is this checkout. `composer test:package` points
+	 * SHAPED_KIT_PLUGIN_DIR at the unzipped release package instead, so the same tests prove
+	 * the package works on its own. A wrong path is an error, never a quiet fall back to the
+	 * checkout, which would test the wrong thing and pass.
+	 */
+	$shaped_kit_plugin_dir = getenv( 'SHAPED_KIT_PLUGIN_DIR' ) ? rtrim( getenv( 'SHAPED_KIT_PLUGIN_DIR' ), '/\\' ) : $shaped_kit_root;
+
+	if ( ! file_exists( $shaped_kit_plugin_dir . '/shaped-kit.php' ) ) {
+		fwrite( STDERR, "No shaped-kit.php in {$shaped_kit_plugin_dir}.\n" );
+		exit( 1 );
+	}
+
+	if ( $shaped_kit_plugin_dir !== $shaped_kit_root ) {
+		fwrite( STDERR, "Testing the package at {$shaped_kit_plugin_dir}\n" );
+	}
+
 	tests_add_filter(
 		'muplugins_loaded',
-		static function () use ( $shaped_kit_root ) {
-			require_once $shaped_kit_root . '/shaped-kit.php';
+		static function () use ( $shaped_kit_plugin_dir ) {
+			require_once $shaped_kit_plugin_dir . '/shaped-kit.php';
 		}
 	);
 

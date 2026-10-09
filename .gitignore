@@ -13,6 +13,9 @@ Thumbs.db
 /vendor/
 /build/
 
+# The release package made by `npm run package`
+/shaped-kit.zip
+
 # Isolated dev toolchains: lock files are committed, installed vendor/ trees are not
 /tools/*/vendor/
 .phpunit.cache/

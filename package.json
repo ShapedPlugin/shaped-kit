@@ -10,7 +10,8 @@
 		"test:js": "wp-scripts test-unit-js --testMatch '**/assets/admin/**/*.test.js'",
 		"format": "wp-scripts format assets/admin",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"package": "npm run build && npm run plugin-zip"
+		"package:verify": "php tools/verify-package.php",
+		"package": "npm run build && npm run plugin-zip && npm run package:verify"
 	},
 	"files": [
 		"shaped-kit.php",

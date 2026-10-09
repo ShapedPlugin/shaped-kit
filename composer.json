@@ -15,10 +15,12 @@
         ],
         "test:scripts": [
             "@php tests/unit/AdapterBootstrapTest.php",
-            "@php tests/unit/AdapterLoadTest.php"
+            "@php tests/unit/AdapterLoadTest.php",
+            "@php tests/unit/PackageCheckTest.php"
         ],
         "test:unit": "tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite unit",
         "test:integration": "SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
+        "test:package": "rm -rf \"${TMPDIR:-/tmp}/shaped-kit-package\" && mkdir -p \"${TMPDIR:-/tmp}/shaped-kit-package\" && unzip -q shaped-kit.zip -d \"${TMPDIR:-/tmp}/shaped-kit-package\" && SHAPED_KIT_PLUGIN_DIR=\"${TMPDIR:-/tmp}/shaped-kit-package/shaped-kit\" SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
         "lint": "tools/phpcs/vendor/bin/phpcs",
         "lint:fix": "tools/phpcs/vendor/bin/phpcbf"
     },
