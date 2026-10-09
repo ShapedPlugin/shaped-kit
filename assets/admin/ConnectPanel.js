@@ -167,13 +167,63 @@ const ConnectPanel = ( { overview } ) => {
 
 	return (
 		<section className="shaped-kit-card shaped-kit-connect">
-			<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
-			<p className="shaped-kit-card-note">
-				{ __(
-					'AI clients sign in with an application password. Create one here, or paste one you made on your profile page, and the text below fills itself in.',
-					'shaped-kit'
-				) }
-			</p>
+			<header className="shaped-kit-connect-head">
+				<div className="shaped-kit-connect-intro">
+					<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
+					<p className="shaped-kit-card-note">
+						{ __(
+							'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in.',
+							'shaped-kit'
+						) }
+					</p>
+				</div>
+
+				<div className="shaped-kit-create">
+					<button
+						type="button"
+						className="button button-primary"
+						onClick={ create }
+						disabled={ ! support.available || isCreating }
+					>
+						{ isCreating
+							? __( 'Creating…', 'shaped-kit' )
+							: __(
+									'Create application password',
+									'shaped-kit'
+							  ) }
+					</button>
+					{ support.manage_url && (
+						<a href={ support.manage_url } className="button">
+							{ __( 'Manage passwords', 'shaped-kit' ) }
+						</a>
+					) }
+				</div>
+			</header>
+
+			{ ! support.available && (
+				<p className="shaped-kit-card-note">
+					{ unavailableText( support.reason ) }
+				</p>
+			) }
+
+			{ created && (
+				<p className="shaped-kit-created" role="status">
+					{ sprintf(
+						/* translators: %s: the name the password was given. */
+						__(
+							'Created "%s". WordPress shows this password only once, so copy the text below now.',
+							'shaped-kit'
+						),
+						created.name
+					) }
+				</p>
+			) }
+
+			{ error && (
+				<p className="shaped-kit-connect-error" role="alert">
+					{ error }
+				</p>
+			) }
 
 			<div className="shaped-kit-credentials">
 				<label>
@@ -214,49 +264,6 @@ const ConnectPanel = ( { overview } ) => {
 					</span>
 				</label>
 			</div>
-
-			<div className="shaped-kit-create">
-				<button
-					type="button"
-					className="button button-primary"
-					onClick={ create }
-					disabled={ ! support.available || isCreating }
-				>
-					{ isCreating
-						? __( 'Creating…', 'shaped-kit' )
-						: __( 'Create application password', 'shaped-kit' ) }
-				</button>
-				{ support.manage_url && (
-					<a href={ support.manage_url } className="button">
-						{ __( 'Manage passwords', 'shaped-kit' ) }
-					</a>
-				) }
-			</div>
-
-			{ ! support.available && (
-				<p className="shaped-kit-card-note">
-					{ unavailableText( support.reason ) }
-				</p>
-			) }
-
-			{ created && (
-				<p className="shaped-kit-created" role="status">
-					{ sprintf(
-						/* translators: %s: the name the password was given. */
-						__(
-							'Created "%s". WordPress shows this password only once, so copy the text below now.',
-							'shaped-kit'
-						),
-						created.name
-					) }
-				</p>
-			) }
-
-			{ error && (
-				<p className="shaped-kit-connect-error" role="alert">
-					{ error }
-				</p>
-			) }
 
 			<div className="shaped-kit-tabs" role="tablist">
 				{ list.map( ( item ) => (
