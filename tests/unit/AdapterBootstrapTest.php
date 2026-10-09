@@ -34,7 +34,7 @@ $kit_dir = '/srv/wp/wp-content/plugins/shaped-kit/';
 $class   = '/includes/Core/McpAdapter.php';
 
 // A fake filesystem: only these adapter marker files exist.
-$exists_in = function ( array $existing ) {
+$exists_in         = function ( array $existing ) {
 	return function ( $path ) use ( $existing ) {
 		return in_array( $path, $existing, true );
 	};
@@ -74,26 +74,91 @@ $check(
 
 echo "-- is_adapter_activation_request\n";
 $adapter_fs = $exists_in( array( $standalone_marker ) );
-$check( 'single activation of the adapter', AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => 'mcp-adapter/mcp-adapter.php' ), $plugins, $adapter_fs ), true );
 $check(
-	'bulk activation including the adapter (action2)',
-	AdapterBootstrap::is_adapter_activation_request( array( 'action2' => 'activate-selected', 'checked' => array( 'akismet/akismet.php', 'mcp-adapter/mcp-adapter.php' ) ), $plugins, $adapter_fs ),
+	'single activation of the adapter',
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'activate',
+			'plugin' => 'mcp-adapter/mcp-adapter.php',
+		),
+		$plugins,
+		$adapter_fs
+	),
 	true
 );
-$check( 'activating some other plugin', AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => 'akismet/akismet.php' ), $plugins, $adapter_fs ), false );
-$check( 'deactivating the adapter', AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'deactivate', 'plugin' => 'mcp-adapter/mcp-adapter.php' ), $plugins, $adapter_fs ), false );
+$check(
+	'bulk activation including the adapter (action2)',
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action2' => 'activate-selected',
+			'checked' => array( 'akismet/akismet.php', 'mcp-adapter/mcp-adapter.php' ),
+		),
+		$plugins,
+		$adapter_fs
+	),
+	true
+);
+$check(
+	'activating some other plugin',
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'activate',
+			'plugin' => 'akismet/akismet.php',
+		),
+		$plugins,
+		$adapter_fs
+	),
+	false
+);
+$check(
+	'deactivating the adapter',
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'deactivate',
+			'plugin' => 'mcp-adapter/mcp-adapter.php',
+		),
+		$plugins,
+		$adapter_fs
+	),
+	false
+);
 $check( 'no action at all', AdapterBootstrap::is_adapter_activation_request( array(), $plugins, $adapter_fs ), false );
 $check(
 	'leading slash and backslashes are normalised',
-	AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => ' /mcp-adapter\\mcp-adapter.php ' ), $plugins, $adapter_fs ),
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'activate',
+			'plugin' => ' /mcp-adapter\\mcp-adapter.php ',
+		),
+		$plugins,
+		$adapter_fs
+	),
 	true
 );
 $check(
 	'path traversal is ignored, not followed',
-	AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => '../plugins/mcp-adapter/mcp-adapter.php' ), $plugins, $exists_in( array( $plugins . '/../plugins/mcp-adapter/includes/Core/McpAdapter.php' ) ) ),
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'activate',
+			'plugin' => '../plugins/mcp-adapter/mcp-adapter.php',
+		),
+		$plugins,
+		$exists_in( array( $plugins . '/../plugins/mcp-adapter/includes/Core/McpAdapter.php' ) )
+	),
 	false
 );
-$check( 'non-string values are skipped', AdapterBootstrap::is_adapter_activation_request( array( 'action' => 'activate', 'plugin' => array( 'x' ) ), $plugins, $adapter_fs ), false );
+$check(
+	'non-string values are skipped',
+	AdapterBootstrap::is_adapter_activation_request(
+		array(
+			'action' => 'activate',
+			'plugin' => array( 'x' ),
+		),
+		$plugins,
+		$adapter_fs
+	),
+	false
+);
 
 echo "-- is_cli_adapter_activation\n";
 $cli = function ( $args, $assoc = array(), $any_installed = false ) use ( $plugins, $adapter_fs ) {

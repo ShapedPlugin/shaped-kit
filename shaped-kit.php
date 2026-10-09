@@ -22,14 +22,14 @@ define( 'SHAPED_KIT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SHAPED_KIT_URL', plugin_dir_url( __FILE__ ) );
 
 spl_autoload_register(
-	static function ( $class ) {
+	static function ( $class_name ) {
 		$prefix = 'ShapedKit\\';
 
-		if ( 0 !== strpos( $class, $prefix ) ) {
+		if ( 0 !== strpos( $class_name, $prefix ) ) {
 			return;
 		}
 
-		$file = SHAPED_KIT_DIR . 'src/' . str_replace( '\\', '/', substr( $class, strlen( $prefix ) ) ) . '.php';
+		$file = SHAPED_KIT_DIR . 'src/' . str_replace( '\\', '/', substr( $class_name, strlen( $prefix ) ) ) . '.php';
 
 		if ( is_readable( $file ) ) {
 			require $file;

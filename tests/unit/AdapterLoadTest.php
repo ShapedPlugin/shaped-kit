@@ -24,8 +24,8 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 		define( 'SHAPED_KIT_DISABLE_BUNDLED_MCP_ADAPTER', true );
 	}
 
-	$GLOBALS['wp_version']   = $scenario['wp_version'];
-	$GLOBALS['active_files'] = array_map(
+	$GLOBALS['wp_version']     = $scenario['wp_version'];
+	$GLOBALS['active_files']   = array_map(
 		function ( $plugin ) {
 			return WP_PLUGIN_DIR . '/' . $plugin;
 		},
@@ -99,12 +99,12 @@ $entry_with_class    = "<?php\nnamespace WP\\MCP\\Core;\n\$GLOBALS['entry_requir
 $entry_without_class = "<?php\n\$GLOBALS['entry_required'] = true;\n";
 
 $tree = array(
-	'kit-ok/libs/mcp-adapter/mcp-adapter.php'                 => $entry_with_class,
-	'kit-noclass/libs/mcp-adapter/mcp-adapter.php'            => $entry_without_class,
-	'kit-missing/shaped-kit.php'                              => "<?php\n",
-	'plugins/akismet/akismet.php'                             => "<?php\n",
-	'plugins/wp-mcp-adapter/mcp-adapter.php'                  => "<?php\n",
-	'plugins/wp-mcp-adapter/includes/Core/McpAdapter.php'     => "<?php\n",
+	'kit-ok/libs/mcp-adapter/mcp-adapter.php'             => $entry_with_class,
+	'kit-noclass/libs/mcp-adapter/mcp-adapter.php'        => $entry_without_class,
+	'kit-missing/shaped-kit.php'                          => "<?php\n",
+	'plugins/akismet/akismet.php'                         => "<?php\n",
+	'plugins/wp-mcp-adapter/mcp-adapter.php'              => "<?php\n",
+	'plugins/wp-mcp-adapter/includes/Core/McpAdapter.php' => "<?php\n",
 );
 
 foreach ( $tree as $path => $contents ) {
@@ -131,9 +131,33 @@ $scenarios = array(
 	'a 6.9 pre-release still loads'                        => array( array( 'wp_version' => '6.9-RC2' ), array( true, true, true, false ) ),
 	'an adapter another plugin loaded wins'                => array( array( 'preloaded' => true ), array( false, false, false, false ) ),
 	'an active adapter plugin in any folder wins'          => array( array( 'active' => array( 'akismet/akismet.php', 'wp-mcp-adapter/mcp-adapter.php' ) ), array( false, false, false, false ) ),
-	'activating an adapter plugin skips this request'      => array( array( 'request' => array( 'action' => 'activate', 'plugin' => 'wp-mcp-adapter/mcp-adapter.php' ) ), array( false, false, false, false ) ),
-	'bulk-activating an adapter plugin skips this request' => array( array( 'request' => array( 'action2' => 'activate-selected', 'checked' => array( 'akismet/akismet.php', 'wp-mcp-adapter/mcp-adapter.php' ) ) ), array( false, false, false, false ) ),
-	'activating an unrelated plugin still loads'           => array( array( 'request' => array( 'action' => 'activate', 'plugin' => 'akismet/akismet.php' ) ), array( true, true, true, false ) ),
+	'activating an adapter plugin skips this request'      => array(
+		array(
+			'request' => array(
+				'action' => 'activate',
+				'plugin' => 'wp-mcp-adapter/mcp-adapter.php',
+			),
+		),
+		array( false, false, false, false ),
+	),
+	'bulk-activating an adapter plugin skips this request' => array(
+		array(
+			'request' => array(
+				'action2' => 'activate-selected',
+				'checked' => array( 'akismet/akismet.php', 'wp-mcp-adapter/mcp-adapter.php' ),
+			),
+		),
+		array( false, false, false, false ),
+	),
+	'activating an unrelated plugin still loads'           => array(
+		array(
+			'request' => array(
+				'action' => 'activate',
+				'plugin' => 'akismet/akismet.php',
+			),
+		),
+		array( true, true, true, false ),
+	),
 	'wp plugin activate <adapter> skips'                   => array( array( 'cli' => array( array( 'plugin', 'activate', 'wp-mcp-adapter' ), array() ) ), array( false, false, false, false ) ),
 	'wp plugin activate --all with an adapter skips'       => array( array( 'cli' => array( array( 'plugin', 'activate' ), array( 'all' => true ) ) ), array( false, false, false, false ) ),
 	'another wp-cli command still loads'                   => array( array( 'cli' => array( array( 'cache', 'flush' ), array() ) ), array( true, true, true, false ) ),
