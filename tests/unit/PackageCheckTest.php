@@ -11,10 +11,10 @@
  * @package ShapedKit
  */
 
-require __DIR__ . '/../../tools/verify-package.php';
-
 $failures = 0;
 $total    = 0;
+
+require __DIR__ . '/../../tools/verify-package.php';
 
 $check = function ( $label, $actual, $expected ) use ( &$failures, &$total ) {
 	++$total;
@@ -134,10 +134,59 @@ $check( 'an asset file that is empty', $has( $problems( $good_files, array( 'ass
 $drift = function ( array $versions ) use ( $problems, $good_files ) {
 	return $problems( $good_files, array( 'versions' => $versions ) );
 };
-$check( 'the header and the constant disagree', $has( $drift( array( 'header' => '0.2.0', 'constant' => '0.1.0', 'package' => '0.2.0' ) ), 'Versions disagree' ), true );
-$check( 'package.json is behind', $has( $drift( array( 'header' => '0.2.0', 'constant' => '0.2.0', 'package' => '0.1.0' ) ), 'Versions disagree' ), true );
-$check( 'no version found in the header', $has( $drift( array( 'header' => '', 'constant' => '', 'package' => '' ) ), 'Versions disagree' ), true );
-$check( 'all three agree', $drift( array( 'header' => '1.4.0', 'constant' => '1.4.0', 'package' => '1.4.0' ) ), array() );
+$check(
+	'the header and the constant disagree',
+	$has(
+		$drift(
+			array(
+				'header'   => '0.2.0',
+				'constant' => '0.1.0',
+				'package'  => '0.2.0',
+			)
+		),
+		'Versions disagree'
+	),
+	true
+);
+$check(
+	'package.json is behind',
+	$has(
+		$drift(
+			array(
+				'header'   => '0.2.0',
+				'constant' => '0.2.0',
+				'package'  => '0.1.0',
+			)
+		),
+		'Versions disagree'
+	),
+	true
+);
+$check(
+	'no version found in the header',
+	$has(
+		$drift(
+			array(
+				'header'   => '',
+				'constant' => '',
+				'package'  => '',
+			)
+		),
+		'Versions disagree'
+	),
+	true
+);
+$check(
+	'all three agree',
+	$drift(
+		array(
+			'header'   => '1.4.0',
+			'constant' => '1.4.0',
+			'package'  => '1.4.0',
+		)
+	),
+	array()
+);
 
 echo "\n{$total} cases, {$failures} failed\n";
 

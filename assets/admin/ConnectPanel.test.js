@@ -22,6 +22,24 @@ jest.mock( './connectionTest', () => ( {
 	testConnection: jest.fn(),
 } ) );
 
+// The tool tester has its own tests. Here it only has to be given the right things.
+jest.mock( './ToolTester', () => {
+	const { createElement } = require( 'react' );
+
+	return {
+		__esModule: true,
+		default: ( props ) =>
+			createElement( 'div', {
+				'data-testid': 'tool-tester',
+				'data-products': props.products
+					.map( ( p ) => p.slug )
+					.join( ',' ),
+				'data-username': props.username,
+				'data-password': props.password,
+			} ),
+	};
+} );
+
 let container;
 let root;
 
@@ -428,5 +446,52 @@ describe( 'Test connection', () => {
 		);
 
 		expect( button( /Test connection/ ) ).toBeUndefined();
+	} );
+} );
+
+describe( 'Try a tool', () => {
+	const tester = () =>
+		container.querySelector( '[data-testid="tool-tester"]' );
+
+	test( 'it sits under the connect panel and gets the products that are on, and the typed login', async () => {
+		await render(
+			overview( {
+				products: [
+					product(),
+					product( {
+						slug: 'real-testimonials',
+						name: 'Real Testimonials',
+						enabled: false,
+						endpoint_url:
+							'https://site.test/wp-json/real-testimonials/mcp',
+					} ),
+				],
+			} )
+		);
+
+		expect( tester() ).not.toBeNull();
+		expect(
+			container
+				.querySelector( '.shaped-kit-connect' )
+				.compareDocumentPosition( tester() ) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+		expect( tester().dataset.products ).toBe( 'location-weather' );
+		expect( tester().dataset.username ).toBe( 'admin' );
+		expect( tester().dataset.password ).toBe( '' );
+
+		await type( passwordInput(), 'abcd efgh ijkl mnop qrst uvwx' );
+
+		expect( tester().dataset.password ).toBe(
+			'abcd efgh ijkl mnop qrst uvwx'
+		);
+	} );
+
+	test( 'with nothing switched on it is given no products', async () => {
+		await render(
+			overview( { products: [ product( { enabled: false } ) ] } )
+		);
+
+		expect( tester().dataset.products ).toBe( '' );
 	} );
 } );

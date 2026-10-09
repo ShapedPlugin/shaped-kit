@@ -3,6 +3,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { createAppPassword, describeError } from './api';
 import { testConnection } from './connectionTest';
 import { buildSnippet, clients } from './snippets';
+import ToolTester from './ToolTester';
 
 /**
  * The tone a test result is drawn in: green for a connection, amber for "type something first",
@@ -166,195 +167,207 @@ const ConnectPanel = ( { overview } ) => {
 	};
 
 	return (
-		<section className="shaped-kit-card shaped-kit-connect">
-			<header className="shaped-kit-connect-head">
-				<div className="shaped-kit-connect-intro">
-					<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
+		<>
+			<section className="shaped-kit-card shaped-kit-connect">
+				<header className="shaped-kit-connect-head">
+					<div className="shaped-kit-connect-intro">
+						<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
+						<p className="shaped-kit-card-note">
+							{ __(
+								'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in.',
+								'shaped-kit'
+							) }
+						</p>
+					</div>
+
+					<div className="shaped-kit-create">
+						<button
+							type="button"
+							className="button button-primary"
+							onClick={ create }
+							disabled={ ! support.available || isCreating }
+						>
+							{ isCreating
+								? __( 'Creating…', 'shaped-kit' )
+								: __(
+										'Create application password',
+										'shaped-kit'
+								  ) }
+						</button>
+						{ support.manage_url && (
+							<a href={ support.manage_url } className="button">
+								{ __( 'Manage passwords', 'shaped-kit' ) }
+							</a>
+						) }
+					</div>
+				</header>
+
+				{ ! support.available && (
+					<p className="shaped-kit-card-note">
+						{ unavailableText( support.reason ) }
+					</p>
+				) }
+
+				{ created && (
+					<p className="shaped-kit-created" role="status">
+						{ sprintf(
+							/* translators: %s: the name the password was given. */
+							__(
+								'Created "%s". WordPress shows this password only once, so copy the text below now.',
+								'shaped-kit'
+							),
+							created.name
+						) }
+					</p>
+				) }
+
+				{ error && (
+					<p className="shaped-kit-connect-error" role="alert">
+						{ error }
+					</p>
+				) }
+
+				<div className="shaped-kit-credentials">
+					<label>
+						<span>{ __( 'Username', 'shaped-kit' ) }</span>
+						<input
+							type="text"
+							value={ username }
+							autoComplete="off"
+							onChange={ ( event ) =>
+								setUsername( event.target.value )
+							}
+						/>
+					</label>
+					<label>
+						<span>
+							{ __( 'Application password', 'shaped-kit' ) }
+						</span>
+						<span className="shaped-kit-password">
+							<input
+								type={ showPassword ? 'text' : 'password' }
+								value={ password }
+								// "off" is ignored by password managers. "new-password" is not: it stops
+								// a saved login being dropped into the field without React hearing of it,
+								// which left the field and the text below it disagreeing.
+								autoComplete="new-password"
+								onChange={ ( event ) =>
+									setPassword( event.target.value )
+								}
+							/>
+							<button
+								type="button"
+								className="button"
+								aria-pressed={ showPassword }
+								onClick={ () =>
+									setShowPassword( ! showPassword )
+								}
+							>
+								{ showPassword
+									? __( 'Hide', 'shaped-kit' )
+									: __( 'Show', 'shaped-kit' ) }
+							</button>
+						</span>
+					</label>
+				</div>
+
+				<div className="shaped-kit-tabs" role="tablist">
+					{ list.map( ( item ) => (
+						<button
+							key={ item.key }
+							type="button"
+							role="tab"
+							aria-selected={ client === item.key }
+							className="shaped-kit-tab"
+							onClick={ () => {
+								setClient( item.key );
+								setCopied( false );
+							} }
+						>
+							{ item.label }
+						</button>
+					) ) }
+				</div>
+
+				{ client === 'claude-desktop' && (
+					<label className="shaped-kit-check">
+						<input
+							type="checkbox"
+							checked={ localDev }
+							onChange={ ( event ) =>
+								setLocalDev( event.target.checked )
+							}
+						/>
+						<span>
+							{ __(
+								'Local site with a self-signed certificate (turns off TLS checks for this client)',
+								'shaped-kit'
+							) }
+						</span>
+					</label>
+				) }
+
+				<p className="shaped-kit-card-note">{ current.note }</p>
+
+				{ snippet ? (
+					<div className="shaped-kit-snippet">
+						<pre>
+							<code>{ snippet }</code>
+						</pre>
+						<div className="shaped-kit-snippet-actions">
+							<button
+								type="button"
+								className="button"
+								onClick={ copy }
+							>
+								{ copied
+									? __( 'Copied', 'shaped-kit' )
+									: __( 'Copy snippet', 'shaped-kit' ) }
+							</button>
+							<button
+								type="button"
+								className="button"
+								onClick={ runTest }
+								disabled={ isTesting }
+							>
+								{ isTesting
+									? __( 'Testing…', 'shaped-kit' )
+									: __( 'Test connection', 'shaped-kit' ) }
+							</button>
+						</div>
+
+						{ results && (
+							<ul className="shaped-kit-results" role="status">
+								{ results.map( ( result ) => (
+									<li
+										key={ result.slug }
+										className={ `shaped-kit-result shaped-kit-result-${ resultTone(
+											result.state
+										) }` }
+									>
+										<strong>{ result.name }</strong>
+										<span>{ result.message }</span>
+									</li>
+								) ) }
+							</ul>
+						) }
+					</div>
+				) : (
 					<p className="shaped-kit-card-note">
 						{ __(
-							'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in.',
+							'Turn on a product above to get something to paste.',
 							'shaped-kit'
 						) }
 					</p>
-				</div>
+				) }
+			</section>
 
-				<div className="shaped-kit-create">
-					<button
-						type="button"
-						className="button button-primary"
-						onClick={ create }
-						disabled={ ! support.available || isCreating }
-					>
-						{ isCreating
-							? __( 'Creating…', 'shaped-kit' )
-							: __(
-									'Create application password',
-									'shaped-kit'
-							  ) }
-					</button>
-					{ support.manage_url && (
-						<a href={ support.manage_url } className="button">
-							{ __( 'Manage passwords', 'shaped-kit' ) }
-						</a>
-					) }
-				</div>
-			</header>
-
-			{ ! support.available && (
-				<p className="shaped-kit-card-note">
-					{ unavailableText( support.reason ) }
-				</p>
-			) }
-
-			{ created && (
-				<p className="shaped-kit-created" role="status">
-					{ sprintf(
-						/* translators: %s: the name the password was given. */
-						__(
-							'Created "%s". WordPress shows this password only once, so copy the text below now.',
-							'shaped-kit'
-						),
-						created.name
-					) }
-				</p>
-			) }
-
-			{ error && (
-				<p className="shaped-kit-connect-error" role="alert">
-					{ error }
-				</p>
-			) }
-
-			<div className="shaped-kit-credentials">
-				<label>
-					<span>{ __( 'Username', 'shaped-kit' ) }</span>
-					<input
-						type="text"
-						value={ username }
-						autoComplete="off"
-						onChange={ ( event ) =>
-							setUsername( event.target.value )
-						}
-					/>
-				</label>
-				<label>
-					<span>{ __( 'Application password', 'shaped-kit' ) }</span>
-					<span className="shaped-kit-password">
-						<input
-							type={ showPassword ? 'text' : 'password' }
-							value={ password }
-							// "off" is ignored by password managers. "new-password" is not: it stops
-							// a saved login being dropped into the field without React hearing of it,
-							// which left the field and the text below it disagreeing.
-							autoComplete="new-password"
-							onChange={ ( event ) =>
-								setPassword( event.target.value )
-							}
-						/>
-						<button
-							type="button"
-							className="button"
-							aria-pressed={ showPassword }
-							onClick={ () => setShowPassword( ! showPassword ) }
-						>
-							{ showPassword
-								? __( 'Hide', 'shaped-kit' )
-								: __( 'Show', 'shaped-kit' ) }
-						</button>
-					</span>
-				</label>
-			</div>
-
-			<div className="shaped-kit-tabs" role="tablist">
-				{ list.map( ( item ) => (
-					<button
-						key={ item.key }
-						type="button"
-						role="tab"
-						aria-selected={ client === item.key }
-						className="shaped-kit-tab"
-						onClick={ () => {
-							setClient( item.key );
-							setCopied( false );
-						} }
-					>
-						{ item.label }
-					</button>
-				) ) }
-			</div>
-
-			{ client === 'claude-desktop' && (
-				<label className="shaped-kit-check">
-					<input
-						type="checkbox"
-						checked={ localDev }
-						onChange={ ( event ) =>
-							setLocalDev( event.target.checked )
-						}
-					/>
-					<span>
-						{ __(
-							'Local site with a self-signed certificate (turns off TLS checks for this client)',
-							'shaped-kit'
-						) }
-					</span>
-				</label>
-			) }
-
-			<p className="shaped-kit-card-note">{ current.note }</p>
-
-			{ snippet ? (
-				<div className="shaped-kit-snippet">
-					<pre>
-						<code>{ snippet }</code>
-					</pre>
-					<div className="shaped-kit-snippet-actions">
-						<button
-							type="button"
-							className="button"
-							onClick={ copy }
-						>
-							{ copied
-								? __( 'Copied', 'shaped-kit' )
-								: __( 'Copy snippet', 'shaped-kit' ) }
-						</button>
-						<button
-							type="button"
-							className="button"
-							onClick={ runTest }
-							disabled={ isTesting }
-						>
-							{ isTesting
-								? __( 'Testing…', 'shaped-kit' )
-								: __( 'Test connection', 'shaped-kit' ) }
-						</button>
-					</div>
-
-					{ results && (
-						<ul className="shaped-kit-results" role="status">
-							{ results.map( ( result ) => (
-								<li
-									key={ result.slug }
-									className={ `shaped-kit-result shaped-kit-result-${ resultTone(
-										result.state
-									) }` }
-								>
-									<strong>{ result.name }</strong>
-									<span>{ result.message }</span>
-								</li>
-							) ) }
-						</ul>
-					) }
-				</div>
-			) : (
-				<p className="shaped-kit-card-note">
-					{ __(
-						'Turn on a product above to get something to paste.',
-						'shaped-kit'
-					) }
-				</p>
-			) }
-		</section>
+			<ToolTester
+				products={ products }
+				username={ username }
+				password={ password }
+			/>
+		</>
 	);
 };
 

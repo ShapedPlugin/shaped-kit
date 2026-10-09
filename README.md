@@ -14,7 +14,7 @@ Shaped Kit runs no AI model, calls no AI provider, and sends nothing to ShapedPl
 |---|---|
 | Bundled WordPress MCP Adapter 0.7.0, plus a loader that never clashes with other copies | **Built and tested** |
 | Adapter status report (version, compatibility, which plugin supplied it) | **Built**, shown on the dashboard |
-| Admin page **ShapedPlugin → AI & MCP**: products and their on/off switches, connection snippets for six AI clients, creating an application password, a "Test connection" button | **Built and tested** |
+| Admin page **ShapedPlugin → AI & MCP**: products and their on/off switches, connection snippets for six AI clients, creating an application password, a "Test connection" button, and a **"Try a tool"** panel that calls a product's tools and shows the raw answer | **Built and tested** |
 | Release package (`npm run package`), checked by a verifier and tested unzipped | **Built** |
 | First product module (Location Weather, free, read-only) | Built, in the Location Weather plugin (not yet released) |
 | Location Weather Pro, Real Testimonials, further products | Planned |
@@ -57,6 +57,16 @@ Three consequences:
 1. **One endpoint per product, whatever the edition.** Upgrading from free to Pro adds tools; the AI client's configuration keeps working.
 2. **Products work without the Kit.** Any MCP Adapter on the site will do: the standalone MCP Adapter plugin, or a copy another plugin bundles. The Kit adds convenience, the dashboard and the audit log.
 3. **Products never call Kit code.** They talk to the Kit only through WordPress filters, so neither can break the other.
+
+### Checking what an agent would receive
+
+The dashboard can show a product's tools without setting up an AI client. Under **Connect a client**, the **Try a tool** panel does what an agent does:
+
+1. **Load tools** signs in to the product's endpoint with the username and application password typed above, and lists its tools.
+2. Pick a tool. Its description is shown, and the arguments box is filled with the tool's required fields as blanks.
+3. **Run tool** calls it and shows the raw JSON answer with the HTTP status and the time taken. If the tool reports that its own call failed, a note says so and its message is kept.
+
+It runs in the browser with no cookies, so the answer is what a real agent gets, and the password goes only to the product's own endpoint, never through the Kit's server. Arguments that are not a JSON object are refused before any request is made. A tool that changes data will change it, so treat write tools (when products have them) as you would in any client.
 
 ---
 
@@ -236,7 +246,7 @@ Four layers, each the cheapest one that can see its kind of bug (see `tests/TEST
 composer test:scripts       # plain PHP, no packages: the loader (54 + 21 cases) and the package verifier (29)
 composer test:unit          # PHPUnit, no WordPress
 composer test:integration   # PHPUnit inside real WordPress
-npm run test:js             # Jest: the dashboard (131 tests)
+npm run test:js             # Jest: the dashboard (188 tests)
 ```
 
 `AdapterLoadTest.php` builds a throwaway site tree in the system temp directory, fakes the handful of WordPress functions the loader touches, and runs every scenario in its own process, because classes and constants cannot be undefined. It cleans up after itself. Every script exits non-zero on failure.

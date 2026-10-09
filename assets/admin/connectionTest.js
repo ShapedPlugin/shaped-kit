@@ -92,6 +92,23 @@ export const interpret = ( status, body ) => {
 };
 
 /**
+ * What a request that never got an answer means, in a sentence. Shared with the tool tester.
+ *
+ * @param {*} failure What `fetch` rejected with.
+ * @return {string} The sentence.
+ */
+export const describeFailure = ( failure ) =>
+	failure?.name === 'AbortError'
+		? __(
+				'No answer within 15 seconds. The server may be slow or the address wrong.',
+				'shaped-kit'
+		  )
+		: __(
+				'The browser could not reach this address. Check the address, the certificate and your connection.',
+				'shaped-kit'
+		  );
+
+/**
  * Try one product.
  *
  * @param {Object}   product            A product with `slug`, `name` and `endpoint_url`.
@@ -154,16 +171,7 @@ export const testConnection = async (
 		return {
 			...identity,
 			state: 'unreachable',
-			message:
-				failure?.name === 'AbortError'
-					? __(
-							'No answer within 15 seconds. The server may be slow or the address wrong.',
-							'shaped-kit'
-					  )
-					: __(
-							'The browser could not reach this address. Check the address, the certificate and your connection.',
-							'shaped-kit'
-					  ),
+			message: describeFailure( failure ),
 		};
 	} finally {
 		clearTimeout( timer );
