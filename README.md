@@ -13,15 +13,15 @@ Shaped Kit runs no AI model, calls no AI provider, and sends nothing to ShapedPl
 | Area | State |
 |---|---|
 | Bundled WordPress MCP Adapter 0.7.0, plus a loader that never clashes with other copies | **Built and tested** |
-| Adapter status report (version, compatibility, which plugin supplied it) | Built (`AdapterBootstrap::status()`); not shown in the UI yet |
-| Admin page **ShapedPlugin → AI & MCP** | Placeholder (an empty React mount point) |
-| First product module (Location Weather) | Planned, next |
-| Real Testimonials module | Planned |
-| Dashboard: products, connection snippets, per-product on/off | Planned |
+| Adapter status report (version, compatibility, which plugin supplied it) | **Built**, shown on the dashboard |
+| Admin page **ShapedPlugin → AI & MCP**: products and their on/off switches, connection snippets for six AI clients, creating an application password, a "Test connection" button | **Built and tested** |
+| Release package (`npm run package`), checked by a verifier and tested unzipped | **Built** |
+| First product module (Location Weather, free, read-only) | Built, in the Location Weather plugin (not yet released) |
+| Location Weather Pro, Real Testimonials, further products | Planned |
 | Audit log of agent actions | Planned |
 | Write tools with server-side confirmation | Planned |
 
-Nothing is exposed to AI agents by Shaped Kit on its own today.
+Nothing is exposed to AI agents by Shaped Kit on its own. A product has to register itself, and each product's MCP is off until its owner turns it on.
 
 ---
 
@@ -40,8 +40,9 @@ Shaped Kit copies a proven split: **the Kit carries the plumbing, each product c
 ```
 ┌─ Shaped Kit (one per site) ────────────────────────────────────────┐
 │ • bundles the official WordPress MCP Adapter (unmodified copy)     │
-│ • dashboard: ShapedPlugin → AI & MCP                    (planned)  │
-│ • connection help, per-product switches, audit log      (planned)  │
+│ • dashboard: ShapedPlugin → AI & MCP                               │
+│ • connection help and per-product switches                         │
+│ • audit log                                             (planned)  │
 └────────────────────────────────────────────────────────────────────┘
           ▲ a product needs *an* adapter, never Shaped Kit specifically
 ┌─ each ShapedPlugin product, free or Pro ───────────────────────────┐
@@ -216,23 +217,48 @@ add_filter( 'splw/mcp_ability_names', function ( $names ) {
 ### Layout
 
 ```
-shaped-kit.php                  Plugin header, class autoloader, adapter load, admin page
-src/Mcp/AdapterBootstrap.php    When to load the bundled adapter; status() for the dashboard
-src/Admin/DashboardPage.php     ShapedPlugin → AI & MCP (React mount point)
-tests/unit/                     Dependency-free tests (no WordPress, no packages)
+shaped-kit.php                  Plugin header, class autoloader, adapter load, REST routes, admin page
+src/Mcp/                        Adapter loader, product registry, product switch, application passwords
+src/Rest/McpController.php      The dashboard's REST routes (overview, switch a product, create a password)
+src/Admin/DashboardPage.php     ShapedPlugin → AI & MCP: loads the React app
+assets/admin/                   The React dashboard's source and its Jest tests (not shipped)
+build/admin/                    The compiled dashboard (git-ignored; made by `npm run build`)
+tests/                          Dependency-free script tests, PHPUnit unit and integration tests
+tools/                          Isolated PHPUnit and PHPCS toolchains, and the package verifier
 libs/mcp-adapter/               Official WordPress MCP Adapter 0.7.0, unmodified
 ```
 
 ### Tests
 
-The tests use no PHPUnit and no third-party packages. Run them with plain PHP:
+Four layers, each the cheapest one that can see its kind of bug (see `tests/TESTING.md`):
 
 ```bash
-php tests/unit/AdapterBootstrapTest.php   # the loader's decisions (54 cases)
-php tests/unit/AdapterLoadTest.php        # whole-loader scenarios (21), each in a fresh PHP process
+composer test:scripts       # plain PHP, no packages: the loader (54 + 21 cases) and the package verifier (29)
+composer test:unit          # PHPUnit, no WordPress
+composer test:integration   # PHPUnit inside real WordPress
+npm run test:js             # Jest: the dashboard (131 tests)
 ```
 
-`AdapterLoadTest.php` builds a throwaway site tree in the system temp directory, fakes the handful of WordPress functions the loader touches, and runs every scenario in its own process, because classes and constants cannot be undefined. It cleans up after itself. Both scripts exit non-zero on failure.
+`AdapterLoadTest.php` builds a throwaway site tree in the system temp directory, fakes the handful of WordPress functions the loader touches, and runs every scenario in its own process, because classes and constants cannot be undefined. It cleans up after itself. Every script exits non-zero on failure.
+
+### Building a release
+
+The compiled dashboard is **not in git** (`build/` is ignored), so a plain download of this repository shows the page heading and no dashboard. A release is built, not copied:
+
+```bash
+npm install            # once
+npm run package        # build the dashboard, zip the plugin, verify the zip
+```
+
+That produces `shaped-kit.zip` (about 480 KB) with everything under one `shaped-kit/` folder, ready for **Plugins → Add New → Upload**. It contains `shaped-kit.php`, `src/`, `libs/` and `build/`, and leaves out the docs, tests, tools, JavaScript sources and `node_modules`.
+
+`npm run package` ends by running `php tools/verify-package.php`, which fails if the zip is missing the dashboard build, a PHP class or an adapter file, if the build no longer depends on `wp-api-fetch` (the dashboard's REST nonce comes from it), if a dev folder slipped in, if the three version numbers disagree (plugin header, `SHAPED_KIT_VERSION`, `package.json`), or if any PHP file fails to parse. To prove a package works on its own, run the WordPress integration suite against the unzipped copy:
+
+```bash
+composer test:package
+```
+
+Bump the version in all three places before a release; the verifier names any that differ.
 
 ### Upgrading the bundled adapter
 
