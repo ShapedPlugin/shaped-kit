@@ -56,4 +56,58 @@
 		margin: 24px 0;
 		color: var(--sk-muted);
 	}
+
+	.shaped-kit-overview {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin: 0 0 24px;
+	}
+
+	// A notice takes its colours from the tone class it is given.
+	.shaped-kit-notice {
+		padding: 12px 16px;
+		border: 1px solid var(--sk-border);
+		border-radius: 8px;
+		background: var(--sk-off-soft);
+		color: var(--sk-off);
+		line-height: 1.5;
+	}
+
+	@each $tone in (good, off, warn, bad) {
+		.shaped-kit-notice-#{$tone} {
+			border-color: var(--sk-#{$tone});
+			background: var(--sk-#{$tone}-soft);
+			color: var(--sk-#{$tone});
+		}
+	}
+
+	.shaped-kit-tiles {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 12px;
+		margin: 0;
+	}
+
+	.shaped-kit-tile {
+		padding: 16px;
+		border: 1px solid var(--sk-border);
+		border-radius: 8px;
+		background: var(--sk-surface);
+
+		dt {
+			margin: 0 0 6px;
+			color: var(--sk-muted);
+			font-size: 12px;
+			letter-spacing: 0.02em;
+			text-transform: uppercase;
+		}
+
+		dd {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 600;
+			overflow-wrap: anywhere;
+		}
+	}
 }
