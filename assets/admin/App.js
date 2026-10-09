@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { describeError, fetchOverview } from './api';
+import OverviewStrip from './OverviewStrip';
 
 /**
  * The "AI & MCP" dashboard. This step owns getting the overview and its three states (loading, failed,
@@ -79,7 +80,9 @@ const App = () => {
 			) }
 
 			{ overview && (
-				<div className="shaped-kit-body" data-loaded="true" />
+				<div className="shaped-kit-body" data-loaded="true">
+					<OverviewStrip overview={ overview } />
+				</div>
 			) }
 		</div>
 	);

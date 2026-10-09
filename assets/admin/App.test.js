@@ -66,6 +66,38 @@ test( 'it reads the overview on load and shows it', async () => {
 	expect( container.querySelector( '[role="alert"]' ) ).toBeNull();
 } );
 
+test( 'what the server reported reaches the screen, and a refresh replaces it', async () => {
+	const overview = ( on ) => ( {
+		wordpress_supported: true,
+		abilities_api: true,
+		adapter: {
+			loaded: true,
+			compatible: true,
+			version: '0.7.0',
+			source: { type: 'shaped-kit' },
+		},
+		products: [
+			{
+				slug: 'a',
+				enabled: on,
+				status: on ? 'ready' : 'disabled',
+				tools_count: 5,
+			},
+		],
+	} );
+	fetchOverview
+		.mockResolvedValueOnce( overview( true ) )
+		.mockResolvedValueOnce( overview( false ) );
+
+	await mount();
+	await settle();
+	expect( container.textContent ).toContain( '1 of 1' );
+
+	await act( async () => refreshButton().click() );
+	await settle();
+	expect( container.textContent ).toContain( '0 of 1' );
+} );
+
 test( 'while the first read is pending it says so, and refresh is locked', async () => {
 	const pending = deferred();
 	fetchOverview.mockReturnValueOnce( pending.promise );
