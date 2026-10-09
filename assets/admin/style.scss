@@ -231,11 +231,33 @@
 		}
 	}
 
+	// Title and explanation on the left, the two buttons on the right, and a
+	// divider before the fields. It wraps on a narrow screen, buttons below.
+	.shaped-kit-connect-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px 24px;
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--sk-border);
+	}
+
+	.shaped-kit-connect-intro {
+		flex: 1 1 360px;
+		max-width: 640px;
+
+		.shaped-kit-card-note {
+			margin: 4px 0 0;
+			line-height: 1.5;
+		}
+	}
+
 	.shaped-kit-credentials {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 12px;
-		margin-top: 16px;
+		gap: 16px;
+		margin-top: 20px;
 
 		label {
 			display: flex;
@@ -263,9 +285,9 @@
 
 	.shaped-kit-create {
 		display: flex;
+		flex: 0 0 auto;
 		flex-wrap: wrap;
 		gap: 8px;
-		margin-top: 12px;
 	}
 
 	.shaped-kit-created {
