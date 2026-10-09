@@ -86,13 +86,14 @@ final class DashboardPage {
 			wp_style_add_data( self::SCRIPT_HANDLE, 'rtl', 'replace' );
 		}
 
-		// The REST nonce is for this user and this page load. Nothing else the page needs is secret.
+		// No nonce is handed over. The script depends on `wp-api-fetch`, and WordPress itself gives that
+		// the REST nonce for this user and refreshes it when it expires (script-loader.php), so the page
+		// holds no credential of its own.
 		wp_localize_script(
 			self::SCRIPT_HANDLE,
 			'shapedKitAdmin',
 			array(
 				'restUrl' => esc_url_raw( rest_url( McpController::REST_NAMESPACE . McpController::ROUTE ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
 				'version' => SHAPED_KIT_VERSION,
 			)
 		);

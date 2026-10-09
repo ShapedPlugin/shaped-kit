@@ -2,7 +2,7 @@
 /**
  * DashboardPage: loading the React app, and only where and for whom it belongs.
  *
- * Risk covered: the dashboard script (and the REST nonce handed to it) loading on every admin page or
+ * Risk covered: the dashboard script loading on every admin page or
  * for a user who may not use it, and a missing build being hidden behind a script that 404s.
  *
  * @package ShapedKit
@@ -107,7 +107,7 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		return get_plugin_page_hookname( DashboardPage::SLUG, '' );
 	}
 
-	public function test_the_app_loads_on_its_own_page_with_the_rest_address_and_a_real_nonce(): void {
+	public function test_the_app_loads_on_its_own_page_with_the_rest_address(): void {
 		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
 
 		$this->assertTrue( wp_script_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
@@ -116,8 +116,6 @@ final class DashboardPageTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'shapedKitAdmin', $data );
 		$this->assertMatchesRegularExpression( '#"restUrl":"[^"]*shaped-kit(\\\\/|/)v1(\\\\/|/)mcp"#', $data, 'Pretty or plain permalinks, the address ends in the route.' );
-		$this->assertSame( 1, preg_match( '/"nonce":"([^"]+)"/', $data, $match ) );
-		$this->assertNotFalse( wp_verify_nonce( $match[1], 'wp_rest' ), 'The nonce is the REST one, so the routes accept it.' );
 		$this->assertSame( array( 'wp-element' ), wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->deps );
 		$this->assertSame( 'abc123', wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->ver );
 	}
@@ -130,7 +128,7 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$this->assertFalse( wp_script_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
 	}
 
-	public function test_a_user_who_cannot_manage_options_gets_neither_the_script_nor_the_nonce(): void {
+	public function test_a_user_who_cannot_manage_options_gets_no_script(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
 		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
@@ -144,12 +142,13 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$this->assertFalse( wp_script_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
 	}
 
-	public function test_the_page_hands_over_only_what_it_needs(): void {
+	public function test_the_page_holds_no_credential_of_its_own(): void {
 		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
 
 		$data = wp_scripts()->get_data( DashboardPage::SCRIPT_HANDLE, 'data' );
 
 		$this->assertSame( 1, preg_match( '/=\s*(\{.*\});/s', $data, $match ) );
-		$this->assertSame( array( 'restUrl', 'nonce', 'version' ), array_keys( json_decode( $match[1], true ) ) );
+		$this->assertSame( array( 'restUrl', 'version' ), array_keys( json_decode( $match[1], true ) ), 'No nonce: wp-api-fetch carries and refreshes it.' );
+		$this->assertStringNotContainsString( wp_create_nonce( 'wp_rest' ), $data );
 	}
 }
