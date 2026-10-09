@@ -91,7 +91,7 @@ Probed on a real WordPress 7.1 site:
 | Standalone adapter active, in a folder sorting after `shaped-kit` | The standalone | Kit stays out; previously a fatal on every request |
 | Activating the standalone adapter (wp-admin or WP-CLI) | The standalone | Activates cleanly; previously "Cannot redeclare class" |
 
-The oldest adapter verified to have everything products rely on is **0.4.1** (`AdapterBootstrap::MIN_COMPATIBLE_VERSION`).
+The oldest adapter version products accept is **0.1.0** (`AdapterBootstrap::MIN_COMPATIBLE_VERSION`), the lowest any copy reports. It is measured: Location Weather's real-adapter tests pass on every adapter release that reports a version (0.3.0, whose code still says 0.1.0, up to 0.7.0).
 
 ### The adapter's shared default server
 
@@ -194,7 +194,7 @@ add_filter( 'splw/mcp_ability_names', function ( $names ) {
 - **Short descriptions** (about 30 tokens or fewer), to keep the tool list cheap for the model.
 - **A `{slug}/get-context` tool** in every product, so the agent can orient itself before anything else.
 - **Endpoint only:** abilities use `show_in_rest: false` and `mcp.public: false`. They are reachable only through the product's own endpoint, not core's Abilities REST API or the adapter's shared default server.
-- **Adapter version:** a product creates its server only if the loaded adapter is 0.4.1 or later, and otherwise says why in its settings.
+- **Adapter version:** a product creates its server only if the loaded adapter is 0.1.0 or later and reports its version, and otherwise says why in its settings.
 
 ---
 
@@ -228,8 +228,8 @@ libs/mcp-adapter/               Official WordPress MCP Adapter 0.7.0, unmodified
 The tests use no PHPUnit and no third-party packages. Run them with plain PHP:
 
 ```bash
-php tests/unit/AdapterBootstrapTest.php   # the loader's decisions (44 cases)
-php tests/unit/AdapterLoadTest.php        # whole-loader scenarios (15), each in a fresh PHP process
+php tests/unit/AdapterBootstrapTest.php   # the loader's decisions (54 cases)
+php tests/unit/AdapterLoadTest.php        # whole-loader scenarios (21), each in a fresh PHP process
 ```
 
 `AdapterLoadTest.php` builds a throwaway site tree in the system temp directory, fakes the handful of WordPress functions the loader touches, and runs every scenario in its own process, because classes and constants cannot be undefined. It cleans up after itself. Both scripts exit non-zero on failure.

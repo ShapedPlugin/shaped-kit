@@ -52,6 +52,18 @@ $check( '6.8.3', AdapterBootstrap::wordpress_supported( '6.8.3' ), false );
 $check( 'empty', AdapterBootstrap::wordpress_supported( '' ), false );
 $check( 'garbage', AdapterBootstrap::wordpress_supported( 'abc' ), false );
 
+echo "-- version_compatible\n";
+$check( 'WooCommerce copy, the lowest any release reports (0.1.0)', AdapterBootstrap::version_compatible( '0.1.0' ), true );
+$check( '0.4.0', AdapterBootstrap::version_compatible( '0.4.0' ), true );
+$check( 'Rank Math copy (0.4.1)', AdapterBootstrap::version_compatible( '0.4.1' ), true );
+$check( 'the bundled 0.7.0', AdapterBootstrap::version_compatible( '0.7.0' ), true );
+$check( '0.10.0 is above 0.7.0, not below', AdapterBootstrap::version_compatible( '0.10.0' ), true );
+$check( '1.0.0', AdapterBootstrap::version_compatible( '1.0.0' ), true );
+$check( 'a pre-release below the floor', AdapterBootstrap::version_compatible( '0.1.0-alpha' ), false );
+$check( 'below the floor', AdapterBootstrap::version_compatible( '0.0.9' ), false );
+$check( 'no version reported is never compatible', AdapterBootstrap::version_compatible( null ), false );
+$check( 'empty version', AdapterBootstrap::version_compatible( '' ), false );
+
 echo "-- find_adapter_plugin\n";
 $active = array( $plugins . '/seo-by-rank-math/rank-math.php', $plugins . '/shaped-kit/shaped-kit.php' );
 $check( 'no adapter plugin active', AdapterBootstrap::find_adapter_plugin( $active, $kit_dir, $plugins, $exists_in( array( $standalone_marker ) ) ), '' );

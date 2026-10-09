@@ -27,9 +27,14 @@ final class AdapterBootstrap {
 	const MIN_WP_VERSION = '6.9';
 
 	/**
-	 * Oldest adapter verified to have everything ShapedPlugin products use.
+	 * Oldest adapter version ShapedPlugin products accept: 0.1.0, the lowest any copy reports.
+	 *
+	 * This is measured, and matches `Server::MIN_ADAPTER_VERSION` in Location Weather. Its real-adapter
+	 * suite passes on every adapter release that has a plugin layout and reports a version: 0.3.0
+	 * (whose code still says "0.1.0", and is what WooCommerce bundles), 0.4.0, 0.4.1, 0.5.0, 0.6.0,
+	 * 0.6.1 and 0.7.0. A copy that reports no version is never compatible. Keep the two constants equal.
 	 */
-	const MIN_COMPATIBLE_VERSION = '0.4.1';
+	const MIN_COMPATIBLE_VERSION = '0.1.0';
 
 	/**
 	 * Define as true in wp-config.php to stop the Kit from ever loading its bundled copy.
@@ -146,7 +151,7 @@ final class AdapterBootstrap {
 
 		$status['loaded']     = true;
 		$status['version']    = $version;
-		$status['compatible'] = null !== $version && version_compare( $version, self::MIN_COMPATIBLE_VERSION, '>=' );
+		$status['compatible'] = self::version_compatible( $version );
 		$status['source']     = self::classify_source(
 			self::real_path( (string) $reflection->getFileName() ),
 			self::real_path( self::bundled_dir() ),
@@ -154,6 +159,17 @@ final class AdapterBootstrap {
 		);
 
 		return $status;
+	}
+
+	/**
+	 * Whether an adapter version is one ShapedPlugin products accept. A copy that reports no version
+	 * is never compatible: nobody can say how old it is.
+	 *
+	 * @param string|null $version The version the adapter reports.
+	 * @return bool
+	 */
+	public static function version_compatible( $version ) {
+		return is_string( $version ) && '' !== $version && version_compare( $version, self::MIN_COMPATIBLE_VERSION, '>=' );
 	}
 
 	/**

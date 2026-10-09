@@ -50,7 +50,12 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 	}
 
 	if ( ! empty( $scenario['preloaded'] ) ) {
-		eval( 'namespace WP\MCP\Core; class McpAdapter { const VERSION = "0.4.1"; }' ); // phpcs:ignore Squiz.PHP.Eval -- simulates another plugin's copy.
+		if ( 'no-version' === $scenario['preloaded'] ) {
+			eval( 'namespace WP\MCP\Core; class McpAdapter {}' ); // phpcs:ignore Squiz.PHP.Eval -- a copy that reports no version.
+		} else {
+			$version = is_string( $scenario['preloaded'] ) ? $scenario['preloaded'] : '0.4.1';
+			eval( 'namespace WP\MCP\Core; class McpAdapter { const VERSION = "' . $version . '"; }' ); // phpcs:ignore Squiz.PHP.Eval -- simulates another plugin's copy.
+		}
 	}
 
 	// The WordPress functions the loader touches.
@@ -85,6 +90,7 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 			'entry_required'    => $GLOBALS['entry_required'],
 			'filter_registered' => isset( $GLOBALS['filters']['mcp_adapter_create_default_server'] ),
 			'default_server'    => \ShapedKit\Mcp\AdapterBootstrap::filter_default_server( true ),
+			'status'            => \ShapedKit\Mcp\AdapterBootstrap::status(),
 		)
 	);
 	exit( 0 );
@@ -190,6 +196,39 @@ foreach ( $scenarios as $label => $case ) {
 		. json_encode( $expected ) . "\n      got " . ( null === $actual ? trim( (string) $output ) : json_encode( $actual ) ) . "\n";
 }
 
+// What `status()` reports for an adapter another plugin loaded: its version, and whether products
+// accept it. Each runs in a fresh process, because the class cannot be undefined.
+$version_scenarios = array(
+	'a copy reporting 0.1.0 (WooCommerce) is compatible' => array( '0.1.0', array( '0.1.0', true ) ),
+	'a copy reporting 0.4.1 (Rank Math) is compatible'   => array( '0.4.1', array( '0.4.1', true ) ),
+	'a copy reporting 0.7.0 is compatible'               => array( '0.7.0', array( '0.7.0', true ) ),
+	'a copy reporting 0.10.0 is above 0.7.0'             => array( '0.10.0', array( '0.10.0', true ) ),
+	'a copy below the floor is not compatible'           => array( '0.0.9', array( '0.0.9', false ) ),
+	'a copy that reports no version is never compatible' => array( 'no-version', array( null, false ) ),
+);
+
+foreach ( $version_scenarios as $label => $case ) {
+	list( $preloaded, $expected ) = $case;
+
+	$command = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( __FILE__ ) . ' --child '
+		. escapeshellarg( json_encode( array_merge( $base, array( 'preloaded' => $preloaded ) ) ) ) . ' ' . escapeshellarg( $root ) . ' 2>&1';
+	$output  = shell_exec( $command );
+	$result  = json_decode( (string) $output, true );
+
+	$actual = is_array( $result ) && isset( $result['status'] )
+		? array( $result['status']['version'], $result['status']['compatible'] )
+		: null;
+
+	if ( $actual === $expected ) {
+		echo "ok    {$label}\n";
+		continue;
+	}
+
+	++$failures;
+	echo "FAIL  {$label}\n      expected [version, compatible] = "
+		. json_encode( $expected ) . "\n      got " . ( null === $actual ? trim( (string) $output ) : json_encode( $actual ) ) . "\n";
+}
+
 // Remove the throwaway tree.
 $items = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ), RecursiveIteratorIterator::CHILD_FIRST );
 foreach ( $items as $item ) {
@@ -197,6 +236,6 @@ foreach ( $items as $item ) {
 }
 rmdir( $root );
 
-echo "\n" . count( $scenarios ) . " scenarios, {$failures} failed\n";
+echo "\n" . ( count( $scenarios ) + count( $version_scenarios ) ) . " scenarios, {$failures} failed\n";
 
 exit( $failures > 0 ? 1 : 0 );

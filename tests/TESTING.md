@@ -52,7 +52,7 @@ In rough order. Spend test effort here first:
 
 1. Permission and transport gates on every product endpoint.
 2. Destructive confirmation (FR-S2).
-3. The adapter loader (built: 44 + 15 + 2 cases).
+3. The adapter loader (built: 54 + 21 + 2 cases).
 4. Store-track verification: signature, hash, allowlist, no-downgrade.
 5. Secret masking and private-post filtering in read tools.
 6. Audit log: writes keys only, never values; never breaks a tool call.
