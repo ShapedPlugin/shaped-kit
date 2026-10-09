@@ -23,6 +23,13 @@ final class DashboardPageTest extends WP_UnitTestCase {
 	private $asset_file;
 
 	/**
+	 * The folder that holds the stand-in build.
+	 *
+	 * @var string
+	 */
+	private $build_dir;
+
+	/**
 	 * Register the menu as an administrator and write a stand-in asset file.
 	 *
 	 * @return void
@@ -35,7 +42,10 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		DashboardPage::add_menu();
 
-		$this->asset_file = wp_tempnam( 'shaped-kit-asset' );
+		// A folder of its own, so a stylesheet written next to the asset file is found only by the test that wants it.
+		$this->build_dir = trailingslashit( get_temp_dir() ) . 'shaped-kit-build-' . wp_generate_password( 8, false );
+		wp_mkdir_p( $this->build_dir );
+		$this->asset_file = $this->build_dir . '/index.asset.php';
 		file_put_contents( $this->asset_file, "<?php return array( 'dependencies' => array( 'wp-element' ), 'version' => 'abc123' );" );
 	}
 
@@ -47,9 +57,45 @@ final class DashboardPageTest extends WP_UnitTestCase {
 	public function tear_down(): void {
 		wp_dequeue_script( DashboardPage::SCRIPT_HANDLE );
 		wp_deregister_script( DashboardPage::SCRIPT_HANDLE );
-		unlink( $this->asset_file );
+		wp_dequeue_style( DashboardPage::SCRIPT_HANDLE );
+		wp_deregister_style( DashboardPage::SCRIPT_HANDLE );
+
+		foreach ( glob( $this->build_dir . '/*' ) as $file ) {
+			unlink( $file );
+		}
+		rmdir( $this->build_dir );
 
 		parent::tear_down();
+	}
+
+	public function test_the_stylesheet_loads_with_the_script_when_the_build_has_one(): void {
+		file_put_contents( $this->build_dir . '/style-index.css', '.x{}' );
+
+		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
+
+		$this->assertTrue( wp_style_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
+		$style = wp_styles()->registered[ DashboardPage::SCRIPT_HANDLE ];
+		$this->assertStringEndsWith( 'build/admin/style-index.css', $style->src );
+		$this->assertSame( 'abc123', $style->ver );
+		$this->assertSame( 'replace', $style->extra['rtl'], 'Right-to-left sites get the -rtl file.' );
+	}
+
+	public function test_a_build_without_styles_loads_the_script_and_no_stylesheet(): void {
+		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
+
+		$this->assertTrue( wp_script_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
+		$this->assertFalse( wp_style_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ), 'No link to a file that is not there.' );
+	}
+
+	public function test_the_stylesheet_follows_the_same_page_and_user_rules_as_the_script(): void {
+		file_put_contents( $this->build_dir . '/style-index.css', '.x{}' );
+
+		DashboardPage::enqueue( 'index.php', $this->asset_file );
+		$this->assertFalse( wp_style_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
+		$this->assertFalse( wp_style_is( DashboardPage::SCRIPT_HANDLE, 'enqueued' ) );
 	}
 
 	/**

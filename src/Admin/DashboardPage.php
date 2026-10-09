@@ -74,6 +74,18 @@ final class DashboardPage {
 			true
 		);
 
+		// The stylesheet is optional: it exists only once the build has styles. WordPress swaps in the
+		// -rtl copy by itself on right-to-left sites (class-wp-styles.php), so only the one file is named.
+		if ( is_readable( dirname( $asset_file ) . '/style-index.css' ) ) {
+			wp_enqueue_style(
+				self::SCRIPT_HANDLE,
+				SHAPED_KIT_URL . 'build/admin/style-index.css',
+				array(),
+				isset( $asset['version'] ) ? (string) $asset['version'] : SHAPED_KIT_VERSION
+			);
+			wp_style_add_data( self::SCRIPT_HANDLE, 'rtl', 'replace' );
+		}
+
 		// The REST nonce is for this user and this page load. Nothing else the page needs is secret.
 		wp_localize_script(
 			self::SCRIPT_HANDLE,
