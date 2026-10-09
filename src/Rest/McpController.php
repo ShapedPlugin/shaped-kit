@@ -8,6 +8,7 @@
 namespace ShapedKit\Rest;
 
 use ShapedKit\Mcp\AdapterBootstrap;
+use ShapedKit\Mcp\AppPasswords;
 use ShapedKit\Mcp\ProductRegistry;
 use ShapedKit\Mcp\ProductSwitch;
 
@@ -72,6 +73,45 @@ class McpController {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::ROUTE . '/app-password',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'create_app_password' ),
+				'permission_callback' => array( __CLASS__, 'can_manage' ),
+				'args'                => array(
+					'name' => array(
+						'type'      => 'string',
+						'maxLength' => 100,
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * `POST`: create an Application Password for the signed-in user, and return it once.
+	 *
+	 * The reply carries a secret, so it is marked not to be stored by any cache on the way. The user is
+	 * always the one signed in; nothing in the request can name another.
+	 *
+	 * @param \WP_REST_Request $request The request, optionally holding `name`.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function create_app_password( $request ) {
+		$created = AppPasswords::create( (string) $request['name'] );
+
+		if ( is_wp_error( $created ) ) {
+			return $created;
+		}
+
+		$response = rest_ensure_response( $created );
+		$response->header( 'Cache-Control', 'no-store' );
+
+		return $response;
 	}
 
 	/**
@@ -134,6 +174,7 @@ class McpController {
 			),
 			'abilities_api'       => $adapter['abilities_api'],
 			'products'            => ProductRegistry::all(),
+			'app_password'        => AppPasswords::support(),
 		);
 	}
 

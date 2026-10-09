@@ -207,6 +207,76 @@ final class McpControllerTest extends WP_UnitTestCase {
 		$this->assertSame( 404, $this->switch_product( 'made-up', true )->get_status() );
 	}
 
+	/**
+	 * Dispatch an app-password request.
+	 *
+	 * @param array $params Body parameters.
+	 *
+	 * @return WP_REST_Response
+	 */
+	private function create_password( array $params = array() ): WP_REST_Response {
+		$request = new WP_REST_Request( 'POST', '/shaped-kit/v1/mcp/app-password' );
+		$request->set_body_params( $params );
+
+		return rest_do_request( $request );
+	}
+
+	public function test_an_administrator_creates_a_password_once_and_it_is_not_cacheable(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_true' );
+		$this->sign_in_as( 'administrator' );
+
+		$response = $this->create_password( array( 'name' => 'My laptop' ) );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'My laptop', $data['name'] );
+		$this->assertNotSame( '', $data['password'] );
+		$this->assertSame( get_current_user_id(), get_user_by( 'login', $data['username'] )->ID, 'It is for the signed-in user.' );
+		$this->assertSame( 'no-store', $response->get_headers()['Cache-Control'] );
+
+		$overview = $this->get()->get_data();
+		$this->assertStringNotContainsString( $data['password'], wp_json_encode( $overview ), 'The overview never carries a password.' );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
+	public function test_a_password_request_is_for_administrators_only(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_true' );
+
+		$this->sign_in_as( 'editor' );
+		$this->assertSame( 403, $this->create_password()->get_status() );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( 401, $this->create_password()->get_status() );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
+	public function test_a_site_that_cannot_make_one_says_why_and_the_overview_agrees(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_false' );
+		$this->sign_in_as( 'administrator' );
+
+		$response = $this->create_password();
+
+		$this->assertSame( 409, $response->get_status() );
+		$this->assertSame( 'site_disabled', $response->as_error()->get_error_data()['reason'] );
+
+		$support = $this->get()->get_data()['app_password'];
+		$this->assertFalse( $support['available'] );
+		$this->assertSame( 'site_disabled', $support['reason'] );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
+	public function test_a_name_that_is_too_long_is_refused(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_true' );
+		$this->sign_in_as( 'administrator' );
+
+		$this->assertSame( 400, $this->create_password( array( 'name' => str_repeat( 'a', 101 ) ) )->get_status() );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
 	public function test_the_overview_route_only_reads(): void {
 		$this->sign_in_as( 'administrator' );
 
