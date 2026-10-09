@@ -343,6 +343,46 @@
 		}
 	}
 
+	.shaped-kit-snippet-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.shaped-kit-results {
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	// One row per product, in the tone of its answer (the same colours as
+	// the notices and pills).
+	.shaped-kit-result {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin: 0;
+		padding: 10px 14px;
+		border: 1px solid var(--sk-off);
+		border-radius: 6px;
+		background: var(--sk-off-soft);
+		color: var(--sk-off);
+		line-height: 1.5;
+	}
+
+	@each $tone in (good, off, warn, bad) {
+		.shaped-kit-result-#{$tone} {
+			border-color: var(--sk-#{$tone});
+			background: var(--sk-#{$tone}-soft);
+			color: var(--sk-#{$tone});
+		}
+	}
+
 	// The switch is a real checkbox (so keyboards and screen readers work),
 	// drawn as a track and knob.
 	.shaped-kit-switch {
