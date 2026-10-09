@@ -9,12 +9,17 @@ import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 import ConnectPanel, { isLocalSite } from './ConnectPanel';
 import { createAppPassword } from './api';
+import { testConnection } from './connectionTest';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock( './api', () => ( {
 	describeError: jest.fn( ( error ) => `described: ${ error.message }` ),
 	createAppPassword: jest.fn(),
+} ) );
+
+jest.mock( './connectionTest', () => ( {
+	testConnection: jest.fn(),
 } ) );
 
 let container;
@@ -73,6 +78,7 @@ const type = async ( input, value ) => {
 
 beforeEach( () => {
 	createAppPassword.mockReset();
+	testConnection.mockReset();
 } );
 
 afterEach( () => {
@@ -295,4 +301,132 @@ test( 'the password field asks the browser not to fill in a saved login', async 
 	expect( passwordInput().getAttribute( 'autocomplete' ) ).toBe(
 		'new-password'
 	);
+} );
+
+describe( 'Test connection', () => {
+	const result = ( product, state, message ) => ( {
+		slug: product.slug,
+		name: product.name,
+		state,
+		message,
+	} );
+
+	const twoProducts = () =>
+		overview( {
+			products: [
+				product(),
+				product( {
+					slug: 'real-testimonials',
+					name: 'Real Testimonials',
+					endpoint_url:
+						'https://site.test/wp-json/real-testimonials/mcp',
+				} ),
+			],
+		} );
+
+	test( 'it tests every product that is on with what was typed, and lists each answer in its tone', async () => {
+		testConnection.mockImplementation( ( item ) =>
+			Promise.resolve(
+				item.slug === 'location-weather'
+					? result( item, 'ok', 'Connected.' )
+					: result( item, 'rejected', 'Not accepted.' )
+			)
+		);
+		await render( twoProducts() );
+		await type( passwordInput(), 'abcd efgh ijkl mnop qrst uvwx' );
+
+		await act( async () => button( /Test connection/ ).click() );
+		await settle();
+
+		expect( testConnection ).toHaveBeenCalledTimes( 2 );
+		expect( testConnection.mock.calls[ 0 ][ 1 ] ).toEqual( {
+			username: 'admin',
+			password: 'abcd efgh ijkl mnop qrst uvwx',
+		} );
+		const rows = [ ...container.querySelectorAll( '.shaped-kit-result' ) ];
+		expect( rows.map( ( row ) => row.textContent ) ).toEqual( [
+			'Location WeatherConnected.',
+			'Real TestimonialsNot accepted.',
+		] );
+		expect( rows[ 0 ].className ).toContain( 'shaped-kit-result-good' );
+		expect( rows[ 1 ].className ).toContain( 'shaped-kit-result-bad' );
+	} );
+
+	test( 'a "type something first" answer is drawn as a warning, not a failure', async () => {
+		testConnection.mockImplementation( ( item ) =>
+			Promise.resolve( result( item, 'incomplete', 'Type it first.' ) )
+		);
+		await render( overview() );
+
+		await act( async () => button( /Test connection/ ).click() );
+		await settle();
+
+		expect(
+			container.querySelector( '.shaped-kit-result' ).className
+		).toContain( 'shaped-kit-result-warn' );
+	} );
+
+	test( 'the button is locked while a test runs', async () => {
+		let finish;
+		testConnection.mockImplementation(
+			( item ) =>
+				new Promise( ( resolve ) => {
+					finish = () =>
+						resolve( result( item, 'ok', 'Connected.' ) );
+				} )
+		);
+		await render( overview() );
+
+		await act( async () => button( /Test connection/ ).click() );
+
+		expect( button( /Testing/ ).disabled ).toBe( true );
+
+		await act( async () => finish() );
+		await settle();
+		expect( button( /Test connection/ ).disabled ).toBe( false );
+	} );
+
+	test( 'changing the password clears the old answer', async () => {
+		testConnection.mockImplementation( ( item ) =>
+			Promise.resolve( result( item, 'ok', 'Connected.' ) )
+		);
+		await render( overview() );
+		await act( async () => button( /Test connection/ ).click() );
+		await settle();
+		expect(
+			container.querySelector( '.shaped-kit-result' )
+		).not.toBeNull();
+
+		await type( passwordInput(), 'something else' );
+
+		expect( container.querySelector( '.shaped-kit-result' ) ).toBeNull();
+	} );
+
+	test( 'an answer that arrives after the password changed is dropped, and the button is not left locked', async () => {
+		let finish;
+		testConnection.mockImplementation(
+			( item ) =>
+				new Promise( ( resolve ) => {
+					finish = () =>
+						resolve( result( item, 'ok', 'Connected.' ) );
+				} )
+		);
+		await render( overview() );
+		await act( async () => button( /Test connection/ ).click() );
+
+		await type( passwordInput(), 'changed meanwhile' );
+		await act( async () => finish() );
+		await settle();
+
+		expect( container.querySelector( '.shaped-kit-result' ) ).toBeNull();
+		expect( button( /Test connection/ ).disabled ).toBe( false );
+	} );
+
+	test( 'with nothing switched on there is nothing to test', async () => {
+		await render(
+			overview( { products: [ product( { enabled: false } ) ] } )
+		);
+
+		expect( button( /Test connection/ ) ).toBeUndefined();
+	} );
 } );

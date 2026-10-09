@@ -1,7 +1,23 @@
-import { useMemo, useState } from '@wordpress/element';
+import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { createAppPassword, describeError } from './api';
+import { testConnection } from './connectionTest';
 import { buildSnippet, clients } from './snippets';
+
+/**
+ * The tone a test result is drawn in: green for a connection, amber for "type something first",
+ * red for every way it can fail.
+ *
+ * @param {string} state A result's state from `connectionTest.js`.
+ * @return {string} good, warn or bad.
+ */
+const resultTone = ( state ) => {
+	if ( state === 'ok' ) {
+		return 'good';
+	}
+
+	return state === 'incomplete' ? 'warn' : 'bad';
+};
 
 /**
  * Whether an address is on a development machine, where a self-signed certificate is normal.
@@ -85,6 +101,10 @@ const ConnectPanel = ( { overview } ) => {
 	const [ created, setCreated ] = useState( null );
 	const [ error, setError ] = useState( '' );
 	const [ copied, setCopied ] = useState( false );
+	const [ results, setResults ] = useState( null );
+	const [ pendingTests, setPendingTests ] = useState( 0 );
+	const latestTest = useRef( 0 );
+	const isTesting = pendingTests > 0;
 
 	const snippet = buildSnippet( client, {
 		products,
@@ -107,6 +127,32 @@ const ConnectPanel = ( { overview } ) => {
 			} )
 			.catch( ( failure ) => setError( describeError( failure ) ) )
 			.finally( () => setIsCreating( false ) );
+	};
+
+	// What was typed or switched on is what a result was about. When either changes, the result is
+	// no longer true of the screen, so it goes, and an answer still on its way is dropped.
+	useEffect( () => {
+		latestTest.current += 1;
+		setResults( null );
+	}, [ username, password, products ] );
+
+	const runTest = () => {
+		const run = ++latestTest.current;
+
+		setPendingTests( ( count ) => count + 1 );
+		setResults( null );
+
+		Promise.all(
+			products.map( ( product ) =>
+				testConnection( product, { username, password } )
+			)
+		)
+			.then( ( answers ) => {
+				if ( run === latestTest.current ) {
+					setResults( answers );
+				}
+			} )
+			.finally( () => setPendingTests( ( count ) => count - 1 ) );
 	};
 
 	const copy = async () => {
@@ -255,11 +301,43 @@ const ConnectPanel = ( { overview } ) => {
 					<pre>
 						<code>{ snippet }</code>
 					</pre>
-					<button type="button" className="button" onClick={ copy }>
-						{ copied
-							? __( 'Copied', 'shaped-kit' )
-							: __( 'Copy snippet', 'shaped-kit' ) }
-					</button>
+					<div className="shaped-kit-snippet-actions">
+						<button
+							type="button"
+							className="button"
+							onClick={ copy }
+						>
+							{ copied
+								? __( 'Copied', 'shaped-kit' )
+								: __( 'Copy snippet', 'shaped-kit' ) }
+						</button>
+						<button
+							type="button"
+							className="button"
+							onClick={ runTest }
+							disabled={ isTesting }
+						>
+							{ isTesting
+								? __( 'Testing…', 'shaped-kit' )
+								: __( 'Test connection', 'shaped-kit' ) }
+						</button>
+					</div>
+
+					{ results && (
+						<ul className="shaped-kit-results" role="status">
+							{ results.map( ( result ) => (
+								<li
+									key={ result.slug }
+									className={ `shaped-kit-result shaped-kit-result-${ resultTone(
+										result.state
+									) }` }
+								>
+									<strong>{ result.name }</strong>
+									<span>{ result.message }</span>
+								</li>
+							) ) }
+						</ul>
+					) }
 				</div>
 			) : (
 				<p className="shaped-kit-card-note">
