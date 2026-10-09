@@ -1,5 +1,6 @@
 import { createRoot } from '@wordpress/element';
 import App from './App';
+import './style.scss';
 
 /**
  * Entry point of the "AI & MCP" dashboard. It mounts into the element `DashboardPage::render()` prints,
