@@ -41,6 +41,9 @@ spl_autoload_register(
 // plugins that load after it. Plugins that loaded earlier keep theirs.
 \ShapedKit\Mcp\AdapterBootstrap::maybe_load();
 
+// Not behind is_admin(): a REST request is not an admin request, and the route must exist for it.
+\ShapedKit\Rest\McpController::register();
+
 if ( is_admin() ) {
 	\ShapedKit\Admin\DashboardPage::register();
 }
