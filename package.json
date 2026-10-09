@@ -8,8 +8,16 @@
 		"build": "wp-scripts build assets/admin/index.js --output-path=build/admin",
 		"start": "wp-scripts start assets/admin/index.js --output-path=build/admin",
 		"test:js": "wp-scripts test-unit-js --testMatch '**/assets/admin/**/*.test.js'",
-		"format": "wp-scripts format assets/admin"
+		"format": "wp-scripts format assets/admin",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"package": "npm run build && npm run plugin-zip"
 	},
+	"files": [
+		"shaped-kit.php",
+		"src",
+		"libs",
+		"build"
+	],
 	"devDependencies": {
 		"@wordpress/scripts": "^30.25.0"
 	},
