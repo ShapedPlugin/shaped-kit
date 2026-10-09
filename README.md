@@ -250,9 +250,9 @@ npm install            # once
 npm run package        # build the dashboard, zip the plugin, verify the zip
 ```
 
-That produces `shaped-kit.zip` (about 480 KB) with everything under one `shaped-kit/` folder, ready for **Plugins → Add New → Upload**. It contains `shaped-kit.php`, `src/`, `libs/` and `build/`, and leaves out the docs, tests, tools, JavaScript sources and `node_modules`.
+That produces `shaped-kit.zip` (about 480 KB) with everything under one `shaped-kit/` folder, ready for **Plugins → Add New → Upload**. It contains `shaped-kit.php`, `LICENSE`, `src/`, `libs/` and `build/`, and leaves out the docs, tests, tools, JavaScript sources and `node_modules`.
 
-`npm run package` ends by running `php tools/verify-package.php`, which fails if the zip is missing the dashboard build, a PHP class or an adapter file, if the build no longer depends on `wp-api-fetch` (the dashboard's REST nonce comes from it), if a dev folder slipped in, if the three version numbers disagree (plugin header, `SHAPED_KIT_VERSION`, `package.json`), or if any PHP file fails to parse. To prove a package works on its own, run the WordPress integration suite against the unzipped copy:
+`npm run package` ends by running `php tools/verify-package.php`, which fails if the zip is missing the dashboard build, a PHP class or an adapter file, if the build no longer depends on `wp-api-fetch` (the dashboard's REST nonce comes from it), if a dev folder slipped in, if the `LICENSE` is missing, if the three version numbers disagree (plugin header, `SHAPED_KIT_VERSION`, `package.json`), or if any PHP file fails to parse. To prove a package works on its own, run the WordPress integration suite against the unzipped copy:
 
 ```bash
 composer test:package
@@ -279,6 +279,6 @@ Bump the version in all three places before a release; the verifier names any th
 
 ## License
 
-Shaped Kit is licensed under **GPLv2 or later**.
+Shaped Kit is licensed under **GPLv2 or later**; the full text is in [`LICENSE`](LICENSE).
 
 The bundled WordPress MCP Adapter (`libs/mcp-adapter/`) is licensed under **GPL-2.0-or-later** by its contributors; see `libs/mcp-adapter/LICENSE.md`.

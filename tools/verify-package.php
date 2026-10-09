@@ -28,6 +28,7 @@
 function shaped_kit_required_files() {
 	return array(
 		'shaped-kit.php',
+		'LICENSE',
 		'src/Admin/DashboardPage.php',
 		'src/Mcp/AdapterBootstrap.php',
 		'src/Mcp/ProductRegistry.php',
@@ -42,12 +43,13 @@ function shaped_kit_required_files() {
 }
 
 /**
- * What may sit at the top of the plugin folder. `package.json` and `README.md` are added by npm itself.
+ * What may sit at the top of the plugin folder. `package.json`, `README.md` and `LICENSE` are added by npm
+ * itself; the LICENSE is also required, because a GPL plugin has to carry its licence.
  *
  * @return string[]
  */
 function shaped_kit_allowed_top_level() {
-	return array( 'shaped-kit.php', 'src', 'libs', 'build', 'package.json', 'README.md' );
+	return array( 'shaped-kit.php', 'LICENSE', 'src', 'libs', 'build', 'package.json', 'README.md' );
 }
 
 /**
