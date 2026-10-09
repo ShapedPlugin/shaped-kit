@@ -183,9 +183,9 @@ test( 'there is a card for each product', async () => {
 	await mount();
 	await settle();
 
-	expect( container.querySelectorAll( '.shaped-kit-card' ) ).toHaveLength(
-		1
-	);
+	expect(
+		container.querySelectorAll( '.shaped-kit-cards .shaped-kit-card' )
+	).toHaveLength( 1 );
 	expect( container.querySelector( 'h2' ).textContent ).toBe(
 		'Location Weather'
 	);
@@ -285,4 +285,46 @@ test( 'a switch that answers after a newer refresh is dropped', async () => {
 
 	expect( switchInput().checked ).toBe( false );
 	expect( switchInput().disabled ).toBe( false );
+} );
+
+test( 'the connect panel sits under the cards and is built from the same overview', async () => {
+	fetchOverview.mockResolvedValueOnce( {
+		...site( true ),
+		app_password: {
+			available: true,
+			reason: '',
+			user_login: 'admin',
+			manage_url: 'https://site.test/wp-admin/profile.php',
+		},
+	} );
+
+	await mount();
+	await settle();
+
+	const panel = container.querySelector( '.shaped-kit-connect' );
+	expect( panel ).not.toBeNull();
+	expect(
+		container
+			.querySelector( '.shaped-kit-cards' )
+			.compareDocumentPosition( panel ) & Node.DOCUMENT_POSITION_FOLLOWING
+	).toBeTruthy();
+	expect( panel.querySelector( 'input' ).value ).toBe( 'admin' );
+	expect( panel.querySelector( 'pre code' ).textContent ).toContain(
+		'https://site.test/mcp'
+	);
+} );
+
+test( 'switching the last product off takes its text out of the panel', async () => {
+	fetchOverview.mockResolvedValueOnce( site( true ) );
+	switchProduct.mockResolvedValueOnce( site( false ) );
+
+	await mount();
+	await settle();
+	expect( container.querySelector( 'pre code' ) ).not.toBeNull();
+
+	await act( async () => switchInput().click() );
+	await settle();
+
+	expect( container.querySelector( 'pre code' ) ).toBeNull();
+	expect( container.textContent ).toContain( 'Turn on a product above' );
 } );

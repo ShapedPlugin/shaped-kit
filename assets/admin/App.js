@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { describeError, fetchOverview, switchProduct } from './api';
+import ConnectPanel from './ConnectPanel';
 import OverviewStrip from './OverviewStrip';
 import ProductCard from './ProductCard';
 
@@ -131,6 +132,8 @@ const App = () => {
 							/>
 						) ) }
 					</div>
+
+					<ConnectPanel overview={ overview } />
 				</div>
 			) }
 		</div>
