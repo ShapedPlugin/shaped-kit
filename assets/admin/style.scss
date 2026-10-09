@@ -215,6 +215,134 @@
 		}
 	}
 
+	// The connect panel sits under the product cards.
+	.shaped-kit-connect {
+		margin-top: 16px;
+
+		h2 {
+			margin: 0 0 4px;
+			padding: 0;
+			font-size: 17px;
+			font-weight: 600;
+		}
+	}
+
+	.shaped-kit-credentials {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 12px;
+		margin-top: 16px;
+
+		label {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			font-weight: 600;
+		}
+
+		input[type="text"],
+		input[type="password"] {
+			width: 100%;
+			font-weight: 400;
+		}
+	}
+
+	.shaped-kit-password {
+		display: flex;
+		gap: 8px;
+
+		input {
+			flex: 1;
+			min-width: 0;
+		}
+	}
+
+	.shaped-kit-create {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 12px;
+	}
+
+	.shaped-kit-created {
+		margin: 12px 0 0;
+		padding: 10px 14px;
+		border: 1px solid var(--sk-good);
+		border-radius: 6px;
+		background: var(--sk-good-soft);
+		color: var(--sk-good);
+	}
+
+	.shaped-kit-connect-error {
+		margin: 12px 0 0;
+		padding: 10px 14px;
+		border: 1px solid var(--sk-bad);
+		border-radius: 6px;
+		background: var(--sk-bad-soft);
+		color: var(--sk-bad);
+	}
+
+	.shaped-kit-tabs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		margin-top: 20px;
+		border-bottom: 1px solid var(--sk-border);
+	}
+
+	.shaped-kit-tab {
+		margin-bottom: -1px;
+		padding: 8px 14px;
+		border: 1px solid transparent;
+		border-bottom: 0;
+		border-radius: 6px 6px 0 0;
+		background: none;
+		color: var(--sk-muted);
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+
+		&[aria-selected="true"] {
+			border-color: var(--sk-border);
+			background: var(--sk-surface);
+			color: var(--sk-text);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--sk-accent);
+			outline-offset: -2px;
+		}
+	}
+
+	.shaped-kit-check {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 12px;
+	}
+
+	.shaped-kit-snippet {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 10px;
+
+		pre {
+			box-sizing: border-box;
+			width: 100%;
+			max-height: 360px;
+			margin: 0;
+			padding: 16px;
+			overflow: auto;
+			border-radius: 8px;
+			background: #1d2327;
+			color: #f0f0f1;
+			font-size: 12.5px;
+			line-height: 1.6;
+			white-space: pre;
+		}
+	}
+
 	// The switch is a real checkbox (so keyboards and screen readers work),
 	// drawn as a track and knob.
 	.shaped-kit-switch {
