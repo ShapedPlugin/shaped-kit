@@ -285,10 +285,16 @@ test( 'on a local site the self-signed option is already ticked, on a real site 
 	expect( snippet() ).not.toContain( 'NODE_TLS_REJECT_UNAUTHORIZED' );
 } );
 
-test( 'the self-signed option is offered only for the client that has it', async () => {
+test( 'the self-signed option is offered only for the clients that have it', async () => {
 	await render( overview() );
 
 	expect( container.querySelector( '.shaped-kit-check' ) ).toBeNull();
+
+	const gemini = [ ...container.querySelectorAll( '[role="tab"]' ) ].find(
+		( t ) => /Gemini CLI/.test( t.textContent )
+	);
+	await act( async () => gemini.click() );
+	expect( container.querySelector( '.shaped-kit-check' ) ).not.toBeNull();
 } );
 
 test( 'a second try that fails does not leave the first try\'s "created" notice beside the error', async () => {

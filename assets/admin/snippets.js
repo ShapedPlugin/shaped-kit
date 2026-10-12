@@ -55,6 +55,14 @@ export const clients = () => [
 		),
 	},
 	{
+		key: 'gemini-cli',
+		label: __( 'Gemini CLI', 'shaped-kit' ),
+		note: __(
+			'Paste this JSON into your Gemini CLI configuration file (~/.gemini/settings.json).',
+			'shaped-kit'
+		),
+	},
+	{
 		key: 'generic',
 		label: __( 'Other', 'shaped-kit' ),
 		note: __(
@@ -202,6 +210,7 @@ export const buildSnippet = (
 			} );
 
 		case 'claude-desktop':
+		case 'gemini-cli':
 			return json( {
 				mcpServers: byKey( list, ( product ) => ( {
 					command: 'npx',
