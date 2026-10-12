@@ -7,6 +7,9 @@
         "yoast/phpunit-polyfills": "^3.1"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "php": "7.4.33"
+        }
     }
 }
