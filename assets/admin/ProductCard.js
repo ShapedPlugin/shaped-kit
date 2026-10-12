@@ -1,13 +1,10 @@
 import { useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { statusView } from './overview';
+import { getProductTools } from './toolsCatalog';
 
 /**
- * One product: its name and edition, how it stands, its endpoint, and the switch.
- *
- * The switch always shows what the server last reported (`product.enabled`), never the click. A click
- * only asks `onSwitch`; the card changes when a new overview arrives. A product with no working
- * switch of its own is shown with the switch locked and a line saying where to turn it on.
+ * One product: its name and edition, how it stands, its endpoint, tools list with prompts, and the switch.
  *
  * @param {Object}   props          Component props.
  * @param {Object}   props.product  One cleaned product from the overview.
@@ -16,9 +13,12 @@ import { statusView } from './overview';
  */
 const ProductCard = ( { product, busy = false, onSwitch } ) => {
 	const [ copied, setCopied ] = useState( false );
+	const [ showTools, setShowTools ] = useState( false );
+	const [ copiedPrompt, setCopiedPrompt ] = useState( '' );
 	const endpointRef = useRef( null );
 	const view = statusView( product.status );
 	const labelId = `shaped-kit-switch-${ product.slug }`;
+	const tools = getProductTools( product.slug );
 
 	const copyEndpoint = async () => {
 		try {
@@ -28,6 +28,16 @@ const ProductCard = ( { product, busy = false, onSwitch } ) => {
 		} catch ( failure ) {
 			// Some browsers refuse the clipboard: select the address so it can be copied by hand.
 			endpointRef.current?.select();
+		}
+	};
+
+	const copyPrompt = async ( promptText ) => {
+		try {
+			await navigator.clipboard.writeText( promptText );
+			setCopiedPrompt( promptText );
+			setTimeout( () => setCopiedPrompt( '' ), 2000 );
+		} catch ( e ) {
+			// ignore
 		}
 	};
 
@@ -118,9 +128,68 @@ const ProductCard = ( { product, busy = false, onSwitch } ) => {
 				) }
 				<div className="shaped-kit-detail">
 					<dt>{ __( 'Tools', 'shaped-kit' ) }</dt>
-					<dd>{ product.tools_count }</dd>
+					<dd className="shaped-kit-tools-count-wrapper">
+						<span className="shaped-kit-tools-number">{ product.tools_count }</span>
+						{ tools.length > 0 && (
+							<button
+								type="button"
+								className="shaped-kit-tools-toggle"
+								onClick={ () => setShowTools( ! showTools ) }
+								aria-expanded={ showTools }
+							>
+								{ showTools
+									? __( 'Hide tools list', 'shaped-kit' )
+									: __( 'View tools & sample prompts', 'shaped-kit' ) }
+							</button>
+						) }
+					</dd>
 				</div>
 			</dl>
+
+			{ showTools && tools.length > 0 && (
+				<div className="shaped-kit-tools-catalog">
+					<h3 className="shaped-kit-tools-catalog-title">
+						{ sprintf(
+							/* translators: %s: product name */
+							__( 'Available tools for %s', 'shaped-kit' ),
+							product.name
+						) }
+					</h3>
+					<div className="shaped-kit-tools-grid">
+						{ tools.map( ( tool ) => (
+							<div key={ tool.name } className="shaped-kit-tool-card">
+								<div className="shaped-kit-tool-header">
+									<strong className="shaped-kit-tool-label">{ tool.label }</strong>
+									<code className="shaped-kit-tool-name">{ tool.name }</code>
+								</div>
+								<p className="shaped-kit-tool-desc">{ tool.summary }</p>
+								<div className="shaped-kit-tool-prompts">
+									<span className="shaped-kit-tool-prompts-title">
+										{ __( 'Example prompts for AI:', 'shaped-kit' ) }
+									</span>
+									<ul className="shaped-kit-prompts-list">
+										{ tool.prompts.map( ( prompt, idx ) => (
+											<li key={ idx } className="shaped-kit-prompt-item">
+												<span className="shaped-kit-prompt-quote">“{ prompt }”</span>
+												<button
+													type="button"
+													className="shaped-kit-prompt-copy-btn"
+													title={ __( 'Copy prompt', 'shaped-kit' ) }
+													onClick={ () => copyPrompt( prompt ) }
+												>
+													{ copiedPrompt === prompt
+														? __( 'Copied', 'shaped-kit' )
+														: __( 'Copy', 'shaped-kit' ) }
+												</button>
+											</li>
+										) ) }
+									</ul>
+								</div>
+							</div>
+						) ) }
+					</div>
+				</div>
+			) }
 		</section>
 	);
 };

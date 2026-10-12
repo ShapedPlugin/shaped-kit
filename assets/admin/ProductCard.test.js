@@ -156,3 +156,39 @@ test( 'text from a product is shown as text, never as markup', async () => {
 	expect( container.querySelector( 'script' ) ).toBeNull();
 	expect( container.querySelector( 'h2' ).textContent ).toContain( '<img' );
 } );
+
+test( 'it renders a tools toggle button and expands tools catalog with sample prompts', async () => {
+	await render( { product: product() } );
+
+	const toggleBtn = container.querySelector( '.shaped-kit-tools-toggle' );
+	expect( toggleBtn ).not.toBeNull();
+	expect( toggleBtn.textContent ).toContain( 'View tools & sample prompts' );
+	expect( container.querySelector( '.shaped-kit-tools-catalog' ) ).toBeNull();
+
+	await act( async () => toggleBtn.click() );
+
+	expect( toggleBtn.textContent ).toContain( 'Hide tools list' );
+	const catalog = container.querySelector( '.shaped-kit-tools-catalog' );
+	expect( catalog ).not.toBeNull();
+	expect( catalog.querySelectorAll( '.shaped-kit-tool-card' ).length ).toBeGreaterThan( 0 );
+	expect( catalog.textContent ).toContain( 'location-weather/get-context' );
+	expect( catalog.querySelectorAll( '.shaped-kit-prompt-item' ).length ).toBeGreaterThan( 0 );
+} );
+
+test( 'copying a prompt puts the prompt text on the clipboard', async () => {
+	const writeText = jest.fn( () => Promise.resolve() );
+	Object.assign( navigator, { clipboard: { writeText } } );
+
+	await render( { product: product() } );
+	const toggleBtn = container.querySelector( '.shaped-kit-tools-toggle' );
+	await act( async () => toggleBtn.click() );
+
+	const promptCopyBtn = container.querySelector( '.shaped-kit-prompt-copy-btn' );
+	expect( promptCopyBtn ).not.toBeNull();
+
+	await act( async () => promptCopyBtn.click() );
+
+	expect( writeText ).toHaveBeenCalled();
+	expect( promptCopyBtn.textContent ).toContain( 'Copied' );
+} );
+
