@@ -28,3 +28,5 @@ Thumbs.db
 *.log
 .env
 .phpunit.result.cache
+/AGENTS.md
+/CLAUDE.md

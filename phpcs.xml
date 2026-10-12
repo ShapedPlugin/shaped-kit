@@ -12,6 +12,14 @@
 	<file>src</file>
 	<file>tests</file>
 
+	<!--
+		templates/ holds exportable product-module templates intended for sibling
+		plugins (Location Weather, Real Testimonials, WP Carousel), so they use
+		their own product-specific namespaces, text domains, and hooks rather than
+		ShapedKit's.
+	-->
+	<exclude-pattern>templates/*</exclude-pattern>
+
 	<rule ref="WordPress" />
 	<rule ref="WordPress-Docs" />
 
