@@ -130,7 +130,7 @@ test( 'it starts with the signed-in username, placeholders for the password, and
 	expect( passwordInput().value ).toBe( '' );
 	expect( passwordInput().type ).toBe( 'password' );
 	expect( snippet() ).toContain( 'claude mcp add' );
-	expect( snippet() ).toContain( '<base64(' );
+	expect( snippet() ).toContain( '<your-application-password>' );
 } );
 
 test( 'typing a password fills the text in, and Show reveals the field', async () => {
@@ -138,8 +138,8 @@ test( 'typing a password fills the text in, and Show reveals the field', async (
 
 	await type( passwordInput(), 'abcd efgh ijkl mnop qrst uvwx' );
 
-	expect( snippet() ).not.toContain( '<base64(' );
-	expect( snippet() ).toContain( 'YWRtaW46YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4' );
+	expect( snippet() ).not.toContain( '<your-application-password>' );
+	expect( snippet() ).toContain( 'abcdefghijklmnopqrstuvwx' );
 
 	await act( async () => button( /Show/ ).click() );
 	expect( passwordInput().type ).toBe( 'text' );
@@ -161,7 +161,7 @@ test( 'creating a password fills both fields, says it is shown once, and the tex
 	expect(
 		container.querySelector( '[role="status"]' ).textContent
 	).toContain( 'only once' );
-	expect( snippet() ).toContain( 'YWRtaW46YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4' );
+	expect( snippet() ).toContain( 'abcdefghijklmnopqrstuvwx' );
 } );
 
 test( 'a failed create shows the sentence and fills nothing', async () => {

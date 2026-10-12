@@ -69,6 +69,7 @@ class Context_Tools {
 				'wordpress_version' => (string) $wp_version,
 				'timezone'          => wp_timezone_string(),
 				'current_time'      => wp_date( 'c' ),
+				'environment'       => function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : 'production',
 			),
 			'product'  => array(
 				'name'    => Module::NAME,
