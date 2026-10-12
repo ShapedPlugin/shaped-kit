@@ -62,16 +62,20 @@ describe( 'buildSnippet', () => {
 		...overrides,
 	} );
 
-	test( 'Claude Code is one claude mcp add command with the header', () => {
+	test( 'Claude Code is one claude mcp add command using the stdio bridge', () => {
 		const text = buildSnippet( 'claude-code', options() );
 
 		expect( text ).toContain( 'claude mcp add' );
-		expect( text ).toContain( '--transport http' );
+		expect( text ).toContain( '--transport stdio' );
+		expect( text ).toContain( 'location-weather' );
+		expect( text ).toContain( `--env WP_API_URL=${ weather.endpoint_url }` );
+		expect( text ).toContain( "--env WP_API_USERNAME='admin'" );
 		expect( text ).toContain(
-			`location-weather ${ weather.endpoint_url }`
+			"--env WP_API_PASSWORD='abcdefghijklmnopqrstuvwx'"
 		);
+		expect( text ).toContain( '--env OAUTH_ENABLED=false' );
 		expect( text ).toContain(
-			`--header "Authorization: Basic ${ expected }"`
+			'-- npx -y @automattic/mcp-wordpress-remote@latest'
 		);
 	} );
 

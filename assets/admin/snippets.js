@@ -155,10 +155,19 @@ export const buildSnippet = (
 	switch ( client ) {
 		case 'claude-code':
 			return list
-				.map(
-					( product ) =>
-						`claude mcp add \\\n  --transport http \\\n  ${ product.slug } ${ product.endpoint_url } \\\n  --header "Authorization: ${ basic }"`
-				)
+				.map( ( product ) => {
+					const envFlags = [
+						localDev ? '  --env NODE_TLS_REJECT_UNAUTHORIZED=0 \\' : null,
+						`  --env WP_API_URL=${ product.endpoint_url } \\`,
+						`  --env WP_API_USERNAME='${ shellQuote( user ) }' \\`,
+						`  --env WP_API_PASSWORD='${ shellQuote( secret ) }' \\`,
+						'  --env OAUTH_ENABLED=false \\',
+					]
+						.filter( Boolean )
+						.join( '\n' );
+
+					return `claude mcp add \\\n  --transport stdio \\\n  ${ product.slug } \\\n${ envFlags }\n  -- npx -y @automattic/mcp-wordpress-remote@latest`;
+				} )
 				.join( '\n\n' );
 
 		case 'codex':
