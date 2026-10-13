@@ -74,6 +74,73 @@ export const fetchLogs = ( params = {} ) => {
 	return apiFetch( { url: routeUrl( base(), suffix ) } );
 };
 
+const storeBase = () => window.shapedKitAdmin?.storeRestUrl || '';
+
+/**
+ * Fetch products and catalog items from the Store Track REST API.
+ *
+ * @param {boolean} [refresh=false] Whether to bypass cache and fetch remote catalog.
+ * @return {Promise<{serial: number, expires_at: string, products: Array}>}
+ */
+export const fetchStoreCatalog = ( refresh = false ) => {
+	const suffix = refresh ? 'catalog?refresh=1' : 'catalog';
+	return apiFetch( { url: routeUrl( storeBase(), suffix ) } );
+};
+
+/**
+ * Install and activate a free plugin from wordpress.org.
+ *
+ * @param {string} slug Plugin directory slug.
+ * @return {Promise<Object>}
+ */
+export const installFreeProduct = ( slug ) =>
+	apiFetch( {
+		url: routeUrl( storeBase(), 'install' ),
+		method: 'POST',
+		data: { slug, activate: true },
+	} );
+
+/**
+ * Activate an already installed plugin.
+ *
+ * @param {string} slug Plugin directory slug.
+ * @return {Promise<Object>}
+ */
+export const activateProduct = ( slug ) =>
+	apiFetch( {
+		url: routeUrl( storeBase(), 'activate' ),
+		method: 'POST',
+		data: { slug },
+	} );
+
+/**
+ * Install and activate a Pro plugin with a license key.
+ *
+ * @param {string} slug        Product slug.
+ * @param {string} licenseKey User-supplied license key.
+ * @return {Promise<Object>}
+ */
+export const installProProduct = ( slug, licenseKey ) =>
+	apiFetch( {
+		url: routeUrl( storeBase(), 'install-pro' ),
+		method: 'POST',
+		data: { slug, license_key: licenseKey, activate: true },
+	} );
+
+/**
+ * Install a beta version of a Free or Pro product.
+ *
+ * @param {string} slug         Product slug.
+ * @param {string} [licenseKey] Optional license key for Pro betas.
+ * @return {Promise<Object>}
+ */
+export const installBetaProduct = ( slug, licenseKey = '' ) =>
+	apiFetch( {
+		url: routeUrl( storeBase(), 'install-beta' ),
+		method: 'POST',
+		data: { slug, license_key: licenseKey || undefined, activate: true },
+	} );
+
 /**
  * How a failed request reads to the owner. The server words its own refusals (they are plain text
  * written for this screen), so a message it sent wins, except for two cases WordPress words badly.

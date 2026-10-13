@@ -93,8 +93,9 @@ final class DashboardPage {
 			self::SCRIPT_HANDLE,
 			'shapedKitAdmin',
 			array(
-				'restUrl' => esc_url_raw( rest_url( McpController::REST_NAMESPACE . McpController::ROUTE ) ),
-				'version' => SHAPED_KIT_VERSION,
+				'restUrl'      => esc_url_raw( rest_url( McpController::REST_NAMESPACE . McpController::ROUTE ) ),
+				'storeRestUrl' => esc_url_raw( rest_url( McpController::REST_NAMESPACE . '/store' ) ),
+				'version'      => SHAPED_KIT_VERSION,
 			)
 		);
 	}
