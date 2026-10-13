@@ -99,6 +99,33 @@ class StoreController {
 				),
 			)
 		);
+
+		// 4. POST /store/install-pro
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/store/install-pro',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'install_pro_plugin' ),
+				'permission_callback' => array( __CLASS__, 'can_install_plugins' ),
+				'args'                => array(
+					'slug'        => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'license_key' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'activate'    => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -164,6 +191,14 @@ class StoreController {
 			$product_data['active_version'] = $active_version;
 			$product_data['can_install']    = wp_is_file_mod_allowed( 'install_plugins' );
 
+			// Read-only license introspection for Pro products.
+			if ( 'pro' === $product['edition'] ) {
+				$license_info                   = \ShapedKit\Store\EddBridge::get_installed_license_info( $product );
+				$product_data['has_license']    = $license_info['has_license'];
+				$product_data['masked_license'] = $license_info['masked_key'];
+				$product_data['license_status'] = $license_info['status'];
+			}
+
 			$enriched_products[] = $product_data;
 		}
 
@@ -187,6 +222,25 @@ class StoreController {
 		$activate = (bool) $request->get_param( 'activate' );
 
 		$result = Installer::install_free_plugin( $slug, $activate );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * Handles POST /store/install-pro.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function install_pro_plugin( $request ) {
+		$slug        = $request->get_param( 'slug' );
+		$license_key = $request->get_param( 'license_key' );
+		$activate    = (bool) $request->get_param( 'activate' );
+
+		$result = Installer::install_pro_plugin( $slug, $license_key, $activate );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

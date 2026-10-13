@@ -182,4 +182,66 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 		$response = rest_do_request( $request );
 		$this->assertSame( 403, $response->get_status() );
 	}
+
+	/**
+	 * Test EddBridge::mask_license_key preserves only last 4 characters.
+	 */
+	public function test_edd_bridge_masks_license_keys_safely() {
+		$this->assertSame( '••••', \ShapedKit\Store\EddBridge::mask_license_key( 'abcd' ) );
+		$this->assertSame( '•••••••••••••••5678', \ShapedKit\Store\EddBridge::mask_license_key( '1234-abcd-efgh-5678' ) );
+		$this->assertSame( '', \ShapedKit\Store\EddBridge::mask_license_key( '' ) );
+	}
+
+	/**
+	 * Test read-only license introspection for Location Weather Pro without modifying options.
+	 */
+	public function test_license_introspection_reads_option_safely() {
+		// Mock existing Location Weather Pro license settings.
+		update_option(
+			'location_weather_settings',
+			array(
+				'license_key' => 'mock-license-key-for-weather-pro-9988',
+			)
+		);
+		update_option( 'location_weather_license_key_status', 'valid' );
+
+		$entry = array(
+			'slug'                  => 'location-weather-pro',
+			'edition'               => 'pro',
+			'license_option'        => 'location_weather_settings',
+			'license_key_field'     => 'license_key',
+			'license_status_option' => 'location_weather_license_key_status',
+		);
+
+		$info = \ShapedKit\Store\EddBridge::get_installed_license_info( $entry );
+
+		$this->assertTrue( $info['has_license'] );
+		$this->assertSame( 'valid', $info['status'] );
+		$this->assertStringEndsWith( '9988', $info['masked_key'] );
+		$this->assertStringNotContainsString( 'mock-license-key', $info['masked_key'] );
+
+		// Clean up.
+		delete_option( 'location_weather_settings' );
+		delete_option( 'location_weather_license_key_status' );
+	}
+
+	/**
+	 * Test POST /store/install-pro permissions and empty license rejection.
+	 */
+	public function test_install_pro_endpoint_permissions_and_validation() {
+		// Subscriber rejected.
+		wp_set_current_user( $this->subscriber_id );
+		$request = new WP_REST_Request( 'POST', '/shaped-kit/v1/store/install-pro' );
+		$request->set_param( 'slug', 'location-weather-pro' );
+		$request->set_param( 'license_key', 'valid-key-1234' );
+
+		$response = rest_do_request( $request );
+		$this->assertSame( 403, $response->get_status() );
+
+		// Admin authorized with empty key rejected with 400.
+		wp_set_current_user( $this->admin_id );
+		$request->set_param( 'license_key', '' );
+		$response = rest_do_request( $request );
+		$this->assertSame( 400, $response->get_status() );
+	}
 }

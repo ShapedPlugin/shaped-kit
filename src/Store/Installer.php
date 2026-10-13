@@ -187,6 +187,150 @@ class Installer {
 	}
 
 	/**
+	 * Installs and activates a Pro plugin using single-use license verification with EDD.
+	 *
+	 * Zero license key persistence in database.
+	 *
+	 * @param string $slug        Plugin slug (e.g. 'location-weather-pro').
+	 * @param string $license_key Raw license key provided in request.
+	 * @param bool   $activate    Whether to activate upon successful installation.
+	 * @return array|\WP_Error
+	 */
+	public static function install_pro_plugin( $slug, $license_key, $activate = true ) {
+		// Capability and file modification checks (SE01, SE13).
+		$permission_check = self::can_install();
+		if ( is_wp_error( $permission_check ) ) {
+			return $permission_check;
+		}
+
+		// Ensure catalog contains the Pro product.
+		$catalog = CatalogClient::get_catalog();
+		$matched = null;
+		foreach ( $catalog['products'] as $item ) {
+			if ( $item['slug'] === $slug && 'pro' === $item['edition'] ) {
+				$matched = $item;
+				break;
+			}
+		}
+
+		if ( ! $matched ) {
+			return new \WP_Error(
+				'product_not_in_catalog',
+				__( 'The requested Pro plugin is not available in the store catalog.', 'shaped-kit' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		// 1. Resolve package URL via EDD POST get_version.
+		$version_info = EddBridge::get_version( $matched, $license_key );
+		if ( is_wp_error( $version_info ) ) {
+			return $version_info;
+		}
+
+		$package_url = $version_info['package_url'];
+
+		// 2. Validate host allowlist (SE06).
+		if ( ! PackageVerifier::is_allowed_host( $package_url ) ) {
+			return new \WP_Error(
+				'unauthorized_download_host',
+				__( 'The package download host is not allowed.', 'shaped-kit' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// 3. Acquire exclusive upgrader lock (SE08).
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		if ( ! \WP_Upgrader::create_lock( self::LOCK_NAME, self::LOCK_TIMEOUT ) ) {
+			return new \WP_Error(
+				'install_in_progress',
+				__( 'Another installation or update is already running. Please wait and try again.', 'shaped-kit' ),
+				array( 'status' => 429 )
+			);
+		}
+
+		try {
+			// 4. Download and verify SHA-256 (SE05).
+			$download_result = self::download_and_verify( $package_url, $matched['stable_sha256'] );
+			if ( is_wp_error( $download_result ) ) {
+				\WP_Upgrader::release_lock( self::LOCK_NAME );
+				return $download_result;
+			}
+
+			$temp_file = $download_result;
+
+			// 5. Initialize upgrader and install.
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/misc.php';
+			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+
+			ob_start();
+
+			$skin     = new \WP_Ajax_Upgrader_Skin();
+			$upgrader = new \Plugin_Upgrader( $skin );
+
+			$installed = $upgrader->install(
+				$temp_file,
+				array(
+					'overwrite_package' => false,
+				)
+			);
+
+			ob_end_clean();
+
+			if ( file_exists( $temp_file ) ) {
+				wp_delete_file( $temp_file );
+			}
+
+			\WP_Upgrader::release_lock( self::LOCK_NAME );
+
+			if ( is_wp_error( $installed ) ) {
+				return $installed;
+			}
+
+			if ( false === $installed ) {
+				$errors = $skin->get_errors();
+				$msg    = is_wp_error( $errors ) ? $errors->get_error_message() : __( 'Installation failed.', 'shaped-kit' );
+				return new \WP_Error( 'install_failed', $msg, array( 'status' => 500 ) );
+			}
+
+			// 6. Find plugin file and activate.
+			$plugin_file = self::find_plugin_file( $slug );
+			$activated   = false;
+
+			if ( $activate && $plugin_file ) {
+				$act_result = self::activate_plugin_safely( $plugin_file );
+				if ( is_wp_error( $act_result ) ) {
+					return new \WP_Error(
+						'plugin_activation_failed',
+						sprintf(
+							/* translators: %s: activation error message */
+							__( 'Plugin installed successfully, but activation failed: %s', 'shaped-kit' ),
+							$act_result->get_error_message()
+						),
+						array( 'status' => 500 )
+					);
+				}
+				$activated = true;
+			}
+
+			return array(
+				'status'      => 'installed',
+				'slug'        => $slug,
+				'version'     => $matched['stable_version'],
+				'activated'   => $activated,
+				'plugin_file' => $plugin_file,
+			);
+		} catch ( \Throwable $e ) {
+			\WP_Upgrader::release_lock( self::LOCK_NAME );
+			return new \WP_Error(
+				'install_exception',
+				$e->getMessage(),
+				array( 'status' => 500 )
+			);
+		}
+	}
+
+	/**
 	 * Activates an already installed plugin.
 	 *
 	 * @param string $slug Plugin slug.
