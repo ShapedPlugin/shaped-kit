@@ -20,12 +20,12 @@
 	--sk-bad-soft: #fcf0f1;
 	--sk-bad: #8a2424;
 
-	// Full width layout adhering to native WordPress admin standard (.wrap)
+	// Optimal balanced canvas: 1200px max-width with responsive fluid gutters
 	width: 100%;
-	max-width: 100%;
+	max-width: 1200px;
 	box-sizing: border-box;
-	margin: 0;
-	padding: 10px 20px 40px 0;
+	margin: 0 auto;
+	padding: 12px 16px 48px;
 	color: var(--sk-text);
 
 	.shaped-kit-header {
@@ -158,6 +158,97 @@
 			font-size: 18px;
 			font-weight: 600;
 			overflow-wrap: anywhere;
+		}
+	}
+
+	// Horizontal product selector bar for scalable multi-product navigation
+	.shaped-kit-product-selector-bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 16px;
+		padding: 6px;
+		background: #f6f7f7;
+		border: 1px solid var(--sk-border);
+		border-radius: 8px;
+	}
+
+	.shaped-kit-product-tab {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 14px;
+		border: 1px solid transparent;
+		border-radius: 6px;
+		background: transparent;
+		color: var(--sk-muted);
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.15s ease-in-out;
+
+		&:hover {
+			background: #ffffff;
+			color: var(--sk-text);
+			border-color: #dcdcde;
+		}
+
+		&.is-selected {
+			background: #ffffff;
+			color: var(--sk-text);
+			border-color: #c3c4c7;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+			font-weight: 600;
+		}
+
+		.shaped-kit-status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			display: inline-block;
+			background: var(--sk-off);
+
+			&.shaped-kit-status-dot-good {
+				background: #008a20;
+				box-shadow: 0 0 0 2px rgba(0, 138, 32, 0.2);
+			}
+
+			&.shaped-kit-status-dot-warn {
+				background: #dba617;
+			}
+
+			&.shaped-kit-status-dot-bad {
+				background: #d63638;
+			}
+		}
+
+		.shaped-kit-tab-edition {
+			font-size: 10px;
+			font-weight: 700;
+			padding: 1px 5px;
+			border-radius: 3px;
+
+			&.is-pro {
+				background: #f0f0ff;
+				color: #4f46e5;
+				border: 1px solid #c7d2fe;
+			}
+
+			&.is-free {
+				background: #f0f6fc;
+				color: #0969da;
+				border: 1px solid #c8e1ff;
+			}
+		}
+
+		.shaped-kit-tab-count {
+			font-size: 11px;
+			font-weight: 600;
+			background: #e0e0e0;
+			color: #3c434a;
+			padding: 1px 6px;
+			border-radius: 10px;
 		}
 	}
 
@@ -450,21 +541,24 @@
 
 	.shaped-kit-credentials {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 16px;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+		gap: 20px;
 		margin-top: 20px;
 
 		label {
 			display: flex;
 			flex-direction: column;
-			gap: 4px;
+			gap: 6px;
 			font-weight: 600;
+			font-size: 13px;
 		}
 
 		input[type="text"],
 		input[type="password"] {
 			width: 100%;
 			font-weight: 400;
+			font-size: 13.5px;
+			padding: 4px 10px;
 		}
 	}
 
@@ -503,12 +597,53 @@
 		color: var(--sk-bad);
 	}
 
+	.shaped-kit-connect-subnav {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 20px;
+		border-bottom: 1px solid var(--sk-border);
+	}
+
 	.shaped-kit-tabs {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
-		margin-top: 20px;
-		border-bottom: 1px solid var(--sk-border);
+	}
+
+	.shaped-kit-scope-selector {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px;
+		background: #f0f0f1;
+		border-radius: 6px;
+		margin-bottom: 4px;
+	}
+
+	.shaped-kit-scope-btn {
+		border: 0;
+		background: transparent;
+		padding: 4px 10px;
+		font-size: 12px;
+		font-weight: 500;
+		border-radius: 4px;
+		cursor: pointer;
+		color: var(--sk-muted);
+		transition: all 0.15s ease-in-out;
+
+		&:hover {
+			color: var(--sk-text);
+		}
+
+		&.is-active {
+			background: var(--sk-surface);
+			color: var(--sk-text);
+			font-weight: 600;
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+		}
 	}
 
 	.shaped-kit-tab {

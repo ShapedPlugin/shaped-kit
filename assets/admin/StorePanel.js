@@ -50,6 +50,12 @@ const StorePanel = () => {
 		loadCatalog();
 	}, [ loadCatalog ] );
 
+	// Search, Filtering & Pagination State
+	const [ searchQuery, setSearchQuery ] = useState( '' );
+	const [ filterType, setFilterType ] = useState( 'all' ); // 'all' | 'installed' | 'pro' | 'available'
+	const [ page, setPage ] = useState( 1 );
+	const itemsPerPage = 6;
+
 	const handleInstallFree = ( slug ) => {
 		setBusySlug( slug );
 		setError( '' );
@@ -147,11 +153,40 @@ const StorePanel = () => {
 		);
 	}
 
-	const products = catalog?.products || [];
+	const allProducts = catalog?.products || [];
+
+	// Filter & Search computation
+	const filteredProducts = allProducts.filter( ( p ) => {
+		if ( searchQuery ) {
+			const query = searchQuery.toLowerCase();
+			const matchName = p.name.toLowerCase().includes( query );
+			const matchDesc = p.description && p.description.toLowerCase().includes( query );
+			if ( ! matchName && ! matchDesc ) {
+				return false;
+			}
+		}
+
+		if ( filterType === 'installed' ) {
+			return Boolean( p.installed );
+		}
+		if ( filterType === 'pro' ) {
+			return p.edition === 'pro';
+		}
+		if ( filterType === 'available' ) {
+			return ! p.installed;
+		}
+
+		return true;
+	} );
+
+	const totalPages = Math.max( 1, Math.ceil( filteredProducts.length / itemsPerPage ) );
+	const safePage = Math.min( page, totalPages );
+	const startIndex = ( safePage - 1 ) * itemsPerPage;
+	const paginatedProducts = filteredProducts.slice( startIndex, startIndex + itemsPerPage );
 
 	return (
 		<div className="shaped-kit-store-panel">
-			<div className="shaped-kit-store-header" style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' } }>
+			<div className="shaped-kit-store-header" style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' } }>
 				<div>
 					<h2 style={ { margin: '0 0 4px', fontSize: '18px' } }>{ __( 'ShapedPlugin Products & Add-ons', 'shaped-kit' ) }</h2>
 					<p style={ { margin: 0, color: '#646970', fontSize: '13px' } }>
@@ -180,161 +215,271 @@ const StorePanel = () => {
 				</div>
 			) }
 
+			<div className="shaped-kit-store-toolbar" style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' } }>
+				<div className="shaped-kit-store-filters" style={ { display: 'flex', gap: '6px' } }>
+					<button
+						type="button"
+						className={ `button ${ filterType === 'all' ? 'button-primary' : 'button-secondary' }` }
+						style={ { fontSize: '12px', height: '30px', lineHeight: '28px' } }
+						onClick={ () => { setFilterType( 'all' ); setPage( 1 ); } }
+					>
+						{ sprintf( __( 'All (%d)', 'shaped-kit' ), allProducts.length ) }
+					</button>
+					<button
+						type="button"
+						className={ `button ${ filterType === 'installed' ? 'button-primary' : 'button-secondary' }` }
+						style={ { fontSize: '12px', height: '30px', lineHeight: '28px' } }
+						onClick={ () => { setFilterType( 'installed' ); setPage( 1 ); } }
+					>
+						{ sprintf( __( 'Installed (%d)', 'shaped-kit' ), allProducts.filter( ( p ) => p.installed ).length ) }
+					</button>
+					<button
+						type="button"
+						className={ `button ${ filterType === 'pro' ? 'button-primary' : 'button-secondary' }` }
+						style={ { fontSize: '12px', height: '30px', lineHeight: '28px' } }
+						onClick={ () => { setFilterType( 'pro' ); setPage( 1 ); } }
+					>
+						{ sprintf( __( 'Pro (%d)', 'shaped-kit' ), allProducts.filter( ( p ) => p.edition === 'pro' ).length ) }
+					</button>
+					<button
+						type="button"
+						className={ `button ${ filterType === 'available' ? 'button-primary' : 'button-secondary' }` }
+						style={ { fontSize: '12px', height: '30px', lineHeight: '28px' } }
+						onClick={ () => { setFilterType( 'available' ); setPage( 1 ); } }
+					>
+						{ sprintf( __( 'Available (%d)', 'shaped-kit' ), allProducts.filter( ( p ) => ! p.installed ).length ) }
+					</button>
+				</div>
+
+				<div className="shaped-kit-store-search">
+					<input
+						type="search"
+						value={ searchQuery }
+						placeholder={ __( 'Search products…', 'shaped-kit' ) }
+						onChange={ ( e ) => { setSearchQuery( e.target.value ); setPage( 1 ); } }
+						style={ { height: '32px', minWidth: '240px', fontSize: '13px', borderRadius: '4px' } }
+					/>
+				</div>
+			</div>
+
 			<div className="shaped-kit-table-wrapper" style={ { background: '#fff', border: '1px solid #dcdcde', borderRadius: '8px', overflow: 'hidden' } }>
 				<table className="widefat striped shaped-kit-store-table" style={ { border: 0, boxShadow: 'none' } }>
 					<thead>
 						<tr>
-							<th style={ { padding: '12px 16px', fontWeight: 600 } }>{ __( 'Product', 'shaped-kit' ) }</th>
-							<th style={ { padding: '12px 16px', fontWeight: 600, width: '100px' } }>{ __( 'Edition', 'shaped-kit' ) }</th>
-							<th style={ { padding: '12px 16px', fontWeight: 600, width: '180px' } }>{ __( 'Version', 'shaped-kit' ) }</th>
-							<th style={ { padding: '12px 16px', fontWeight: 600, width: '180px' } }>{ __( 'License', 'shaped-kit' ) }</th>
-							<th style={ { padding: '12px 16px', fontWeight: 600, width: '110px' } }>{ __( 'Status', 'shaped-kit' ) }</th>
-							<th style={ { padding: '12px 16px', fontWeight: 600, textAlign: 'right', minWidth: '220px' } }>{ __( 'Actions', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 18px', fontWeight: 600, width: '36%' } }>{ __( 'Product', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '90px' } }>{ __( 'Edition', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '160px' } }>{ __( 'Version', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '160px' } }>{ __( 'License', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '100px' } }>{ __( 'Status', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 18px', fontWeight: 600, textAlign: 'right' } }>{ __( 'Actions', 'shaped-kit' ) }</th>
 						</tr>
 					</thead>
 					<tbody>
-						{ products.map( ( product ) => {
-							const isBusy = busySlug === product.slug;
-							const isInstalled = product.installed;
-							const isActive = product.active;
-							const isPro = product.edition === 'pro';
-							const hasBeta = Boolean( product.beta_version );
+						{ paginatedProducts.length === 0 ? (
+							<tr>
+								<td colSpan="6" style={ { textAlign: 'center', padding: '32px 16px', color: '#646970', fontStyle: 'italic' } }>
+									{ __( 'No products found matching your filter.', 'shaped-kit' ) }
+								</td>
+							</tr>
+						) : (
+							paginatedProducts.map( ( product ) => {
+								const isBusy = busySlug === product.slug;
+								const isInstalled = product.installed;
+								const isActive = product.active;
+								const isPro = product.edition === 'pro';
+								const hasBeta = Boolean( product.beta_version );
 
-							return (
-								<tr key={ product.slug } style={ { verticalAlign: 'middle' } }>
-									<td style={ { padding: '14px 16px' } }>
-										<strong style={ { fontSize: '14px', color: '#1d2327', display: 'block', marginBottom: '2px' } }>
-											{ product.name }
-										</strong>
-										<span style={ { fontSize: '12px', color: '#646970', lineHeight: 1.4, display: 'block' } }>
-											{ product.description }
-										</span>
-									</td>
-									<td style={ { padding: '14px 16px' } }>
-										<span
-											className="shaped-kit-badge"
-											style={ {
-												fontSize: '11px',
-												fontWeight: 600,
-												textTransform: 'uppercase',
-												padding: '2px 8px',
-												borderRadius: '4px',
-												background: isPro ? '#f0f0ff' : '#f0f6fc',
-												color: isPro ? '#4f46e5' : '#0969da',
-												border: `1px solid ${ isPro ? '#c7d2fe' : '#c8e1ff' }`,
-											} }
-										>
-											{ product.edition }
-										</span>
-									</td>
-									<td style={ { padding: '14px 16px', fontSize: '13px' } }>
-										<div>
-											<span style={ { color: '#646970' } }>{ __( 'Stable:', 'shaped-kit' ) } </span>
-											<strong>{ product.stable_version }</strong>
-										</div>
-										{ isInstalled && product.active_version && (
-											<div style={ { fontSize: '11px', color: '#135e96', marginTop: '2px' } }>
-												{ sprintf( __( 'Installed: %s', 'shaped-kit' ), product.active_version ) }
-											</div>
-										) }
-									</td>
-									<td style={ { padding: '14px 16px', fontSize: '12px' } }>
-										{ isPro ? (
-											product.has_license ? (
-												<div>
-													<code style={ { fontSize: '11px', padding: '1px 4px', background: '#f0f0f1' } }>{ product.masked_license }</code>
-													<div style={ { fontSize: '11px', color: '#008a20', marginTop: '2px', fontWeight: 600 } }>
-														({ product.license_status })
-													</div>
-												</div>
-											) : (
-												<span style={ { color: '#8c8f94', fontStyle: 'italic' } }>{ __( 'No license', 'shaped-kit' ) }</span>
-											)
-										) : (
-											<span style={ { color: '#8c8f94' } }>—</span>
-										)}
-									</td>
-									<td style={ { padding: '14px 16px' } }>
-										{ isInstalled ? (
-											isActive ? (
-												<span
+								return (
+									<tr key={ product.slug } style={ { verticalAlign: 'middle' } }>
+										<td style={ { padding: '14px 18px' } }>
+											<div style={ { display: 'flex', alignItems: 'flex-start', gap: '12px' } }>
+												<div
 													style={ {
-														color: '#008a20',
-														fontWeight: 600,
-														fontSize: '13px',
-														display: 'inline-flex',
+														width: '36px',
+														height: '36px',
+														borderRadius: '8px',
+														background: isPro ? '#eef2ff' : '#f0fdf4',
+														border: `1px solid ${ isPro ? '#c7d2fe' : '#bbf7d0' }`,
+														display: 'flex',
 														alignItems: 'center',
-														gap: '4px',
+														justifyContent: 'center',
+														fontSize: '18px',
+														flexShrink: 0,
 													} }
 												>
-													✓ { __( 'Active', 'shaped-kit' ) }
-												</span>
-											) : (
-												<span style={ { color: '#d63638', fontSize: '13px', fontWeight: 500 } }>
-													{ __( 'Inactive', 'shaped-kit' ) }
-												</span>
-											)
-										) : (
-											<span style={ { color: '#8c8f94', fontSize: '13px' } }>
-												{ __( 'Not Installed', 'shaped-kit' ) }
+													{ isPro ? '⚡' : '📦' }
+												</div>
+												<div>
+													<strong style={ { fontSize: '14px', color: '#1d2327', display: 'block', marginBottom: '2px' } }>
+														{ product.name }
+													</strong>
+													<span style={ { fontSize: '12px', color: '#646970', lineHeight: 1.4, display: 'block' } }>
+														{ product.description }
+													</span>
+												</div>
+											</div>
+										</td>
+										<td style={ { padding: '14px 16px' } }>
+											<span
+												className="shaped-kit-badge"
+												style={ {
+													fontSize: '11px',
+													fontWeight: 600,
+													textTransform: 'uppercase',
+													padding: '2px 8px',
+													borderRadius: '4px',
+													background: isPro ? '#f0f0ff' : '#f0f6fc',
+													color: isPro ? '#4f46e5' : '#0969da',
+													border: `1px solid ${ isPro ? '#c7d2fe' : '#c8e1ff' }`,
+												} }
+											>
+												{ product.edition }
 											</span>
-										)}
-									</td>
-									<td style={ { padding: '14px 16px', textAlign: 'right' } }>
-										<div style={ { display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' } }>
-											{ ! isInstalled && ! isPro && (
-												<button
-													type="button"
-													className="button button-primary"
-													onClick={ () => handleInstallFree( product.slug ) }
-													disabled={ isBusy || ! product.can_install }
-												>
-													{ isBusy ? __( 'Installing…', 'shaped-kit' ) : __( 'Install & Activate', 'shaped-kit' ) }
-												</button>
+										</td>
+										<td style={ { padding: '14px 16px', fontSize: '13px' } }>
+											<div>
+												<span style={ { color: '#646970' } }>{ __( 'Stable:', 'shaped-kit' ) } </span>
+												<strong>{ product.stable_version }</strong>
+											</div>
+											{ isInstalled && product.active_version && (
+												<div style={ { fontSize: '11px', color: '#135e96', marginTop: '2px' } }>
+													{ sprintf( __( 'Installed: %s', 'shaped-kit' ), product.active_version ) }
+												</div>
 											) }
+										</td>
+										<td style={ { padding: '14px 16px', fontSize: '12px' } }>
+											{ isPro ? (
+												product.has_license ? (
+													<div>
+														<code style={ { fontSize: '11px', padding: '1px 4px', background: '#f0f0f1' } }>{ product.masked_license }</code>
+														<div style={ { fontSize: '11px', color: '#008a20', marginTop: '2px', fontWeight: 600 } }>
+															({ product.license_status })
+														</div>
+													</div>
+												) : (
+													<span style={ { color: '#8c8f94', fontStyle: 'italic' } }>{ __( 'No license', 'shaped-kit' ) }</span>
+												)
+											) : (
+												<span style={ { color: '#8c8f94' } }>—</span>
+											) }
+										</td>
+										<td style={ { padding: '14px 16px' } }>
+											{ isInstalled ? (
+												isActive ? (
+													<span
+														style={ {
+															color: '#008a20',
+															fontWeight: 600,
+															fontSize: '13px',
+															display: 'inline-flex',
+															alignItems: 'center',
+															gap: '4px',
+														} }
+													>
+														✓ { __( 'Active', 'shaped-kit' ) }
+													</span>
+												) : (
+													<span style={ { color: '#d63638', fontSize: '13px', fontWeight: 500 } }>
+														{ __( 'Inactive', 'shaped-kit' ) }
+													</span>
+												)
+											) : (
+												<span style={ { color: '#8c8f94', fontSize: '13px' } }>
+													{ __( 'Not Installed', 'shaped-kit' ) }
+												</span>
+											) }
+										</td>
+										<td style={ { padding: '14px 18px', textAlign: 'right' } }>
+											<div style={ { display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' } }>
+												{ ! isInstalled && ! isPro && (
+													<button
+														type="button"
+														className="button button-primary"
+														onClick={ () => handleInstallFree( product.slug ) }
+														disabled={ isBusy || ! product.can_install }
+													>
+														{ isBusy ? __( 'Installing…', 'shaped-kit' ) : __( 'Install & Activate', 'shaped-kit' ) }
+													</button>
+												) }
 
-											{ ! isInstalled && isPro && (
-												<button
-													type="button"
-													className="button button-primary"
-													onClick={ () => setProModalProduct( product ) }
-													disabled={ isBusy || ! product.can_install }
-												>
-													{ __( 'Install with License', 'shaped-kit' ) }
-												</button>
-											) }
+												{ ! isInstalled && isPro && (
+													<button
+														type="button"
+														className="button button-primary"
+														onClick={ () => setProModalProduct( product ) }
+														disabled={ isBusy || ! product.can_install }
+													>
+														{ __( 'Install with License', 'shaped-kit' ) }
+													</button>
+												) }
 
-											{ isInstalled && ! isActive && (
-												<button
-													type="button"
-													className="button button-secondary"
-													onClick={ () => handleActivate( product.slug ) }
-													disabled={ isBusy }
-												>
-													{ isBusy ? __( 'Activating…', 'shaped-kit' ) : __( 'Activate', 'shaped-kit' ) }
-												</button>
-											) }
+												{ isInstalled && ! isActive && (
+													<button
+														type="button"
+														className="button button-secondary"
+														onClick={ () => handleActivate( product.slug ) }
+														disabled={ isBusy }
+													>
+														{ isBusy ? __( 'Activating…', 'shaped-kit' ) : __( 'Activate', 'shaped-kit' ) }
+													</button>
+												) }
 
-											{ hasBeta && (
-												<button
-													type="button"
-													className="button button-secondary"
-													style={ { fontSize: '11px', height: '30px', padding: '0 8px' } }
-													onClick={ () => setBetaModalProduct( product ) }
-													disabled={ isBusy || ! product.can_install }
-													title={ sprintf( __( 'Preview and install beta %s', 'shaped-kit' ), product.beta_version ) }
-												>
-													{ sprintf( __( 'Install Beta (%s)', 'shaped-kit' ), product.beta_version ) }
-												</button>
-											) }
-										</div>
-									</td>
-								</tr>
-							);
-						} ) }
+												{ hasBeta && (
+													<button
+														type="button"
+														className="button button-secondary"
+														style={ { fontSize: '11px', height: '30px', padding: '0 8px' } }
+														onClick={ () => setBetaModalProduct( product ) }
+														disabled={ isBusy || ! product.can_install }
+														title={ sprintf( __( 'Preview and install beta %s', 'shaped-kit' ), product.beta_version ) }
+													>
+														{ sprintf( __( 'Install Beta (%s)', 'shaped-kit' ), product.beta_version ) }
+													</button>
+												) }
+											</div>
+										</td>
+									</tr>
+								);
+							} )
+						) }
 					</tbody>
 				</table>
 			</div>
+
+			{ totalPages > 1 && (
+				<div className="shaped-kit-pagination" style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' } }>
+					<span style={ { fontSize: '13px', color: '#646970' } }>
+						{ sprintf(
+							/* translators: 1: start, 2: end, 3: total */
+							__( 'Showing %1$d–%2$d of %3$d products', 'shaped-kit' ),
+							startIndex + 1,
+							Math.min( startIndex + itemsPerPage, filteredProducts.length ),
+							filteredProducts.length
+						) }
+					</span>
+					<div style={ { display: 'flex', gap: '8px', alignItems: 'center' } }>
+						<button
+							type="button"
+							className="button"
+							disabled={ safePage <= 1 }
+							onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+						>
+							{ __( 'Previous', 'shaped-kit' ) }
+						</button>
+						<span style={ { fontSize: '13px', color: '#646970', padding: '0 4px' } }>
+							{ sprintf( __( 'Page %1$d of %2$d', 'shaped-kit' ), safePage, totalPages ) }
+						</span>
+						<button
+							type="button"
+							className="button"
+							disabled={ safePage >= totalPages }
+							onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }
+						>
+							{ __( 'Next', 'shaped-kit' ) }
+						</button>
+					</div>
+				</div>
+			) }
 
 			{ /* Pro License Installation Modal */ }
 			{ proModalProduct && (

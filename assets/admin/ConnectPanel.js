@@ -77,12 +77,13 @@ const unavailableText = ( reason ) => {
  * exist and pasting it would only fail. The password lives in this component's memory for as long as the
  * page is open; it is never stored, and it goes nowhere except into the text the owner copies.
  *
- * @param {Object} props          Component props.
- * @param {Object} props.overview The overview from the server.
+ * @param {Object} props                     Component props.
+ * @param {Object} props.overview            The overview from the server.
+ * @param {string} [props.selectedProductSlug] Currently active product slug from selector.
  */
-const ConnectPanel = ( { overview } ) => {
+const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 	const support = overview?.app_password || {};
-	const products = useMemo(
+	const allEnabledProducts = useMemo(
 		() =>
 			( overview?.products || [] ).filter(
 				( product ) => product.enabled && product.endpoint_url
@@ -91,12 +92,13 @@ const ConnectPanel = ( { overview } ) => {
 	);
 	const list = clients();
 
+	const [ scope, setScope ] = useState( 'selected' ); // 'selected' | 'all'
 	const [ username, setUsername ] = useState( support.user_login || '' );
 	const [ password, setPassword ] = useState( '' );
 	const [ showPassword, setShowPassword ] = useState( false );
 	const [ client, setClient ] = useState( list[ 0 ].key );
 	const [ localDev, setLocalDev ] = useState( () =>
-		products.some( ( product ) => isLocalSite( product.endpoint_url ) )
+		allEnabledProducts.some( ( product ) => isLocalSite( product.endpoint_url ) )
 	);
 	const [ isCreating, setIsCreating ] = useState( false );
 	const [ created, setCreated ] = useState( null );
@@ -106,6 +108,22 @@ const ConnectPanel = ( { overview } ) => {
 	const [ pendingTests, setPendingTests ] = useState( 0 );
 	const latestTest = useRef( 0 );
 	const isTesting = pendingTests > 0;
+
+	// Determine active products for the snippet based on scope:
+	const selectedProduct = useMemo(
+		() =>
+			( overview?.products || [] ).find(
+				( p ) => p.slug === selectedProductSlug && p.enabled && p.endpoint_url
+			),
+		[ overview, selectedProductSlug ]
+	);
+
+	const products = useMemo( () => {
+		if ( scope === 'selected' && selectedProduct ) {
+			return [ selectedProduct ];
+		}
+		return allEnabledProducts;
+	}, [ scope, selectedProduct, allEnabledProducts ] );
 
 	const snippet = buildSnippet( client, {
 		products,
@@ -271,22 +289,51 @@ const ConnectPanel = ( { overview } ) => {
 					</label>
 				</div>
 
-				<div className="shaped-kit-tabs" role="tablist">
-					{ list.map( ( item ) => (
-						<button
-							key={ item.key }
-							type="button"
-							role="tab"
-							aria-selected={ client === item.key }
-							className="shaped-kit-tab"
-							onClick={ () => {
-								setClient( item.key );
-								setCopied( false );
-							} }
-						>
-							{ item.label }
-						</button>
-					) ) }
+				<div className="shaped-kit-connect-subnav">
+					<div className="shaped-kit-tabs" role="tablist">
+						{ list.map( ( item ) => (
+							<button
+								key={ item.key }
+								type="button"
+								role="tab"
+								aria-selected={ client === item.key }
+								className="shaped-kit-tab"
+								onClick={ () => {
+									setClient( item.key );
+									setCopied( false );
+								} }
+							>
+								{ item.label }
+							</button>
+						) ) }
+					</div>
+
+					{ selectedProduct && allEnabledProducts.length > 1 && (
+						<div className="shaped-kit-scope-selector" role="group" aria-label={ __( 'Snippet configuration scope', 'shaped-kit' ) }>
+							<button
+								type="button"
+								className={ `shaped-kit-scope-btn ${ scope === 'selected' ? 'is-active' : '' }` }
+								onClick={ () => setScope( 'selected' ) }
+							>
+								{ sprintf(
+									/* translators: %s: product name */
+									__( '%s only', 'shaped-kit' ),
+									selectedProduct.name
+								) }
+							</button>
+							<button
+								type="button"
+								className={ `shaped-kit-scope-btn ${ scope === 'all' ? 'is-active' : '' }` }
+								onClick={ () => setScope( 'all' ) }
+							>
+								{ sprintf(
+									/* translators: %d: count of enabled products */
+									__( 'All enabled (%d)', 'shaped-kit' ),
+									allEnabledProducts.length
+								) }
+							</button>
+						</div>
+					) }
 				</div>
 
 				{ ( client === 'claude-desktop' || client === 'gemini-cli' ) && (

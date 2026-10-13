@@ -191,6 +191,44 @@ test( 'there is a card for each product', async () => {
 	);
 } );
 
+test( 'clicking a product tab focuses on that product and updates the active card', async () => {
+	const multiProductSite = {
+		...site( true ),
+		products: [
+			site( true ).products[ 0 ],
+			{
+				slug: 'real-testimonials',
+				name: 'Real Testimonials',
+				edition: 'pro',
+				enabled: true,
+				status: 'ready',
+				endpoint_url: 'https://site.test/testimonials/mcp',
+				tools_count: 8,
+				toggleable: true,
+				message: '',
+			},
+		],
+	};
+
+	fetchOverview.mockResolvedValueOnce( multiProductSite );
+	await mount();
+	await settle();
+
+	// Initially displays first product
+	expect( container.querySelector( 'h2' ).textContent ).toBe( 'Location Weather' );
+	const tabs = container.querySelectorAll( '.shaped-kit-product-tab' );
+	expect( tabs ).toHaveLength( 2 );
+
+	// Click the second product tab
+	await act( async () => {
+		tabs[ 1 ].click();
+	} );
+	await settle();
+
+	// Should now display Real Testimonials card
+	expect( container.querySelector( 'h2' ).textContent ).toBe( 'Real Testimonials' );
+} );
+
 test( 'a switch asks for the opposite state, is locked meanwhile, and ends on the answer the server sent', async () => {
 	const pending = deferred();
 	fetchOverview.mockResolvedValueOnce( site( true ) );

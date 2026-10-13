@@ -5,6 +5,7 @@ import { describeError, fetchOverview, switchProduct } from './api';
 import ConnectPanel from './ConnectPanel';
 import OverviewStrip from './OverviewStrip';
 import ProductCard from './ProductCard';
+import ProductSelectorBar from './ProductSelectorBar';
 import StorePanel from './StorePanel';
 
 /**
@@ -21,6 +22,7 @@ import StorePanel from './StorePanel';
  */
 const App = () => {
 	const [ activeTab, setActiveTab ] = useState( 'products' );
+	const [ selectedProductSlug, setSelectedProductSlug ] = useState( '' );
 	const [ overview, setOverview ] = useState( null );
 	const [ error, setError ] = useState( '' );
 	const [ pendingLoads, setPendingLoads ] = useState( 0 );
@@ -40,6 +42,12 @@ const App = () => {
 			.then( ( data ) => {
 				if ( request === latest.current ) {
 					setOverview( data );
+					setSelectedProductSlug( ( current ) => {
+						if ( current && data?.products?.some( ( p ) => p.slug === current ) ) {
+							return current;
+						}
+						return data?.products?.[ 0 ]?.slug || '';
+					} );
 				}
 			} )
 			.catch( ( failure ) => {
@@ -172,18 +180,30 @@ const App = () => {
 						<>
 							<OverviewStrip overview={ overview } />
 
+							<ProductSelectorBar
+								products={ overview.products || [] }
+								selectedSlug={ selectedProductSlug }
+								onSelectProduct={ setSelectedProductSlug }
+								busy={ busy }
+							/>
+
 							<div className="shaped-kit-cards">
-								{ ( overview.products || [] ).map( ( product ) => (
-									<ProductCard
-										key={ product.slug }
-										product={ product }
-										busy={ Boolean( busy[ product.slug ] ) }
-										onSwitch={ handleSwitch }
-									/>
-								) ) }
+								{ ( overview.products || [] )
+									.filter( ( product ) => ! selectedProductSlug || product.slug === selectedProductSlug )
+									.map( ( product ) => (
+										<ProductCard
+											key={ product.slug }
+											product={ product }
+											busy={ Boolean( busy[ product.slug ] ) }
+											onSwitch={ handleSwitch }
+										/>
+									) ) }
 							</div>
 
-							<ConnectPanel overview={ overview } />
+							<ConnectPanel
+								overview={ overview }
+								selectedProductSlug={ selectedProductSlug }
+							/>
 						</>
 					) }
 
