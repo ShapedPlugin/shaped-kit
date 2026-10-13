@@ -1,0 +1,185 @@
+<?php
+/**
+ * Integration tests for Store Track Phase S1 (CatalogClient, PackageVerifier, Installer, and StoreController).
+ *
+ * Verifies:
+ * - SE01: DISALLOW_FILE_MODS barrier blocks install/update.
+ * - SE05: Pre-unpack SHA-256 checksum mismatch aborts installation and unlinks file.
+ * - SE06: Unauthorized download hosts blocked (SSRF guard).
+ * - SE08: Mutex locking prevents concurrent installations.
+ * - GET /shaped-kit/v1/store/catalog endpoint permissions and enriched response data.
+ * - POST /shaped-kit/v1/store/activate capability requirements and execution.
+ *
+ * @package ShapedKit
+ */
+
+namespace ShapedKit\Tests\Integration;
+
+use ShapedKit\Store\CatalogClient;
+use ShapedKit\Store\CatalogData;
+use ShapedKit\Store\Installer;
+use ShapedKit\Store\PackageVerifier;
+use ShapedKit\Rest\StoreController;
+use WP_REST_Request;
+use WP_UnitTestCase;
+use WP_Upgrader;
+
+/**
+ * Class StoreTrackIntegrationTest
+ */
+class StoreTrackIntegrationTest extends WP_UnitTestCase {
+
+	/**
+	 * Admin user ID.
+	 *
+	 * @var int
+	 */
+	protected $admin_id;
+
+	/**
+	 * Subscriber user ID.
+	 *
+	 * @var int
+	 */
+	protected $subscriber_id;
+
+	/**
+	 * Set up test fixtures.
+	 */
+	public function setUp(): void {
+		parent::setUp();
+
+		$this->admin_id      = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$this->subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+
+		wp_set_current_user( $this->admin_id );
+
+		if ( ! has_action( 'rest_api_init', array( StoreController::class, 'register_routes' ) ) ) {
+			StoreController::register();
+		}
+
+		$GLOBALS['wp_rest_server'] = null;
+	}
+
+	/**
+	 * Tear down after tests.
+	 */
+	public function tearDown(): void {
+		wp_set_current_user( 0 );
+		parent::tearDown();
+	}
+
+	/**
+	 * Test SE06: Host allowlist only accepts HTTPS requests to allowlisted domains.
+	 */
+	public function test_package_verifier_enforces_host_allowlist() {
+		// Valid allowlisted hosts.
+		$this->assertTrue( PackageVerifier::is_allowed_host( 'https://downloads.wordpress.org/plugin/location-weather.3.0.7.zip' ) );
+		$this->assertTrue( PackageVerifier::is_allowed_host( 'https://account.shapedplugin.com/edd-sl/package.zip' ) );
+		$this->assertTrue( PackageVerifier::is_allowed_host( 'https://api.shapedplugin.com/kit/v1/betas/package.zip' ) );
+
+		// Non-HTTPS schemes rejected.
+		$this->assertFalse( PackageVerifier::is_allowed_host( 'http://downloads.wordpress.org/plugin/test.zip' ) );
+
+		// Third-party or rogue domains rejected.
+		$this->assertFalse( PackageVerifier::is_allowed_host( 'https://evil-attacker.com/malicious.zip' ) );
+		$this->assertFalse( PackageVerifier::is_allowed_host( 'https://github.com/downloads/package.zip' ) );
+		$this->assertFalse( PackageVerifier::is_allowed_host( 'https://sub.downloads.wordpress.org.evil.com/fake.zip' ) );
+	}
+
+	/**
+	 * Test SE05: Pre-unpack checksum mismatch aborts unpack and unlinks file.
+	 */
+	public function test_checksum_mismatch_unlinks_file_and_returns_error() {
+		$temp_dir = get_temp_dir();
+		$fake_zip = $temp_dir . 'shaped_kit_test_corrupt_' . uniqid() . '.zip';
+		file_put_contents( $fake_zip, 'PKfake_corrupted_payload_data' );
+
+		$this->assertFileExists( $fake_zip );
+
+		$expected_hash = hash( 'sha256', 'completely_different_content' );
+
+		$result = PackageVerifier::verify_checksum( $fake_zip, $expected_hash );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'checksum_mismatch', $result->get_error_code() );
+		$this->assertSame( 422, $result->get_error_data()['status'] );
+
+		// Verify file was unlinked immediately (SE05).
+		$this->assertFileDoesNotExist( $fake_zip );
+	}
+
+	/**
+	 * Test SE08: Mutex lock prevents concurrent install execution.
+	 */
+	public function test_concurrent_install_lock_rejection() {
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+		// Simulate another process holding the lock.
+		$locked = WP_Upgrader::create_lock( Installer::LOCK_NAME, 300 );
+		$this->assertTrue( $locked );
+
+		// Attempting to install while locked must fail with install_in_progress (429).
+		$result = Installer::install_free_plugin( 'location-weather' );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'install_in_progress', $result->get_error_code() );
+		$this->assertSame( 429, $result->get_error_data()['status'] );
+
+		// Release lock.
+		WP_Upgrader::release_lock( Installer::LOCK_NAME );
+	}
+
+	/**
+	 * Test SE01: DISALLOW_FILE_MODS barrier completely blocks installation.
+	 */
+	public function test_disallow_file_mods_blocks_installation() {
+		add_filter( 'file_mod_allowed', '__return_false' );
+
+		$can = Installer::can_install();
+		$this->assertWPError( $can );
+		$this->assertSame( 'file_mods_disabled', $can->get_error_code() );
+		$this->assertSame( 403, $can->get_error_data()['status'] );
+
+		remove_filter( 'file_mod_allowed', '__return_false' );
+	}
+
+	/**
+	 * Test GET /store/catalog endpoint permission checks and enriched output.
+	 */
+	public function test_get_catalog_rest_endpoint() {
+		// Unauthorized user rejected.
+		wp_set_current_user( $this->subscriber_id );
+		$request  = new WP_REST_Request( 'GET', '/shaped-kit/v1/store/catalog' );
+		$response = rest_do_request( $request );
+		$this->assertSame( 403, $response->get_status() );
+
+		// Admin authorized.
+		wp_set_current_user( $this->admin_id );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'serial', $data );
+		$this->assertArrayHasKey( 'products', $data );
+		$this->assertNotEmpty( $data['products'] );
+
+		$first = $data['products'][0];
+		$this->assertArrayHasKey( 'slug', $first );
+		$this->assertArrayHasKey( 'installed', $first );
+		$this->assertArrayHasKey( 'active', $first );
+		$this->assertArrayHasKey( 'can_install', $first );
+	}
+
+	/**
+	 * Test POST /store/activate permissions.
+	 */
+	public function test_activate_endpoint_permissions() {
+		wp_set_current_user( $this->subscriber_id );
+		$request = new WP_REST_Request( 'POST', '/shaped-kit/v1/store/activate' );
+		$request->set_param( 'slug', 'location-weather' );
+
+		$response = rest_do_request( $request );
+		$this->assertSame( 403, $response->get_status() );
+	}
+}
