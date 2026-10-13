@@ -277,6 +277,10 @@ const ActivityLog = ( { products = [] } ) => {
 					</button>
 				</div>
 			</div>
+
+			<p className="shaped-kit-log-disclaimer" style={ { marginTop: '16px', fontSize: '12px', color: '#646970', lineHeight: 1.5 } }>
+				{ __( 'Audit records reflect tool actions reported by connected ShapedPlugin products. To ensure privacy, parameter keys are recorded while parameter values and sensitive payloads are never stored. Records are retained for 90 days.', 'shaped-kit' ) }
+			</p>
 		</div>
 	);
 };
