@@ -322,4 +322,65 @@ final class McpControllerTest extends WP_UnitTestCase {
 		$this->assertSame( '', McpController::display_name_in( $plugins, 'hello.php' ), 'A single-file plugin has no folder.' );
 		$this->assertSame( '', McpController::display_name_in( $plugins, '' ) );
 	}
+
+	public function test_get_logs_requires_manage_options(): void {
+		$this->sign_in_as( 'subscriber' );
+
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/shaped-kit/v1/mcp/logs' ) );
+		$this->assertSame( 403, $response->get_status() );
+	}
+
+	public function test_get_logs_returns_paginated_and_filtered_records(): void {
+		\ShapedKit\Audit\LogTable::install();
+
+		$admin_id = $this->sign_in_as( 'administrator' );
+
+		// Seed two log records.
+		\ShapedKit\Audit\LogListener::on_tool_called(
+			array(
+				'product'     => 'location-weather',
+				'ability'     => 'location-weather/get-context',
+				'outcome'     => 'ok',
+				'duration_ms' => 12,
+				'arguments'   => array( 'foo' => 'bar' ),
+			)
+		);
+
+		\ShapedKit\Audit\LogListener::on_tool_called(
+			array(
+				'product'     => 'real-testimonials',
+				'ability'     => 'real-testimonials/get-context',
+				'outcome'     => 'error',
+				'duration_ms' => 50,
+				'arguments'   => array( 'id' => 99 ),
+			)
+		);
+
+		// 1. Fetch all (no filter).
+		$req      = new WP_REST_Request( 'GET', '/shaped-kit/v1/mcp/logs' );
+		$response = rest_do_request( $req );
+		$this->assertSame( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertSame( 2, $data['total'] );
+		$this->assertCount( 2, $data['items'] );
+		$this->assertSame( '2', $response->get_headers()['X-WP-Total'] );
+
+		// 2. Filter by product.
+		$req = new WP_REST_Request( 'GET', '/shaped-kit/v1/mcp/logs' );
+		$req->set_param( 'product', 'location-weather' );
+		$res = rest_do_request( $req );
+		$this->assertSame( 1, $res->get_data()['total'] );
+		$this->assertSame( 'location-weather', $res->get_data()['items'][0]['product'] );
+		$this->assertSame( array( 'foo' ), $res->get_data()['items'][0]['argument_keys'] );
+
+		// 3. Filter by outcome.
+		$req = new WP_REST_Request( 'GET', '/shaped-kit/v1/mcp/logs' );
+		$req->set_param( 'outcome', 'error' );
+		$res = rest_do_request( $req );
+		$this->assertSame( 1, $res->get_data()['total'] );
+		$this->assertSame( 'error', $res->get_data()['items'][0]['outcome'] );
+
+		\ShapedKit\Audit\LogTable::drop();
+	}
 }

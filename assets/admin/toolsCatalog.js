@@ -87,6 +87,36 @@ export const productToolsCatalog = {
 				__( 'How many frontend testimonial submission forms are published?', 'shaped-kit' ),
 			],
 		},
+		{
+			name: 'real-testimonials/create-testimonial',
+			label: __( 'Create Testimonial', 'shaped-kit' ),
+			summary: __( 'Creates a new draft customer testimonial with reviewer details, company, and star rating.', 'shaped-kit' ),
+			prompts: [
+				__( 'Create a new draft testimonial from "Jane Doe" with a 5-star rating.', 'shaped-kit' ),
+				__( 'Add a testimonial draft praising our fast onboarding and customer support.', 'shaped-kit' ),
+				__( 'Draft a testimonial review for Acme Corp with rating 5.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/update-testimonial',
+			label: __( 'Update Testimonial', 'shaped-kit' ),
+			summary: __( 'Updates an existing testimonial title, review text, rating, or reviewer profile metadata.', 'shaped-kit' ),
+			prompts: [
+				__( 'Update testimonial #42 with reviewer designation "VP of Engineering".', 'shaped-kit' ),
+				__( 'Change the status of testimonial ID 15 to published.', 'shaped-kit' ),
+				__( 'Update the star rating of testimonial #8 to 5.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/delete-testimonial',
+			label: __( 'Delete Testimonial (Protected)', 'shaped-kit' ),
+			summary: __( 'Moves testimonial to trash or permanently deletes it. Permanent deletion requires two-step WriteGuard confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Permanently delete testimonial #42 with two-step confirmation.', 'shaped-kit' ),
+				__( 'Move testimonial ID 99 to trash.', 'shaped-kit' ),
+				__( 'Preview permanent deletion of testimonial #14.', 'shaped-kit' ),
+			],
+		},
 	],
 	'location-weather': [
 		{
@@ -147,6 +177,56 @@ export const productToolsCatalog = {
 				__( 'Is Styble Cloud connected for enhanced weather forecasts?', 'shaped-kit' ),
 				__( 'Check if the Weather AI Assistant is enabled on this site.', 'shaped-kit' ),
 				__( 'What cloud weather capabilities are active?', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'location-weather/create-view',
+			label: __( 'Create Weather View', 'shaped-kit' ),
+			summary: __( 'Creates a new weather template entry with location coordinates or city name, units, and layout.', 'shaped-kit' ),
+			prompts: [
+				__( 'Create a new weather template for Tokyo with Celsius units and vertical card layout.', 'shaped-kit' ),
+				__( 'Add a new draft weather view for London, GB.', 'shaped-kit' ),
+				__( 'Create a weather widget showing San Francisco forecast in Fahrenheit.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'location-weather/update-view-settings',
+			label: __( 'Update View Settings', 'shaped-kit' ),
+			summary: __( 'Modifies location, display toggles, temperature units, or view layout for an existing template.', 'shaped-kit' ),
+			prompts: [
+				__( 'Update weather template #12 to display humidity and wind speed.', 'shaped-kit' ),
+				__( 'Change the city of weather view 5 to Berlin, DE and switch units to metric.', 'shaped-kit' ),
+				__( 'Set layout of weather template #8 to horizontal card.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'location-weather/duplicate-view',
+			label: __( 'Duplicate View', 'shaped-kit' ),
+			summary: __( 'Clones an existing weather template into a new draft view.', 'shaped-kit' ),
+			prompts: [
+				__( 'Duplicate weather template #3 so I can test different display options.', 'shaped-kit' ),
+				__( 'Clone the header weather view into a new draft.', 'shaped-kit' ),
+				__( 'Make a copy of template 15 titled "Sidebar Weather".', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'location-weather/delete-weather-template',
+			label: __( 'Delete Weather Template (Protected)', 'shaped-kit' ),
+			summary: __( 'Moves template to trash or permanently deletes it. Permanent deletion requires two-step WriteGuard confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Permanently delete weather template #9 with two-step confirmation.', 'shaped-kit' ),
+				__( 'Move weather template #22 to trash.', 'shaped-kit' ),
+				__( 'Preview permanent deletion of weather template ID 7.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'location-weather/clear-cache',
+			label: __( 'Clear Cache (Protected for Global)', 'shaped-kit' ),
+			summary: __( 'Purges cached weather API transients for a single template, or globally with WriteGuard confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Clear cached weather data for template ID 4 to fetch live conditions.', 'shaped-kit' ),
+				__( 'Purge all site-wide weather cache transients with two-step confirmation.', 'shaped-kit' ),
+				__( 'Preview clearing global weather cache.', 'shaped-kit' ),
 			],
 		},
 	],

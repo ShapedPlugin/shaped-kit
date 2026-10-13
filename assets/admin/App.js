@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import ActivityLog from './ActivityLog';
 import { describeError, fetchOverview, switchProduct } from './api';
 import ConnectPanel from './ConnectPanel';
 import OverviewStrip from './OverviewStrip';
 import ProductCard from './ProductCard';
 
 /**
- * The "AI & MCP" dashboard: the overview strip, a card per product, and the refresh button.
+ * The "AI & MCP" dashboard: the overview strip, product cards, connect panel, and activity log.
  *
  * Two rules keep the screen true to the site:
  *
@@ -18,6 +19,7 @@ import ProductCard from './ProductCard';
  * A failed read keeps the last good overview on screen with the error above it.
  */
 const App = () => {
+	const [ activeTab, setActiveTab ] = useState( 'products' );
 	const [ overview, setOverview ] = useState( null );
 	const [ error, setError ] = useState( '' );
 	const [ pendingLoads, setPendingLoads ] = useState( 0 );
@@ -141,20 +143,43 @@ const App = () => {
 
 			{ overview && (
 				<div className="shaped-kit-body" data-loaded="true">
-					<OverviewStrip overview={ overview } />
+					<nav className="nav-tab-wrapper shaped-kit-nav-tabs" aria-label={ __( 'Dashboard navigation', 'shaped-kit' ) }>
+						<button
+							type="button"
+							className={ `nav-tab ${ activeTab === 'products' ? 'nav-tab-active' : '' }` }
+							onClick={ () => setActiveTab( 'products' ) }
+						>
+							{ __( 'Products & Connect', 'shaped-kit' ) }
+						</button>
+						<button
+							type="button"
+							className={ `nav-tab ${ activeTab === 'logs' ? 'nav-tab-active' : '' }` }
+							onClick={ () => setActiveTab( 'logs' ) }
+						>
+							{ __( 'Activity Log', 'shaped-kit' ) }
+						</button>
+					</nav>
 
-					<div className="shaped-kit-cards">
-						{ ( overview.products || [] ).map( ( product ) => (
-							<ProductCard
-								key={ product.slug }
-								product={ product }
-								busy={ Boolean( busy[ product.slug ] ) }
-								onSwitch={ handleSwitch }
-							/>
-						) ) }
-					</div>
+					{ activeTab === 'products' ? (
+						<>
+							<OverviewStrip overview={ overview } />
 
-					<ConnectPanel overview={ overview } />
+							<div className="shaped-kit-cards">
+								{ ( overview.products || [] ).map( ( product ) => (
+									<ProductCard
+										key={ product.slug }
+										product={ product }
+										busy={ Boolean( busy[ product.slug ] ) }
+										onSwitch={ handleSwitch }
+									/>
+								) ) }
+							</div>
+
+							<ConnectPanel overview={ overview } />
+						</>
+					) : (
+						<ActivityLog products={ overview.products || [] } />
+					) }
 				</div>
 			) }
 		</div>

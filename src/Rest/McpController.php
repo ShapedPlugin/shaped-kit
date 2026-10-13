@@ -89,6 +89,145 @@ class McpController {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			self::ROUTE . '/logs',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'get_logs' ),
+				'permission_callback' => array( __CLASS__, 'can_manage' ),
+				'args'                => array(
+					'page'     => array(
+						'type'              => 'integer',
+						'default'           => 1,
+						'minimum'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+					'per_page' => array(
+						'type'              => 'integer',
+						'default'           => 20,
+						'minimum'           => 1,
+						'maximum'           => 100,
+						'sanitize_callback' => 'absint',
+					),
+					'product'  => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'outcome'  => array(
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'user_id'  => array(
+						'type'              => 'integer',
+						'minimum'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * `GET`: query audit logs with pagination and filters.
+	 *
+	 * Verified source: PRD FR-S3.
+	 *
+	 * @param \WP_REST_Request $request The request containing pagination and filter args.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public static function get_logs( $request ) {
+		global $wpdb;
+
+		$table_name = \ShapedKit\Audit\LogTable::table_name();
+		if ( ! \ShapedKit\Audit\LogTable::exists() ) {
+			return rest_ensure_response(
+				array(
+					'items'       => array(),
+					'total'       => 0,
+					'page'        => 1,
+					'per_page'    => 20,
+					'total_pages' => 0,
+				)
+			);
+		}
+
+		$page     = max( 1, (int) $request['page'] );
+		$per_page = min( 100, max( 1, (int) $request['per_page'] ) );
+		$offset   = ( $page - 1 ) * $per_page;
+
+		$where_clauses = array( '1=1' );
+		$query_params  = array();
+
+		if ( ! empty( $request['product'] ) ) {
+			$where_clauses[] = 'product = %s';
+			$query_params[]  = sanitize_key( (string) $request['product'] );
+		}
+
+		if ( ! empty( $request['outcome'] ) ) {
+			$where_clauses[] = 'outcome = %s';
+			$query_params[]  = sanitize_text_field( (string) $request['outcome'] );
+		}
+
+		if ( ! empty( $request['user_id'] ) ) {
+			$where_clauses[] = 'user_id = %d';
+			$query_params[]  = absint( $request['user_id'] );
+		}
+
+		$where_sql = implode( ' AND ', $where_clauses );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		if ( ! empty( $query_params ) ) {
+			$count_sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$table_name} WHERE {$where_sql}", ...$query_params );
+			$total     = (int) $wpdb->get_var( $count_sql );
+
+			$query_params_paged = array_merge( $query_params, array( $per_page, $offset ) );
+			$items_sql          = $wpdb->prepare( "SELECT * FROM {$table_name} WHERE {$where_sql} ORDER BY id DESC LIMIT %d OFFSET %d", ...$query_params_paged );
+			$rows               = $wpdb->get_results( $items_sql, ARRAY_A );
+		} else {
+			$total     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
+			$items_sql = $wpdb->prepare( "SELECT * FROM {$table_name} ORDER BY id DESC LIMIT %d OFFSET %d", $per_page, $offset );
+			$rows      = $wpdb->get_results( $items_sql, ARRAY_A );
+		}
+		// phpcs:enable
+
+		$items = array();
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$decoded_keys = json_decode( (string) $row['argument_keys'], true );
+				$items[]      = array(
+					'id'                => (int) $row['id'],
+					'created_at'        => (string) $row['created_at'],
+					'user_id'           => (int) $row['user_id'],
+					'app_password_name' => (string) $row['app_password_name'],
+					'product'           => (string) $row['product'],
+					'ability'           => (string) $row['ability'],
+					'outcome'           => (string) $row['outcome'],
+					'error_id'          => $row['error_id'],
+					'duration_ms'       => (int) $row['duration_ms'],
+					'argument_keys'     => is_array( $decoded_keys ) ? $decoded_keys : array(),
+				);
+			}
+		}
+
+		$total_pages = $per_page > 0 ? (int) ceil( $total / $per_page ) : 0;
+
+		$response = rest_ensure_response(
+			array(
+				'items'       => $items,
+				'total'       => $total,
+				'page'        => $page,
+				'per_page'    => $per_page,
+				'total_pages' => $total_pages,
+			)
+		);
+
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) $total_pages );
+
+		return $response;
 	}
 
 	/**
