@@ -115,7 +115,7 @@ class CatalogDataTest extends TestCase {
 		$signature    = shaped_kit_sign_catalog( $catalog_json, $keys['private'] );
 
 		// Corrupt 1 byte in base64 signature (guaranteed different character).
-		$char      = $signature[5] === 'X' ? 'Y' : 'X';
+		$char      = 'X' === $signature[5] ? 'Y' : 'X';
 		$corrupted = substr_replace( $signature, $char, 5, 1 );
 
 		$valid = shaped_kit_verify_catalog_signature( $catalog_json, $corrupted, $keys['public'] );
