@@ -289,7 +289,7 @@ const ConnectPanel = ( { overview } ) => {
 					) ) }
 				</div>
 
-				{ client === 'claude-desktop' && (
+				{ ( client === 'claude-desktop' || client === 'gemini-cli' ) && (
 					<label className="shaped-kit-check">
 						<input
 							type="checkbox"

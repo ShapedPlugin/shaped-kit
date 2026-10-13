@@ -26,9 +26,12 @@ Shaped Kit does that part once, for every ShapedPlugin product on the site:
 A new screen in WordPress Admin: **ShapedPlugin → AI & MCP**.
 
 - **Your products at a glance.** Every ShapedPlugin product that supports MCP is listed with its status, its address and the number of tools it offers, plus an on/off switch for each.
-- **Connect an AI app.** Create a sign-in (a WordPress Application Password) with one click. Copy the ready-made configuration for **Claude Code, Claude Desktop, Cursor, OpenAI Codex, GitHub Copilot**, or any other app that speaks MCP over HTTP.
+- **Product Tools & Prompts Drawer.** Explore full tool catalogues for each product directly on the card, with human descriptions and realistic sample prompts you can copy into your AI client.
+- **Connect an AI app.** Create a sign-in (a WordPress Application Password) with one click. Copy the ready-made configuration for **Claude Code, Claude Desktop, Cursor, Gemini CLI, OpenAI Codex, GitHub Copilot**, or any other app that speaks MCP over HTTP.
 - **Test connection.** Checks that the sign-in works, and explains the usual causes if it doesn't.
 - **Try a tool.** Lists a product's tools and lets you run one yourself, so you can see exactly what an assistant would receive before you connect one.
+- **Activity Log (Audit Trail).** Complete oversight over every tool call made by AI agents on your site. Records timestamp, product, ability, authenticated user, application password name, execution time, and outcome (`ok`, `confirmed`, `denied`, `confirmation_required`, `error`). Zero PII logged—only parameter keys are tracked, never customer data or sensitive payload values.
+- **Two-Step Write Confirmation (WriteGuard).** Destructive and mutating actions (such as permanent deletion or global cache purges) cannot be executed in a single hit. The AI client must execute a dry-run preview first to obtain a cryptographically secure 32-character confirmation token bound to user ID, canonical argument hash, and entity state before confirming.
 - **Adapter status.** Shows which MCP adapter your site is using and whether it is compatible.
 
 ---
@@ -40,10 +43,12 @@ An assistant never connects to your site directly. The AI app you use (for examp
 1. You switch MCP on for a product and create a sign-in on the Shaped Kit screen.
 2. You paste the configuration into your AI app.
 3. When you ask the assistant a question, it picks a tool from the product's tool list. Your AI app calls your site, WordPress checks that user's permissions, and the product returns the answer.
+4. If the assistant asks to perform a destructive operation (such as permanently deleting a template or clearing all cache), the server halts execution, generates a preview summary and confirmation token, and requires the assistant to confirm before running.
+5. Every invocation is recorded to the Activity Log for transparent auditing.
 
 Each ShapedPlugin product provides its own tools and its own address, so one product never adds clutter to another's tool list. The Pro edition of a product adds its tools to the same address as the free one, so upgrading doesn't break a connected app.
 
-Shaped Kit itself carries the shared parts: the official **WordPress MCP Adapter** (bundled, unmodified), the dashboard and the connection help. Products also work with any other MCP adapter already on your site, such as the standalone adapter plugin, or one that another plugin includes. Shaped Kit steps aside rather than load a second copy.
+Shaped Kit itself carries the shared parts: the official **WordPress MCP Adapter** (bundled, unmodified), the dashboard, the audit log engine, the WriteGuard safety engine, and connection helpers. Products also work with any other MCP adapter already on your site, such as the standalone adapter plugin, or one that another plugin includes. Shaped Kit steps aside rather than load a second copy.
 
 ---
 

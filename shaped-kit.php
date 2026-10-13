@@ -44,6 +44,14 @@ spl_autoload_register(
 // Not behind is_admin(): a REST request is not an admin request, and the route must exist for it.
 \ShapedKit\Rest\McpController::register();
 
+// Audit logging subsystem: table migration, event listening, and 90-day pruning.
+register_activation_hook( SHAPED_KIT_FILE, array( \ShapedKit\Audit\LogTable::class, 'install' ) );
+register_deactivation_hook( SHAPED_KIT_FILE, array( \ShapedKit\Audit\LogPruner::class, 'unregister' ) );
+add_action( 'plugins_loaded', array( \ShapedKit\Audit\LogTable::class, 'maybe_upgrade' ) );
+\ShapedKit\Audit\LogListener::register();
+\ShapedKit\Audit\LogPruner::register();
+
 if ( is_admin() ) {
 	\ShapedKit\Admin\DashboardPage::register();
+	add_action( 'admin_init', array( \ShapedKit\Audit\LogPruner::class, 'maybe_prune_opportunistically' ) );
 }

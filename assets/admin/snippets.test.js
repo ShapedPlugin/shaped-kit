@@ -121,6 +121,23 @@ describe( 'buildSnippet', () => {
 		} );
 	} );
 
+	test( 'Gemini CLI runs the remote proxy with the credentials in its environment', () => {
+		const server = JSON.parse( buildSnippet( 'gemini-cli', options() ) )
+			.mcpServers[ 'location-weather' ];
+
+		expect( server.command ).toBe( 'npx' );
+		expect( server.args ).toEqual( [
+			'-y',
+			'@automattic/mcp-wordpress-remote@latest',
+		] );
+		expect( server.env ).toEqual( {
+			WP_API_URL: weather.endpoint_url,
+			WP_API_USERNAME: 'admin',
+			WP_API_PASSWORD: 'abcdefghijklmnopqrstuvwx',
+			OAUTH_ENABLED: 'false',
+		} );
+	} );
+
 	test( 'TLS checks are switched off only when the owner asked for a local site', () => {
 		const off = JSON.parse(
 			buildSnippet( 'claude-desktop', options( { localDev: true } ) )

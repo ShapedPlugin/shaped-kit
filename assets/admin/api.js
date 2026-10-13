@@ -55,6 +55,26 @@ export const createAppPassword = ( name = '' ) =>
 	} );
 
 /**
+ * Fetch paginated and filtered MCP audit logs.
+ *
+ * @param {Object} [params={}] Filter and pagination parameters (page, per_page, product, outcome, user_id).
+ * @return {Promise<{items: Array, total: number, page: number, per_page: number, total_pages: number}>}
+ */
+export const fetchLogs = ( params = {} ) => {
+	const query = new URLSearchParams();
+	Object.entries( params ).forEach( ( [ key, val ] ) => {
+		if ( val !== undefined && val !== null && val !== '' ) {
+			query.append( key, String( val ) );
+		}
+	} );
+
+	const queryString = query.toString();
+	const suffix = queryString ? `logs?${ queryString }` : 'logs';
+
+	return apiFetch( { url: routeUrl( base(), suffix ) } );
+};
+
+/**
  * How a failed request reads to the owner. The server words its own refusals (they are plain text
  * written for this screen), so a message it sent wins, except for two cases WordPress words badly.
  *
