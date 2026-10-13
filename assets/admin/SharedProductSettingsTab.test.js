@@ -204,4 +204,112 @@ describe( 'SharedProductSettingsTab Component', () => {
 			expect.stringContaining( 'claude mcp add' )
 		);
 	} );
+
+	it( 'renders opt-in toolsets and saves updated toolset selections', async () => {
+		const mockSummaryWithToolsets = {
+			slug: 'testimonial-pro',
+			name: 'Real Testimonials Pro',
+			enabled: true,
+			endpoint_url: 'http://localhost:10003/wp-json/mcp/v1/testimonial-pro',
+			tools_count: 11,
+			toolsets: [
+				{
+					id: 'core',
+					label: 'Core / Read-Only',
+					description: 'General queries and orientation.',
+					tools_count: 6,
+					enabled: true,
+					locked: true,
+				},
+				{
+					id: 'management',
+					label: 'Management Tools',
+					description: 'Create and update testimonials.',
+					tools_count: 4,
+					enabled: true,
+					locked: false,
+				},
+				{
+					id: 'destructive',
+					label: 'Destructive Actions',
+					description: 'Permanently delete testimonials.',
+					tools_count: 1,
+					enabled: false,
+					locked: false,
+				},
+			],
+		};
+
+		global.fetch = jest
+			.fn()
+			.mockResolvedValueOnce( {
+				ok: true,
+				json: async () => mockSummaryWithToolsets,
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				json: async () => ( {
+					...mockSummaryWithToolsets,
+					toolsets: mockSummaryWithToolsets.toolsets.map( ( t ) =>
+						t.id === 'destructive' ? { ...t, enabled: true } : t
+					),
+				} ),
+			} );
+
+		await mount( {
+			restUrl: '/wp-json/shaped-kit/v1/mcp/testimonial-pro',
+			productName: 'Real Testimonials Pro',
+			productSlug: 'testimonial-pro',
+		} );
+
+		await settle();
+
+		expect( container.textContent ).toContain( 'Ability Toolsets & Token Economy' );
+		expect( container.textContent ).toContain( 'Core / Read-Only' );
+		expect( container.textContent ).toContain( 'Always On' );
+		expect( container.textContent ).toContain( 'Management Tools' );
+		expect( container.textContent ).toContain( 'Destructive Actions' );
+
+		const checkboxes = container.querySelectorAll( 'input[type="checkbox"]:not([role="switch"])' );
+		expect( checkboxes.length).toBe( 3 );
+
+		// Core is locked and checked
+		expect( checkboxes[ 0 ].checked ).toBe( true );
+		expect( checkboxes[ 0 ].disabled ).toBe( true );
+
+		// Management is checked
+		expect( checkboxes[ 1 ].checked ).toBe( true );
+
+		// Destructive is initially unchecked
+		expect( checkboxes[ 2 ].checked ).toBe( false );
+
+		// Click to check destructive
+		await act( async () => {
+			checkboxes[ 2 ].click();
+		} );
+
+		const saveBtn = [ ...container.querySelectorAll( 'button' ) ].find( ( b ) =>
+			b.textContent.includes( 'Save Toolsets' )
+		);
+		expect( saveBtn ).toBeDefined();
+
+		await act( async () => {
+			saveBtn.click();
+		} );
+		await settle();
+
+		expect( global.fetch ).toHaveBeenCalledWith(
+			'/wp-json/shaped-kit/v1/mcp/testimonial-pro',
+			expect.objectContaining( {
+				method: 'POST',
+				body: JSON.stringify( {
+					enabled: true,
+					toolsets: [ 'core', 'management', 'destructive' ],
+				} ),
+			} )
+		);
+
+		expect( container.textContent ).toContain( 'Settings saved successfully.' );
+	} );
 } );
+

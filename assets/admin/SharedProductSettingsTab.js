@@ -28,6 +28,9 @@ const SharedProductSettingsTab = ( {
 	const [ summary, setSummary ] = useState( null );
 	const [ error, setError ] = useState( '' );
 	const [ isSaving, setIsSaving ] = useState( false );
+	const [ isSavingToolsets, setIsSavingToolsets ] = useState( false );
+	const [ toolsetsSavedMessage, setToolsetsSavedMessage ] = useState( false );
+	const [ activeToolsets, setActiveToolsets ] = useState( [] );
 	const [ copiedEndpoint, setCopiedEndpoint ] = useState( false );
 	const [ copiedCommand, setCopiedCommand ] = useState( false );
 	const endpointInputRef = useRef( null );
@@ -58,7 +61,16 @@ const SharedProductSettingsTab = ( {
 		}
 
 		request( 'GET' )
-			.then( ( data ) => setSummary( data ) )
+			.then( ( data ) => {
+				setSummary( data );
+				if ( Array.isArray( data?.toolsets ) ) {
+					setActiveToolsets(
+						data.toolsets
+							.filter( ( t ) => t.enabled || t.locked )
+							.map( ( t ) => t.id )
+					);
+				}
+			} )
 			.catch( ( err ) => setError( err.message ) );
 	}, [ restUrl ] );
 
@@ -71,9 +83,46 @@ const SharedProductSettingsTab = ( {
 		setError( '' );
 
 		request( 'POST', { enabled: ! summary.enabled } )
-			.then( ( updated ) => setSummary( updated ) )
+			.then( ( updated ) => {
+				setSummary( updated );
+				if ( Array.isArray( updated?.toolsets ) ) {
+					setActiveToolsets(
+						updated.toolsets
+							.filter( ( t ) => t.enabled || t.locked )
+							.map( ( t ) => t.id )
+					);
+				}
+			} )
 			.catch( ( err ) => setError( err.message ) )
 			.finally( () => setIsSaving( false ) );
+	};
+
+	const handleToolsetChange = ( toolsetId ) => {
+		setActiveToolsets( ( prev ) => {
+			if ( prev.includes( toolsetId ) ) {
+				return prev.filter( ( id ) => id !== toolsetId );
+			}
+			return [ ...prev, toolsetId ];
+		} );
+	};
+
+	const handleSaveToolsets = () => {
+		if ( ! summary ) {
+			return;
+		}
+
+		setIsSavingToolsets( true );
+		setError( '' );
+		setToolsetsSavedMessage( false );
+
+		request( 'POST', { enabled: summary.enabled, toolsets: activeToolsets } )
+			.then( ( updated ) => {
+				setSummary( updated );
+				setToolsetsSavedMessage( true );
+				setTimeout( () => setToolsetsSavedMessage( false ), 3000 );
+			} )
+			.catch( ( err ) => setError( err.message ) )
+			.finally( () => setIsSavingToolsets( false ) );
 	};
 
 	const copyEndpoint = async () => {
@@ -244,6 +293,117 @@ const SharedProductSettingsTab = ( {
 							<strong>{ __( 'MCP Adapter:', 'shaped-kit' ) }</strong>{' '}
 							<span>{ summary.adapter?.version ? `v${ summary.adapter.version }` : __( 'Active', 'shaped-kit' ) }</span>
 						</div>
+					</div>
+				</div>
+			) }
+
+			{ /* Opt-In Toolsets & Context Budgeting Section (FR-K9 §6, D14) */ }
+			{ summary?.enabled && Array.isArray( summary?.toolsets ) && summary.toolsets.length > 0 && (
+				<div
+					style={ {
+						background: '#fff',
+						border: '1px solid #dcdcde',
+						borderRadius: '8px',
+						padding: '24px',
+						marginBottom: '20px',
+					} }
+				>
+					<div style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' } }>
+						<div>
+							<h4 style={ { margin: '0 0 6px', fontSize: '15px', fontWeight: 600 } }>
+								{ __( 'Ability Toolsets & Token Economy', 'shaped-kit' ) }
+							</h4>
+							<p style={ { margin: 0, color: '#646970', fontSize: '13px' } }>
+								{ __( 'Control which tool groups are exposed to AI models. Disabling write or setup operations reduces prompt token consumption and prevents unauthorized modifications.', 'shaped-kit' ) }
+							</p>
+						</div>
+					</div>
+
+					<div style={ { display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px', marginBottom: '20px' } }>
+						{ summary.toolsets.map( ( toolset ) => {
+							const isChecked = activeToolsets.includes( toolset.id ) || Boolean( toolset.locked );
+							return (
+								<label
+									key={ toolset.id }
+									style={ {
+										display: 'flex',
+										alignItems: 'flex-start',
+										gap: '12px',
+										padding: '14px 16px',
+										borderRadius: '6px',
+										border: '1px solid #e0e0e0',
+										background: isChecked ? '#fbfcfe' : '#fafafa',
+										cursor: toolset.locked ? 'default' : 'pointer',
+									} }
+								>
+									<input
+										type="checkbox"
+										disabled={ Boolean( toolset.locked ) || isSavingToolsets }
+										checked={ isChecked }
+										onChange={ () => handleToolsetChange( toolset.id ) }
+										style={ { marginTop: '2px' } }
+									/>
+									<div style={ { flex: 1 } }>
+										<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } }>
+											<strong style={ { fontSize: '14px', color: '#1d2327' } }>
+												{ toolset.label }
+											</strong>
+											{ toolset.locked && (
+												<span
+													style={ {
+														fontSize: '11px',
+														background: '#f0f0f1',
+														color: '#50575e',
+														padding: '1px 6px',
+														borderRadius: '3px',
+														fontWeight: 500,
+													} }
+												>
+													{ __( 'Always On', 'shaped-kit' ) }
+												</span>
+											) }
+											{ toolset.tools_count > 0 && (
+												<span
+													style={ {
+														fontSize: '11px',
+														background: '#e7f3ff',
+														color: '#0969da',
+														padding: '1px 6px',
+														borderRadius: '3px',
+														fontWeight: 600,
+													} }
+												>
+													{ sprintf(
+														/* translators: %d: number of tools in this toolset */
+														__( '%d tools', 'shaped-kit' ),
+														toolset.tools_count
+													) }
+												</span>
+											) }
+										</div>
+										<p style={ { margin: 0, fontSize: '12.5px', color: '#646970', lineHeight: 1.4 } }>
+											{ toolset.description }
+										</p>
+									</div>
+								</label>
+							);
+						} ) }
+					</div>
+
+					<div style={ { display: 'flex', alignItems: 'center', gap: '12px' } }>
+						<button
+							type="button"
+							className="button button-primary"
+							disabled={ isSavingToolsets }
+							onClick={ handleSaveToolsets }
+						>
+							{ isSavingToolsets ? __( 'Saving…', 'shaped-kit' ) : __( 'Save Toolsets', 'shaped-kit' ) }
+						</button>
+						{ toolsetsSavedMessage && (
+							<span style={ { fontSize: '13px', color: '#14532d', fontWeight: 500 } }>
+								✓ { __( 'Settings saved successfully.', 'shaped-kit' ) }
+							</span>
+						) }
 					</div>
 				</div>
 			) }

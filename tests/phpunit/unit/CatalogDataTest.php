@@ -114,8 +114,9 @@ class CatalogDataTest extends TestCase {
 		$catalog_json = json_encode( CatalogData::get_bundled_catalog() );
 		$signature    = shaped_kit_sign_catalog( $catalog_json, $keys['private'] );
 
-		// Corrupt 1 byte in base64 signature.
-		$corrupted = substr_replace( $signature, 'X', 5, 1 );
+		// Corrupt 1 byte in base64 signature (guaranteed different character).
+		$char      = 'X' === $signature[5] ? 'Y' : 'X';
+		$corrupted = substr_replace( $signature, $char, 5, 1 );
 
 		$valid = shaped_kit_verify_catalog_signature( $catalog_json, $corrupted, $keys['public'] );
 		$this->assertFalse( $valid );
