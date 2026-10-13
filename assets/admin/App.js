@@ -5,6 +5,7 @@ import { describeError, fetchOverview, switchProduct } from './api';
 import ConnectPanel from './ConnectPanel';
 import OverviewStrip from './OverviewStrip';
 import ProductCard from './ProductCard';
+import StorePanel from './StorePanel';
 
 /**
  * The "AI & MCP" dashboard: the overview strip, product cards, connect panel, and activity log.
@@ -149,7 +150,14 @@ const App = () => {
 							className={ `nav-tab ${ activeTab === 'products' ? 'nav-tab-active' : '' }` }
 							onClick={ () => setActiveTab( 'products' ) }
 						>
-							{ __( 'Products & Connect', 'shaped-kit' ) }
+							{ __( 'AI & MCP Products', 'shaped-kit' ) }
+						</button>
+						<button
+							type="button"
+							className={ `nav-tab ${ activeTab === 'store' ? 'nav-tab-active' : '' }` }
+							onClick={ () => setActiveTab( 'store' ) }
+						>
+							{ __( 'Products & Store', 'shaped-kit' ) }
 						</button>
 						<button
 							type="button"
@@ -160,7 +168,7 @@ const App = () => {
 						</button>
 					</nav>
 
-					{ activeTab === 'products' ? (
+					{ activeTab === 'products' && (
 						<>
 							<OverviewStrip overview={ overview } />
 
@@ -177,9 +185,11 @@ const App = () => {
 
 							<ConnectPanel overview={ overview } />
 						</>
-					) : (
-						<ActivityLog products={ overview.products || [] } />
 					) }
+
+					{ activeTab === 'store' && <StorePanel /> }
+
+					{ activeTab === 'logs' && <ActivityLog products={ overview.products || [] } /> }
 				</div>
 			) }
 		</div>

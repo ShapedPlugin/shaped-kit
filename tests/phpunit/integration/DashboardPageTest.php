@@ -116,6 +116,7 @@ final class DashboardPageTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'shapedKitAdmin', $data );
 		$this->assertMatchesRegularExpression( '#"restUrl":"[^"]*shaped-kit(\\\\/|/)v1(\\\\/|/)mcp"#', $data, 'Pretty or plain permalinks, the address ends in the route.' );
+		$this->assertMatchesRegularExpression( '#"storeRestUrl":"[^"]*shaped-kit(\\\\/|/)v1(\\\\/|/)store"#', $data, 'The address ends in /store.' );
 		$this->assertSame( array( 'wp-element' ), wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->deps );
 		$this->assertSame( 'abc123', wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->ver );
 	}
@@ -148,7 +149,7 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$data = wp_scripts()->get_data( DashboardPage::SCRIPT_HANDLE, 'data' );
 
 		$this->assertSame( 1, preg_match( '/=\s*(\{.*\});/s', $data, $match ) );
-		$this->assertSame( array( 'restUrl', 'version' ), array_keys( json_decode( $match[1], true ) ), 'No nonce: wp-api-fetch carries and refreshes it.' );
+		$this->assertSame( array( 'restUrl', 'storeRestUrl', 'version' ), array_keys( json_decode( $match[1], true ) ), 'No nonce: wp-api-fetch carries and refreshes it.' );
 		$this->assertStringNotContainsString( wp_create_nonce( 'wp_rest' ), $data );
 	}
 }
