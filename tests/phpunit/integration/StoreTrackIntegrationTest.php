@@ -54,6 +54,8 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 
 		wp_set_current_user( $this->admin_id );
 
+		\ShapedKit\Audit\LogTable::install();
+
 		if ( ! has_action( 'rest_api_init', array( StoreController::class, 'register_routes' ) ) ) {
 			StoreController::register();
 		}
@@ -243,5 +245,48 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 		$request->set_param( 'license_key', '' );
 		$response = rest_do_request( $request );
 		$this->assertSame( 400, $response->get_status() );
+	}
+
+	/**
+	 * Test SE15: Strict No-Downgrade barrier blocks installation if installed version >= beta version.
+	 */
+	public function test_no_downgrade_barrier_blocks_install_if_newer_or_equal() {
+		// Create mock location-weather plugin folder and main file so find_plugin_file succeeds.
+		$lw_dir  = WP_PLUGIN_DIR . '/location-weather';
+		$lw_file = $lw_dir . '/location-weather.php';
+		if ( ! is_dir( $lw_dir ) ) {
+			wp_mkdir_p( $lw_dir );
+		}
+		file_put_contents(
+			$lw_file,
+			"<?php\n/**\n * Plugin Name: Location Weather\n * Version: 4.0.0\n */\n"
+		);
+
+		// Seed catalog cache with bundled fallback so tests never attempt external network calls.
+		set_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_CATALOG_CACHE, \ShapedKit\Store\CatalogData::get_bundled_catalog(), 3600 );
+
+		$result = \ShapedKit\Store\BetaInstaller::install_beta( 'location-weather' );
+
+		// Clean up dummy plugin files.
+		wp_delete_file( $lw_file );
+		if ( is_dir( $lw_dir ) ) {
+			rmdir( $lw_dir );
+		}
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'downgrade_not_allowed', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Test POST /store/install-beta endpoint permission checks.
+	 */
+	public function test_install_beta_endpoint_permissions() {
+		wp_set_current_user( $this->subscriber_id );
+		$request = new WP_REST_Request( 'POST', '/shaped-kit/v1/store/install-beta' );
+		$request->set_param( 'slug', 'location-weather' );
+
+		$response = rest_do_request( $request );
+		$this->assertSame( 403, $response->get_status() );
 	}
 }

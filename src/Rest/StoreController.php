@@ -126,6 +126,33 @@ class StoreController {
 				),
 			)
 		);
+
+		// 5. POST /store/install-beta
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/store/install-beta',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'install_beta_plugin' ),
+				'permission_callback' => array( __CLASS__, 'can_install_plugins' ),
+				'args'                => array(
+					'slug'        => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'license_key' => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'activate'    => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -258,6 +285,25 @@ class StoreController {
 		$slug = $request->get_param( 'slug' );
 
 		$result = Installer::activate( $slug );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * Handles POST /store/install-beta.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function install_beta_plugin( $request ) {
+		$slug        = $request->get_param( 'slug' );
+		$license_key = $request->get_param( 'license_key' );
+		$activate    = (bool) $request->get_param( 'activate' );
+
+		$result = \ShapedKit\Store\BetaInstaller::install_beta( $slug, $license_key, $activate );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
