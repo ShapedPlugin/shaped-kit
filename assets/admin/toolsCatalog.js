@@ -48,6 +48,16 @@ export const productToolsCatalog = {
 			],
 		},
 		{
+			name: 'real-testimonials/get-testimonial-view',
+			label: __( 'Get Testimonial View', 'shaped-kit' ),
+			summary: __( 'Fetches layout configuration, styling options, and shortcode attributes for a specific view ID.', 'shaped-kit' ),
+			prompts: [
+				__( 'Show the layout and configuration settings for testimonial view ID 5.', 'shaped-kit' ),
+				__( 'Inspect the layout settings for shortcode [sp_testimonial id="12"].', 'shaped-kit' ),
+				__( 'What theme and columns are set on testimonial view #8?', 'shaped-kit' ),
+			],
+		},
+		{
 			name: 'real-testimonials/find-testimonial-blocks',
 			label: __( 'Find Testimonial Blocks', 'shaped-kit' ),
 			summary: __( 'Scans site pages and posts to locate where testimonial blocks and shortcodes are placed.', 'shaped-kit' ),
@@ -75,6 +85,26 @@ export const productToolsCatalog = {
 				__( 'List all testimonial categories and how many reviews each has.', 'shaped-kit' ),
 				__( 'Show the category group hierarchy for customer testimonials.', 'shaped-kit' ),
 				__( 'Find the testimonial category slug for "Enterprise Clients".', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/list-testimonial-forms',
+			label: __( 'List Testimonial Forms (Pro)', 'shaped-kit' ),
+			summary: __( 'Lists frontend testimonial collection forms with shortcode tags and publish status.', 'shaped-kit' ),
+			prompts: [
+				__( 'List all frontend testimonial collection forms created on this site.', 'shaped-kit' ),
+				__( 'What shortcode is used to embed the testimonial submission form?', 'shaped-kit' ),
+				__( 'Show all published testimonial collection forms.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/get-testimonial-form',
+			label: __( 'Get Testimonial Form (Pro)', 'shaped-kit' ),
+			summary: __( 'Retrieves form fields, validation rules, and notification settings for a collection form ID.', 'shaped-kit' ),
+			prompts: [
+				__( 'Get full settings and field configurations for testimonial form ID 3.', 'shaped-kit' ),
+				__( 'What fields are required in the testimonial collection form #7?', 'shaped-kit' ),
+				__( 'Inspect notification settings for testimonial form ID 2.', 'shaped-kit' ),
 			],
 		},
 		{
