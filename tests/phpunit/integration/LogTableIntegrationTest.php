@@ -84,4 +84,31 @@ final class LogTableIntegrationTest extends WP_UnitTestCase {
 		$this->assertFalse( LogTable::exists() );
 		$this->assertFalse( get_option( LogTable::OPTION_SCHEMA_VERSION ) );
 	}
+
+	/**
+	 * Verify that uninstall.php cleans up the table, options, and transients (PRD FR-K8, §19 E37).
+	 *
+	 * @return void
+	 */
+	public function test_uninstall_removes_table_and_options(): void {
+		LogTable::install();
+		update_option( 'shaped_kit_mcp_log_db_version', LogTable::SCHEMA_VERSION );
+		set_transient( 'shaped_kit_mcp_log_prune_throttle', 1, 3600 );
+
+		$this->assertTrue( LogTable::exists() );
+		$this->assertSame( LogTable::SCHEMA_VERSION, get_option( 'shaped_kit_mcp_log_db_version' ) );
+		$this->assertEquals( 1, get_transient( 'shaped_kit_mcp_log_prune_throttle' ) );
+
+		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
+
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			define( 'WP_UNINSTALL_PLUGIN', true );
+		}
+
+		require SHAPED_KIT_DIR . 'uninstall.php';
+
+		$this->assertFalse( LogTable::exists() );
+		$this->assertFalse( get_option( 'shaped_kit_mcp_log_db_version' ) );
+		$this->assertFalse( get_transient( 'shaped_kit_mcp_log_prune_throttle' ) );
+	}
 }

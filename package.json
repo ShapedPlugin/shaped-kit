@@ -15,6 +15,7 @@
 	},
 	"files": [
 		"shaped-kit.php",
+		"uninstall.php",
 		"src",
 		"libs",
 		"build"

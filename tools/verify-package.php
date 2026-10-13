@@ -49,7 +49,7 @@ function shaped_kit_required_files() {
  * @return string[]
  */
 function shaped_kit_allowed_top_level() {
-	return array( 'shaped-kit.php', 'LICENSE', 'src', 'libs', 'build', 'package.json', 'README.md' );
+	return array( 'shaped-kit.php', 'uninstall.php', 'LICENSE', 'src', 'libs', 'build', 'package.json', 'README.md' );
 }
 
 /**
