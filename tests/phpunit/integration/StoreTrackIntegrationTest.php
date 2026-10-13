@@ -289,4 +289,49 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 		$response = rest_do_request( $request );
 		$this->assertSame( 403, $response->get_status() );
 	}
+
+	/**
+	 * Test SelfUpdater::filter_update_plugins injects update when higher version exists.
+	 */
+	public function test_self_updater_injects_update_when_higher_version_in_catalog() {
+		// Mock catalog entry for shaped-kit with higher version.
+		add_filter(
+			'pre_transient_shaped_kit_catalog_cache',
+			function () {
+				$cat = \ShapedKit\Store\CatalogData::get_bundled_catalog();
+				foreach ( $cat['products'] as &$item ) {
+					if ( 'shaped-kit' === $item['slug'] ) {
+						$item['stable_version'] = '9.9.9';
+						$item['package_url']    = 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit-9.9.9.zip';
+					}
+				}
+				return $cat;
+			}
+		);
+
+		$transient = new \stdClass();
+		$filtered  = \ShapedKit\Store\SelfUpdater::filter_update_plugins( $transient );
+
+		$this->assertObjectHasProperty( 'response', $filtered );
+		$this->assertNotEmpty( $filtered->response );
+
+		$file = defined( 'SHAPED_KIT_FILE' ) ? plugin_basename( SHAPED_KIT_FILE ) : 'shaped-kit/shaped-kit.php';
+		$this->assertArrayHasKey( $file, $filtered->response );
+		$this->assertSame( '9.9.9', $filtered->response[ $file ]->new_version );
+		$this->assertSame( 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit-9.9.9.zip', $filtered->response[ $file ]->package );
+
+		remove_all_filters( 'pre_transient_shaped_kit_catalog_cache' );
+	}
+
+	/**
+	 * Test SelfUpdater::filter_plugins_api returns plugin information.
+	 */
+	public function test_self_updater_plugins_api_returns_information() {
+		$args       = (object) array( 'slug' => 'shaped-kit' );
+		$plugin_inf = \ShapedKit\Store\SelfUpdater::filter_plugins_api( false, 'plugin_information', $args );
+
+		$this->assertIsObject( $plugin_inf );
+		$this->assertSame( 'Shaped Kit', $plugin_inf->name );
+		$this->assertSame( 'shaped-kit', $plugin_inf->slug );
+	}
 }

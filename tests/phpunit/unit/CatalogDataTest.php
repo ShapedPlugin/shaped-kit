@@ -35,13 +35,14 @@ class CatalogDataTest extends TestCase {
 
 		$validated = CatalogData::validate_catalog( $catalog );
 		$this->assertNotNull( $validated );
-		$this->assertCount( 4, $validated['products'] );
+		$this->assertCount( 5, $validated['products'] );
 
 		$slugs = array_column( $validated['products'], 'slug' );
 		$this->assertContains( 'location-weather', $slugs );
 		$this->assertContains( 'location-weather-pro', $slugs );
 		$this->assertContains( 'testimonial-free', $slugs );
 		$this->assertContains( 'testimonial-pro', $slugs );
+		$this->assertContains( 'shaped-kit', $slugs );
 	}
 
 	/**

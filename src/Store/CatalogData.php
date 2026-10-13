@@ -126,6 +126,22 @@ class CatalogData {
 					'requires_wp'           => '6.9',
 					'requires_php'          => '7.4',
 				),
+				array(
+					'slug'           => 'shaped-kit',
+					'name'           => 'Shaped Kit',
+					'edition'        => 'free',
+					'product_family' => 'shaped-kit',
+					'item_id'        => null,
+					'description'    => 'Official ShapedPlugin companion for AI agent orchestration and MCP dashboards.',
+					'stable_version' => defined( 'SHAPED_KIT_VERSION' ) ? SHAPED_KIT_VERSION : '0.1.0',
+					'stable_sha256'  => 'a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0',
+					'package_url'    => 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit.zip',
+					'beta_version'   => null,
+					'beta_url'       => null,
+					'beta_sha256'    => null,
+					'requires_wp'    => '6.9',
+					'requires_php'   => '7.4',
+				),
 			),
 		);
 	}
