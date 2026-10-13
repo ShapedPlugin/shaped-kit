@@ -20,11 +20,12 @@
 	--sk-bad-soft: #fcf0f1;
 	--sk-bad: #8a2424;
 
-	// Centred in the admin area, with room on both sides, instead of
-	// hugging the left.
-	max-width: 1080px;
-	margin: 0 auto;
-	padding: 8px 0 40px;
+	// Full width layout adhering to native WordPress admin standard (.wrap)
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 10px 20px 40px 0;
 	color: var(--sk-text);
 
 	.shaped-kit-header {

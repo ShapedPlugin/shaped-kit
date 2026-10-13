@@ -180,142 +180,160 @@ const StorePanel = () => {
 				</div>
 			) }
 
-			<div
-				className="shaped-kit-store-grid"
-				style={ {
-					display: 'grid',
-					gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-					gap: '20px',
-				} }
-			>
-				{ products.map( ( product ) => {
-					const isBusy = busySlug === product.slug;
-					const isInstalled = product.installed;
-					const isActive = product.active;
-					const isPro = product.edition === 'pro';
-					const hasBeta = Boolean( product.beta_version );
+			<div className="shaped-kit-table-wrapper" style={ { background: '#fff', border: '1px solid #dcdcde', borderRadius: '8px', overflow: 'hidden' } }>
+				<table className="widefat striped shaped-kit-store-table" style={ { border: 0, boxShadow: 'none' } }>
+					<thead>
+						<tr>
+							<th style={ { padding: '12px 16px', fontWeight: 600 } }>{ __( 'Product', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '100px' } }>{ __( 'Edition', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '180px' } }>{ __( 'Version', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '180px' } }>{ __( 'License', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, width: '110px' } }>{ __( 'Status', 'shaped-kit' ) }</th>
+							<th style={ { padding: '12px 16px', fontWeight: 600, textAlign: 'right', minWidth: '220px' } }>{ __( 'Actions', 'shaped-kit' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ products.map( ( product ) => {
+							const isBusy = busySlug === product.slug;
+							const isInstalled = product.installed;
+							const isActive = product.active;
+							const isPro = product.edition === 'pro';
+							const hasBeta = Boolean( product.beta_version );
 
-					return (
-						<div
-							key={ product.slug }
-							className="shaped-kit-store-card"
-							style={ {
-								background: '#fff',
-								border: '1px solid #dcdcde',
-								borderRadius: '8px',
-								padding: '20px',
-								display: 'flex',
-								flexDirection: 'column',
-								justifyContent: 'space-between',
-								boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-							} }
-						>
-							<div>
-								<div style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' } }>
-									<h3 style={ { margin: 0, fontSize: '16px', fontWeight: 600 } }>{ product.name }</h3>
-									<span
-										style={ {
-											fontSize: '11px',
-											fontWeight: 600,
-											textTransform: 'uppercase',
-											padding: '2px 8px',
-											borderRadius: '4px',
-											background: isPro ? '#f0f0ff' : '#f0f6fc',
-											color: isPro ? '#4f46e5' : '#0969da',
-											border: `1px solid ${ isPro ? '#c7d2fe' : '#c8e1ff' }`,
-										} }
-									>
-										{ product.edition }
-									</span>
-								</div>
-
-								<p style={ { color: '#50575e', fontSize: '13px', lineHeight: '1.4', margin: '0 0 14px' } }>
-									{ product.description }
-								</p>
-
-								<div style={ { fontSize: '12px', color: '#646970', marginBottom: '16px' } }>
-									<div>
-										<strong>{ __( 'Stable Version:', 'shaped-kit' ) }</strong> { product.stable_version }
-										{ isInstalled && product.active_version && (
-											<span style={ { marginLeft: '6px', color: '#135e96' } }>
-												({ sprintf( __( 'Installed: %s', 'shaped-kit' ), product.active_version ) })
-											</span>
-										) }
-									</div>
-									{ isPro && product.has_license && (
-										<div style={ { marginTop: '4px' } }>
-											<strong>{ __( 'License:', 'shaped-kit' ) }</strong>{' '}
-											<code>{ product.masked_license }</code> ({ product.license_status })
+							return (
+								<tr key={ product.slug } style={ { verticalAlign: 'middle' } }>
+									<td style={ { padding: '14px 16px' } }>
+										<strong style={ { fontSize: '14px', color: '#1d2327', display: 'block', marginBottom: '2px' } }>
+											{ product.name }
+										</strong>
+										<span style={ { fontSize: '12px', color: '#646970', lineHeight: 1.4, display: 'block' } }>
+											{ product.description }
+										</span>
+									</td>
+									<td style={ { padding: '14px 16px' } }>
+										<span
+											className="shaped-kit-badge"
+											style={ {
+												fontSize: '11px',
+												fontWeight: 600,
+												textTransform: 'uppercase',
+												padding: '2px 8px',
+												borderRadius: '4px',
+												background: isPro ? '#f0f0ff' : '#f0f6fc',
+												color: isPro ? '#4f46e5' : '#0969da',
+												border: `1px solid ${ isPro ? '#c7d2fe' : '#c8e1ff' }`,
+											} }
+										>
+											{ product.edition }
+										</span>
+									</td>
+									<td style={ { padding: '14px 16px', fontSize: '13px' } }>
+										<div>
+											<span style={ { color: '#646970' } }>{ __( 'Stable:', 'shaped-kit' ) } </span>
+											<strong>{ product.stable_version }</strong>
 										</div>
-									) }
-								</div>
-							</div>
+										{ isInstalled && product.active_version && (
+											<div style={ { fontSize: '11px', color: '#135e96', marginTop: '2px' } }>
+												{ sprintf( __( 'Installed: %s', 'shaped-kit' ), product.active_version ) }
+											</div>
+										) }
+									</td>
+									<td style={ { padding: '14px 16px', fontSize: '12px' } }>
+										{ isPro ? (
+											product.has_license ? (
+												<div>
+													<code style={ { fontSize: '11px', padding: '1px 4px', background: '#f0f0f1' } }>{ product.masked_license }</code>
+													<div style={ { fontSize: '11px', color: '#008a20', marginTop: '2px', fontWeight: 600 } }>
+														({ product.license_status })
+													</div>
+												</div>
+											) : (
+												<span style={ { color: '#8c8f94', fontStyle: 'italic' } }>{ __( 'No license', 'shaped-kit' ) }</span>
+											)
+										) : (
+											<span style={ { color: '#8c8f94' } }>—</span>
+										)}
+									</td>
+									<td style={ { padding: '14px 16px' } }>
+										{ isInstalled ? (
+											isActive ? (
+												<span
+													style={ {
+														color: '#008a20',
+														fontWeight: 600,
+														fontSize: '13px',
+														display: 'inline-flex',
+														alignItems: 'center',
+														gap: '4px',
+													} }
+												>
+													✓ { __( 'Active', 'shaped-kit' ) }
+												</span>
+											) : (
+												<span style={ { color: '#d63638', fontSize: '13px', fontWeight: 500 } }>
+													{ __( 'Inactive', 'shaped-kit' ) }
+												</span>
+											)
+										) : (
+											<span style={ { color: '#8c8f94', fontSize: '13px' } }>
+												{ __( 'Not Installed', 'shaped-kit' ) }
+											</span>
+										)}
+									</td>
+									<td style={ { padding: '14px 16px', textAlign: 'right' } }>
+										<div style={ { display: 'inline-flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' } }>
+											{ ! isInstalled && ! isPro && (
+												<button
+													type="button"
+													className="button button-primary"
+													onClick={ () => handleInstallFree( product.slug ) }
+													disabled={ isBusy || ! product.can_install }
+												>
+													{ isBusy ? __( 'Installing…', 'shaped-kit' ) : __( 'Install & Activate', 'shaped-kit' ) }
+												</button>
+											) }
 
-							<div style={ { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid #f0f0f1' } }>
-								{ ! isInstalled && ! isPro && (
-									<button
-										type="button"
-										className="button button-primary"
-										onClick={ () => handleInstallFree( product.slug ) }
-										disabled={ isBusy || ! product.can_install }
-									>
-										{ isBusy ? __( 'Installing…', 'shaped-kit' ) : __( 'Install & Activate', 'shaped-kit' ) }
-									</button>
-								) }
+											{ ! isInstalled && isPro && (
+												<button
+													type="button"
+													className="button button-primary"
+													onClick={ () => setProModalProduct( product ) }
+													disabled={ isBusy || ! product.can_install }
+												>
+													{ __( 'Install with License', 'shaped-kit' ) }
+												</button>
+											) }
 
-								{ ! isInstalled && isPro && (
-									<button
-										type="button"
-										className="button button-primary"
-										onClick={ () => setProModalProduct( product ) }
-										disabled={ isBusy || ! product.can_install }
-									>
-										{ __( 'Install with License', 'shaped-kit' ) }
-									</button>
-								) }
+											{ isInstalled && ! isActive && (
+												<button
+													type="button"
+													className="button button-secondary"
+													onClick={ () => handleActivate( product.slug ) }
+													disabled={ isBusy }
+												>
+													{ isBusy ? __( 'Activating…', 'shaped-kit' ) : __( 'Activate', 'shaped-kit' ) }
+												</button>
+											) }
 
-								{ isInstalled && ! isActive && (
-									<button
-										type="button"
-										className="button button-secondary"
-										onClick={ () => handleActivate( product.slug ) }
-										disabled={ isBusy }
-									>
-										{ isBusy ? __( 'Activating…', 'shaped-kit' ) : __( 'Activate', 'shaped-kit' ) }
-									</button>
-								) }
-
-								{ isInstalled && isActive && (
-									<span
-										style={ {
-											color: '#008a20',
-											fontWeight: 600,
-											fontSize: '13px',
-											display: 'inline-flex',
-											alignItems: 'center',
-											gap: '4px',
-										} }
-									>
-										✓ { __( 'Active', 'shaped-kit' ) }
-									</span>
-								) }
-
-								{ hasBeta && (
-									<button
-										type="button"
-										className="button button-secondary"
-										style={ { marginLeft: 'auto', fontSize: '12px' } }
-										onClick={ () => setBetaModalProduct( product ) }
-										disabled={ isBusy || ! product.can_install }
-										title={ sprintf( __( 'Preview and install beta %s', 'shaped-kit' ), product.beta_version ) }
-									>
-										{ sprintf( __( 'Install Beta (%s)', 'shaped-kit' ), product.beta_version ) }
-									</button>
-								) }
-							</div>
-						</div>
-					);
-				} ) }
+											{ hasBeta && (
+												<button
+													type="button"
+													className="button button-secondary"
+													style={ { fontSize: '11px', height: '30px', padding: '0 8px' } }
+													onClick={ () => setBetaModalProduct( product ) }
+													disabled={ isBusy || ! product.can_install }
+													title={ sprintf( __( 'Preview and install beta %s', 'shaped-kit' ), product.beta_version ) }
+												>
+													{ sprintf( __( 'Install Beta (%s)', 'shaped-kit' ), product.beta_version ) }
+												</button>
+											) }
+										</div>
+									</td>
+								</tr>
+							);
+						} ) }
+					</tbody>
+				</table>
 			</div>
 
 			{ /* Pro License Installation Modal */ }
