@@ -69,6 +69,12 @@ class Rest_Controller {
 	 * @return void
 	 */
 	public static function register_routes() {
+		// E119: If Free edition and Pro is active module owner, Free yields its settings route.
+		$owner_const = Module::owner_constant();
+		if ( 'free' === Module::EDITION && defined( $owner_const ) && 'pro' === constant( $owner_const ) ) {
+			return;
+		}
+
 		register_rest_route(
 			self::REST_NAMESPACE,
 			self::ROUTE,
@@ -145,7 +151,18 @@ class Rest_Controller {
 	 * @return array<string, mixed>
 	 */
 	public static function summary( $kit_active = null ) {
-		$entry      = Kit_Registration::add_product( array() )[0];
+		$products = Kit_Registration::add_product( array() );
+		$entry    = ! empty( $products ) ? $products[0] : array(
+			'slug'            => Module::SLUG,
+			'name'            => Module::NAME,
+			'edition'         => Module::EDITION,
+			'mcp_enabled'     => Permission_Gate::is_enabled(),
+			'tools_count'     => count( Abilities_Registrar::names() ),
+			'endpoint_url'    => Server::endpoint_url(),
+			'status'          => 'disabled',
+			'message'         => '',
+			'adapter_version' => null,
+		);
 		$kit_active = null === $kit_active ? defined( 'SHAPED_KIT_VERSION' ) : (bool) $kit_active;
 		$source     = Server::adapter_source();
 

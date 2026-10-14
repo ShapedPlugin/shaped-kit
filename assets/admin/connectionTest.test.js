@@ -10,7 +10,7 @@ import { interpret, testConnection } from './connectionTest';
 const product = {
 	slug: 'location-weather',
 	name: 'Location Weather',
-	endpoint_url: 'https://site.test/wp-json/location-weather/mcp',
+	endpoint_url: 'http://localhost/wp-json/location-weather/mcp',
 };
 const login = { username: 'admin', password: 'abcd efgh ijkl mnop qrst uvwx' };
 
@@ -110,6 +110,37 @@ describe( 'testConnection', () => {
 
 		expect( result.state ).toBe( 'unreachable' );
 		expect( result.message ).toMatch( /could not reach/ );
+		// Same origin as the page: CORS cannot be the cause, so it is not mentioned.
+		expect( result.message ).not.toMatch( /CORS/ );
+	} );
+
+	test( 'a failure on another origin names CORS as a possible cause, not as the cause (E116)', async () => {
+		const originalLocation = window.location;
+		delete window.location;
+		window.location = new URL( 'https://admin.example.com/wp-admin/admin.php' );
+
+		const crossOriginProduct = {
+			...product,
+			endpoint_url: 'https://site.example.com/wp-json/location-weather/mcp',
+		};
+
+		let result;
+		try {
+			result = await testConnection( crossOriginProduct, login, {
+				fetchImpl: jest.fn( () =>
+					Promise.reject( new TypeError( 'Failed to fetch' ) )
+				),
+			} );
+		} finally {
+			window.location = originalLocation;
+		}
+
+		expect( result.state ).toBe( 'unreachable' );
+		expect( result.message ).toMatch( /could not reach/ );
+		expect( result.message ).toMatch( /possible cause/ );
+		expect( result.message ).toMatch( /CORS/ );
+		// A rejected fetch cannot tell a CORS block from a dead network, so it must not claim one.
+		expect( result.message ).not.toMatch( /blocked this/ );
 	} );
 
 	test( 'a request that never answers is given up on and says so', async () => {

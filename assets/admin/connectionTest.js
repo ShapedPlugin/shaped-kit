@@ -46,12 +46,20 @@ export const interpret = ( status, body ) => {
 	}
 
 	if ( status === 401 ) {
+		const hint = body?.host_config_hint
+			? ` ${ body.host_config_hint }`
+			: ' ' +
+			  __(
+					'If your host strips Authorization (FastCGI/reverse proxies), add "SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1" in Apache .htaccess, or "fastcgi_param HTTP_AUTHORIZATION $http_authorization;" in Nginx.',
+					'shaped-kit'
+			  );
 		return {
 			state: 'rejected',
-			message: __(
-				'Not accepted. Either the username or application password is wrong, or your host removes the Authorization header before WordPress sees it (some FastCGI setups do).',
-				'shaped-kit'
-			),
+			message:
+				__(
+					'Not accepted. Either the username or application password is wrong, or your host removes the Authorization header before WordPress sees it.',
+					'shaped-kit'
+				) + hint,
 		};
 	}
 
@@ -94,19 +102,44 @@ export const interpret = ( status, body ) => {
 /**
  * What a request that never got an answer means, in a sentence. Shared with the tool tester.
  *
- * @param {*} failure What `fetch` rejected with.
+ * A browser reports a CORS block and a dead network the same way (a rejected `fetch`), so when the endpoint is
+ * on another origin than this page the sentence names CORS as a possible cause, never as the cause.
+ *
+ * @param {*}      failure     What `fetch` rejected with.
+ * @param {string} endpointUrl The address that was called, used to tell whether it is on another origin.
  * @return {string} The sentence.
  */
-export const describeFailure = ( failure ) =>
-	failure?.name === 'AbortError'
-		? __(
-				'No answer within 15 seconds. The server may be slow or the address wrong.',
-				'shaped-kit'
-		  )
-		: __(
-				'The browser could not reach this address. Check the address, the certificate and your connection.',
-				'shaped-kit'
-		  );
+export const describeFailure = ( failure, endpointUrl = '' ) => {
+	if ( failure?.name === 'AbortError' ) {
+		return __(
+			'No answer within 15 seconds. The server may be slow or the address wrong.',
+			'shaped-kit'
+		);
+	}
+
+	if ( typeof window !== 'undefined' && endpointUrl ) {
+		try {
+			const endpointOrigin = new URL( endpointUrl ).origin;
+			if (
+				window.location &&
+				window.location.origin &&
+				window.location.origin !== endpointOrigin
+			) {
+				return __(
+					'The browser could not reach this address. It is on a different origin from this page, so cross-origin (CORS) blocking is one possible cause. That happens when your WordPress site address and home address differ, or on www versus non-www. Check that first, then the address, the certificate and your connection.',
+					'shaped-kit'
+				);
+			}
+		} catch ( e ) {
+			// Fall through to standard message.
+		}
+	}
+
+	return __(
+		'The browser could not reach this address. Check the address, the certificate and your connection.',
+		'shaped-kit'
+	);
+};
 
 /**
  * Try one product.
@@ -171,7 +204,7 @@ export const testConnection = async (
 		return {
 			...identity,
 			state: 'unreachable',
-			message: describeFailure( failure ),
+			message: describeFailure( failure, product.endpoint_url ),
 		};
 	} finally {
 		clearTimeout( timer );

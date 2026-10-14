@@ -43,7 +43,14 @@ class Kit_Registration {
 	 * @return array
 	 */
 	public static function add_product( $products ) {
-		$products     = is_array( $products ) ? $products : array();
+		$products = is_array( $products ) ? $products : array();
+
+		// E119: Free edition yields when Pro is the active module owner.
+		$owner_const = Module::owner_constant();
+		if ( 'free' === Module::EDITION && defined( $owner_const ) && 'pro' === constant( $owner_const ) ) {
+			return $products;
+		}
+
 		$availability = Server::availability();
 
 		$products[] = array(
@@ -74,6 +81,12 @@ class Kit_Registration {
 	 */
 	public static function add_toggle_handler( $handlers ) {
 		$handlers = is_array( $handlers ) ? $handlers : array();
+
+		// E119: Free edition yields toggle handler when Pro is the active module owner.
+		$owner_const = Module::owner_constant();
+		if ( 'free' === Module::EDITION && defined( $owner_const ) && 'pro' === constant( $owner_const ) ) {
+			return $handlers;
+		}
 
 		$handlers[ Module::SLUG ] = array(
 			'get_enabled' => array( Permission_Gate::class, 'is_enabled' ),

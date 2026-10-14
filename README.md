@@ -115,8 +115,11 @@ Shaped Kit maintains isolated, project-local development toolchains:
 # Install isolated PHPUnit & PHPCS toolchains
 composer tools:install
 
-# Run all test suites (loader tests, unit tests, WP integration tests)
+# Run all test suites (loader tests, unit tests, WP integration tests, and the same integration tests on a real multisite)
 composer test
+
+# Run the integration tests on a real multisite only
+composer test:multisite
 
 # Run unit tests only
 composer test:unit

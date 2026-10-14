@@ -42,6 +42,7 @@ spl_autoload_register(
 \ShapedKit\Mcp\AdapterBootstrap::maybe_load();
 
 // Not behind is_admin(): a REST request is not an admin request, and the route must exist for it.
+\ShapedKit\Mcp\TransportGuard::register();
 \ShapedKit\Rest\McpController::register();
 \ShapedKit\Rest\StoreController::register();
 \ShapedKit\Store\SelfUpdater::register();

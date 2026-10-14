@@ -56,6 +56,15 @@ class Module {
 	const ENTRY_POST_TYPE = '';
 
 	/**
+	 * Name of the constant that marks the Pro edition as the single owner of this product's MCP module (E119).
+	 *
+	 * @return string
+	 */
+	public static function owner_constant() {
+		return strtoupper( str_replace( '-', '_', self::SLUG ) ) . '_MCP_MODULE_OWNER';
+	}
+
+	/**
 	 * Hook the gate. Called once from the plugin's own boot.
 	 *
 	 * The ability hooks and the server hook attach here, at plugin load, not inside `boot()`.
@@ -67,7 +76,16 @@ class Module {
 	 * @return void
 	 */
 	public static function register() {
-		add_action( 'init', array( __CLASS__, 'boot' ), 5 );
+		// E119: If Pro edition, establish single ownership so Free stays inert if both are active.
+		if ( 'pro' === self::EDITION ) {
+			$owner_const = self::owner_constant();
+			if ( ! defined( $owner_const ) ) {
+				define( $owner_const, 'pro' );
+			}
+		}
+
+		$priority = 'pro' === self::EDITION ? 4 : 5;
+		add_action( 'init', array( __CLASS__, 'boot' ), $priority );
 		add_action( 'wp_abilities_api_categories_init', array( Abilities_Registrar::class, 'register_category' ) );
 		add_action( 'wp_abilities_api_init', array( Abilities_Registrar::class, 'register_abilities' ) );
 		add_action( 'mcp_adapter_init', array( Server::class, 'register' ) );
@@ -97,6 +115,14 @@ class Module {
 	 * @return bool
 	 */
 	public static function should_load() {
+		// E119: If this is Free edition and Pro is active, Free yields to enforce the single-owner rule.
+		if ( 'free' === self::EDITION ) {
+			$owner_const = self::owner_constant();
+			if ( defined( $owner_const ) && 'pro' === constant( $owner_const ) ) {
+				return false;
+			}
+		}
+
 		global $wp_version;
 
 		return self::is_supported_wordpress( $wp_version )

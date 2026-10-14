@@ -216,7 +216,7 @@ class StoreController {
 			$product_data['installed']      = $installed;
 			$product_data['active']         = $active;
 			$product_data['active_version'] = $active_version;
-			$product_data['can_install']    = wp_is_file_mod_allowed( 'install_plugins' );
+			$product_data['can_install']    = ! is_wp_error( Installer::can_install() );
 
 			// Read-only license introspection for Pro products.
 			if ( 'pro' === $product['edition'] ) {

@@ -92,7 +92,7 @@ const rpc = async (
 			session,
 			error: {
 				state: 'unreachable',
-				message: describeFailure( failure ),
+				message: describeFailure( failure, product.endpoint_url ),
 			},
 		};
 	} finally {

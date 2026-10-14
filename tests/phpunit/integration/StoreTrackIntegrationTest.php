@@ -52,6 +52,10 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 		$this->admin_id      = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		$this->subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 
+		if ( is_multisite() ) {
+			grant_super_admin( $this->admin_id );
+		}
+
 		wp_set_current_user( $this->admin_id );
 
 		\ShapedKit\Audit\LogTable::install();
