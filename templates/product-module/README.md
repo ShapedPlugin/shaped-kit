@@ -17,9 +17,21 @@ templates/product-module/
 ├── Server.php              # Instantiates isolated /wp-json/{slug}/mcp endpoint
 ├── Kit_Registration.php    # Discovers product in Shaped Kit dashboard via filters
 ├── Rest_Controller.php     # REST endpoints for product settings card (/wp-json/{ns}/mcp)
+├── Builder/                # Generic Build with AI & Ready Patterns engine (Phase B6)
+│   ├── README.md           # Builder-specific adoption guide and configuration checklist
+│   ├── Catalog.php         # Schema lookup, allowed enums, design rules
+│   ├── ValueValidator.php  # Deep attribute validation with dotted path drop reasons
+│   ├── BuildPipeline.php   # Unified finishing pipeline: sanitize -> defaults -> patch
+│   ├── AttributePatch.php  # Presets, layout overrides, prompt column extraction
+│   ├── BlockInserter.php   # Unique ID generation, group wrapping, safe placement & replacement
+│   ├── PatternLibrary.php  # Remote pattern fetching, cache auto-healing, KSES sanitization
+│   ├── Builder_Tools.php   # Callbacks for get-block-catalog, validate-block-attributes, insert-block
+│   ├── Pattern_Tools.php   # Callbacks for list-ready-patterns, insert-ready-pattern
+│   └── Builder_Abilities.php # Helper to wire tool definitions & toolset map into Abilities_Registrar
 ├── Support/
 │   ├── Pagination.php      # Clamps tool lists to 15-100 items with envelope metadata
-│   └── Secret_Mask.php     # Masks secrets: configured / not configured, or the last 4 characters
+│   ├── Secret_Mask.php     # Masks secrets: configured / not configured, or the last 4 characters
+│   └── WriteGuard.php      # Level 1 destructive confirmation & token engine
 └── Tools/
     └── Context_Tools.php   # Universal {slug}-get-context orientation tool
 ```

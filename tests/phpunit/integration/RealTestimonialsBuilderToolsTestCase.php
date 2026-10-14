@@ -97,6 +97,15 @@ abstract class RealTestimonialsBuilderToolsTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The edition's Permission_Gate class.
+	 *
+	 * @return string
+	 */
+	protected function gate() {
+		return static::edition_class( 'Mcp\\Permission_Gate' );
+	}
+
+	/**
 	 * Load the edition's classes and its real carousel attribute set once.
 	 */
 	public static function wpSetUpBeforeClass() {
@@ -1232,5 +1241,63 @@ abstract class RealTestimonialsBuilderToolsTestCase extends WP_UnitTestCase {
 		$this->assertCount( 1, $requests );
 		$this->assertSame( 5, $requests[0]['args']['timeout'] );
 		$this->assertTrue( $cached );
+	}
+
+	/**
+	 * B7: the build-testimonial-block prompt ability declares prompt metadata and follows the builder toolset switch.
+	 */
+	public function test_prompt_definitions_and_prompt_names_for_builder_toolset() {
+		$registrar = $this->registrar();
+		$gate      = $this->gate();
+
+		$prompts = $registrar::prompt_definitions();
+		$name    = 'real-testimonials/build-testimonial-block';
+
+		$this->assertArrayHasKey( $name, $prompts );
+		$def = $prompts[ $name ];
+
+		$this->assertSame( 'prompt', $def['meta']['mcp']['type'] );
+		$this->assertFalse( $def['meta']['mcp']['public'] );
+		$this->assertFalse( $def['meta']['show_in_rest'] );
+		$this->assertTrue( $def['annotations']['readonly'] );
+		$this->assertFalse( $def['annotations']['destructive'] );
+
+		// Off by default.
+		$gate::set_active_toolsets( array( 'core', 'management' ) );
+		$this->assertSame( array(), $registrar::prompt_names() );
+
+		// Served when builder toolset is active.
+		$gate::set_active_toolsets( array( 'builder' ) );
+		$names = $registrar::prompt_names();
+		$this->assertContains( $name, $names );
+	}
+
+	/**
+	 * B7: build_testimonial_block_prompt returns structured guidance for AI agents.
+	 */
+	public function test_build_testimonial_block_prompt_execution() {
+		$tools  = $this->tools();
+		$result = $tools::build_testimonial_block_prompt(
+			array(
+				'request' => 'Modern testimonial slider with stars',
+				'block'   => 'slider',
+			)
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'description', $result );
+		$this->assertArrayHasKey( 'messages', $result );
+		$this->assertCount( 1, $result['messages'] );
+
+		$message = $result['messages'][0];
+		$this->assertSame( 'user', $message['role'] );
+		$this->assertSame( 'text', $message['content']['type'] );
+
+		$text = $message['content']['text'];
+		$this->assertStringContainsString( 'Modern testimonial slider with stars', $text );
+		$this->assertStringContainsString( 'Call `real-testimonials-get-block-catalog` with block "slider"', $text );
+		$this->assertStringContainsString( 'real-testimonials-validate-block-attributes', $text );
+		$this->assertStringContainsString( 'real-testimonials-insert-block', $text );
+		$this->assertStringContainsString( 'target.new_draft', $text );
 	}
 }

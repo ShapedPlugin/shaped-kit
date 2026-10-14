@@ -86,6 +86,10 @@ class Server {
 			return;
 		}
 
+		$prompts = version_compare( (string) $version, '0.5.0', '>=' )
+			? Abilities_Registrar::prompt_names()
+			: array();
+
 		$result = $adapter->create_server(
 			Module::SLUG,
 			Module::SLUG,
@@ -107,7 +111,7 @@ class Server {
 			'\WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler',
 			Abilities_Registrar::names(),
 			array(),
-			array(),
+			$prompts,
 			array( Permission_Gate::class, 'transport' )
 		);
 

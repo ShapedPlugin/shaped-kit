@@ -95,6 +95,15 @@ class Abilities_Registrar {
 	}
 
 	/**
+	 * Prompt definitions for this module (B7).
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function prompt_definitions() {
+		return array();
+	}
+
+	/**
 	 * Register every ability, then fire hook for Pro abilities. Hooked to `wp_abilities_api_init`.
 	 *
 	 * @return void
@@ -105,6 +114,7 @@ class Abilities_Registrar {
 		}
 
 		self::register( self::definitions() );
+		self::register( self::prompt_definitions() );
 
 		/**
 		 * Fires after the free/core product abilities are registered.
@@ -124,6 +134,15 @@ class Abilities_Registrar {
 		$registered = array();
 
 		foreach ( $definitions as $name => $definition ) {
+			$mcp_meta = array(
+				'public' => false,
+			);
+			if ( isset( $definition['meta']['mcp']['type'] ) ) {
+				$mcp_meta['type'] = $definition['meta']['mcp']['type'];
+			} elseif ( isset( self::prompt_definitions()[ $name ] ) ) {
+				$mcp_meta['type'] = 'prompt';
+			}
+
 			$args = array(
 				'label'               => $definition['label'],
 				'description'         => $definition['description'],
@@ -132,9 +151,7 @@ class Abilities_Registrar {
 				'permission_callback' => $definition['permission_callback'],
 				'meta'                => array(
 					'show_in_rest' => false,
-					'mcp'          => array(
-						'public' => false,
-					),
+					'mcp'          => $mcp_meta,
 					'annotations'  => $definition['annotations'],
 				),
 			);
@@ -171,6 +188,29 @@ class Abilities_Registrar {
 		 * @param string[] $names Fully qualified ability names.
 		 */
 		$names = apply_filters( 'template_prefix/mcp_ability_names', array_keys( self::definitions() ) );
+
+		$own = array_filter(
+			(array) $names,
+			static function ( $name ) {
+				return is_string( $name ) && 0 === strpos( $name, self::NAME_PREFIX );
+			}
+		);
+
+		return array_values( array_unique( $own ) );
+	}
+
+	/**
+	 * Returns prompt ability names to serve from the dedicated MCP server endpoint (B7).
+	 *
+	 * @return string[]
+	 */
+	public static function prompt_names() {
+		/**
+		 * Filters the prompt ability names served by the product MCP server.
+		 *
+		 * @param string[] $names Fully qualified prompt ability names.
+		 */
+		$names = apply_filters( 'template_prefix/mcp_prompt_names', array_keys( self::prompt_definitions() ) );
 
 		$own = array_filter(
 			(array) $names,

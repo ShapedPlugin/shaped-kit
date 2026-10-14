@@ -197,6 +197,16 @@ export const productToolsCatalog = {
 				__( 'Pick a fitting testimonial pattern for my agency site and put it on the About page.', 'shaped-kit' ),
 			],
 		},
+		{
+			name: 'real-testimonials/build-testimonial-block',
+			label: __( 'Build Testimonial Block (Prompt)', 'shaped-kit' ),
+			summary: __( 'Guided prompt template directing an AI assistant to construct and insert a testimonial block.', 'shaped-kit' ),
+			prompts: [
+				__( 'Build a 3-column carousel testimonial block with customer ratings and dark cards.', 'shaped-kit' ),
+				__( 'Create a modern testimonial grid with customer avatars and verified badges.', 'shaped-kit' ),
+				__( 'Design a clean testimonial slider section and insert it into a new draft page.', 'shaped-kit' ),
+			],
+		},
 	],
 	'location-weather': [
 		{
