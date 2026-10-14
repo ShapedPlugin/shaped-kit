@@ -9,6 +9,36 @@ import ProductSelectorBar from './ProductSelectorBar';
 import StorePanel from './StorePanel';
 
 /**
+ * The product a link asked to connect (`?connect=<slug>`), for example from a product's
+ * Build with AI modal when no AI key is set up.
+ *
+ * @param {string} search `window.location.search`.
+ * @return {string} Product slug, or ''.
+ */
+export const requestedProduct = ( search = '' ) => new URLSearchParams( search ).get( 'connect' ) || '';
+
+/**
+ * Which product the dashboard shows: the one already chosen while it still exists, else the one a
+ * link asked for when it exists, else the first.
+ *
+ * @param {string} current   Currently selected slug.
+ * @param {Array}  products  Products in the overview.
+ * @param {string} requested Slug from the link.
+ * @return {string} Slug to select, or ''.
+ */
+export const pickProduct = ( current, products, requested ) => {
+	const exists = ( slug ) => Boolean( slug ) && products.some( ( product ) => product.slug === slug );
+
+	if ( exists( current ) ) {
+		return current;
+	}
+	if ( exists( requested ) ) {
+		return requested;
+	}
+	return products[ 0 ]?.slug || '';
+};
+
+/**
  * The "AI & MCP" dashboard: the overview strip, product cards, connect panel, and activity log.
  *
  * Two rules keep the screen true to the site:
@@ -28,6 +58,9 @@ const App = () => {
 	const [ pendingLoads, setPendingLoads ] = useState( 0 );
 	const [ busy, setBusy ] = useState( {} );
 	const latest = useRef( 0 );
+	const requested = useRef( requestedProduct( window.location.search ) );
+	const connectRef = useRef( null );
+	const scrolled = useRef( false );
 
 	// Counted, not flagged: a read whose answer is dropped as old must still end its own "loading".
 	const isLoading = pendingLoads > 0;
@@ -42,12 +75,9 @@ const App = () => {
 			.then( ( data ) => {
 				if ( request === latest.current ) {
 					setOverview( data );
-					setSelectedProductSlug( ( current ) => {
-						if ( current && data?.products?.some( ( p ) => p.slug === current ) ) {
-							return current;
-						}
-						return data?.products?.[ 0 ]?.slug || '';
-					} );
+					setSelectedProductSlug( ( current ) =>
+						pickProduct( current, data?.products || [], requested.current )
+					);
 				}
 			} )
 			.catch( ( failure ) => {
@@ -97,6 +127,14 @@ const App = () => {
 	useEffect( () => {
 		load();
 	}, [ load ] );
+
+	// Opened from a link to connect one product: bring its connect panel into view, once.
+	useEffect( () => {
+		if ( overview && requested.current && ! scrolled.current && connectRef.current?.scrollIntoView ) {
+			scrolled.current = true;
+			connectRef.current.scrollIntoView( { block: 'start' } );
+		}
+	}, [ overview ] );
 
 	return (
 		<div className="shaped-kit-app">
@@ -200,10 +238,12 @@ const App = () => {
 									) ) }
 							</div>
 
-							<ConnectPanel
-								overview={ overview }
-								selectedProductSlug={ selectedProductSlug }
-							/>
+							<div ref={ connectRef }>
+								<ConnectPanel
+									overview={ overview }
+									selectedProductSlug={ selectedProductSlug }
+								/>
+							</div>
 						</>
 					) }
 

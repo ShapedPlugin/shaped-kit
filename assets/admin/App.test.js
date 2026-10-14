@@ -6,7 +6,7 @@
  */
 import { createRoot } from '@wordpress/element';
 import { act } from 'react';
-import App from './App';
+import App, { pickProduct, requestedProduct } from './App';
 import { fetchOverview, switchProduct } from './api';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -365,4 +365,15 @@ test( 'switching the last product off takes its text out of the panel', async ()
 
 	expect( container.querySelector( 'pre code' ) ).toBeNull();
 	expect( container.textContent ).toContain( 'Turn on a product above' );
+} );
+
+test( 'a link asking to connect a product selects it on the first read, if the product exists', () => {
+	const products = [ { slug: 'location-weather' }, { slug: 'real-testimonials' } ];
+
+	expect( requestedProduct( '?page=shaped-kit&connect=real-testimonials' ) ).toBe( 'real-testimonials' );
+	expect( requestedProduct( '?page=shaped-kit' ) ).toBe( '' );
+	expect( pickProduct( '', products, 'real-testimonials' ) ).toBe( 'real-testimonials' );
+	expect( pickProduct( '', products, 'no-such-product' ) ).toBe( 'location-weather' );
+	expect( pickProduct( 'location-weather', products, 'real-testimonials' ) ).toBe( 'location-weather' );
+	expect( pickProduct( 'gone', [], 'real-testimonials' ) ).toBe( '' );
 } );

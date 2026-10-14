@@ -147,6 +147,56 @@ export const productToolsCatalog = {
 				__( 'Preview permanent deletion of testimonial #14.', 'shaped-kit' ),
 			],
 		},
+		{
+			name: 'real-testimonials/get-block-catalog',
+			label: __( 'Get Block Catalog (Builder)', 'shaped-kit' ),
+			summary: __( 'Returns the settings a testimonial block accepts, with design rules and examples, so your AI client can design it.', 'shaped-kit' ),
+			prompts: [
+				__( 'Design a dark testimonial carousel with 3 columns and autoplay. Show me the settings first.', 'shaped-kit' ),
+				__( 'Which settings can I change on the Real Testimonials grid block?', 'shaped-kit' ),
+				__( 'Plan a minimal, light slider for customer reviews using the block catalog.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/validate-block-attributes',
+			label: __( 'Validate Block Attributes (Builder)', 'shaped-kit' ),
+			summary: __( 'Checks block settings your AI wrote, lists every dropped setting with its reason, and returns the final settings the block would get.', 'shaped-kit' ),
+			prompts: [
+				__( 'Check these carousel settings and tell me which ones Real Testimonials would drop.', 'shaped-kit' ),
+				__( 'Validate a 4-column grid design with rounded cards and soft shadows.', 'shaped-kit' ),
+				__( 'Fix any invalid values in my slider settings and validate them again.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/insert-block',
+			label: __( 'Insert Block (Builder, Protected)', 'shaped-kit' ),
+			summary: __( 'Saves the built block into a new draft page, or into an existing page after you confirm a preview.', 'shaped-kit' ),
+			prompts: [
+				__( 'Build a dark testimonial carousel with autoplay and save it as a new draft page called "Customer Love".', 'shaped-kit' ),
+				__( 'Add a 3-column testimonial grid at the end of my Testimonials page.', 'shaped-kit' ),
+				__( 'Restyle the testimonial slider on my About page with a light, minimal look.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/list-ready-patterns',
+			label: __( 'List Ready Patterns (Builder)', 'shaped-kit' ),
+			summary: __( 'Lists ready-made testimonial designs from the Ready Patterns library. On Free, Pro designs are shown as needing Pro.', 'shaped-kit' ),
+			prompts: [
+				__( 'Show me ready-made testimonial carousel designs for a real estate site.', 'shaped-kit' ),
+				__( 'Which testimonial grid patterns can I use without Pro?', 'shaped-kit' ),
+				__( 'Find a ready testimonial design for an online store.', 'shaped-kit' ),
+			],
+		},
+		{
+			name: 'real-testimonials/insert-ready-pattern',
+			label: __( 'Insert Ready Pattern (Builder, Protected)', 'shaped-kit' ),
+			summary: __( 'Inserts a ready-made design into a new draft page, or into an existing page after you confirm a preview.', 'shaped-kit' ),
+			prompts: [
+				__( 'Insert the "Grid – Design 01" pattern into a new draft page called "Reviews".', 'shaped-kit' ),
+				__( 'Add a ready-made testimonial carousel to the end of my Home page.', 'shaped-kit' ),
+				__( 'Pick a fitting testimonial pattern for my agency site and put it on the About page.', 'shaped-kit' ),
+			],
+		},
 	],
 	'location-weather': [
 		{

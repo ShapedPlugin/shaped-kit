@@ -84,7 +84,7 @@ Built and functional:
 - `src/Admin/DashboardPage.php`: the admin page under `ShapedPlugin > AI & MCP`.
 - `assets/admin/`: React dashboard with the overview strip, product cards with switches and opt-in toolsets, the sample-prompt drawer (`toolsCatalog.js`), the connect drawer (Application Passwords, client snippets for Claude Code, Claude Desktop, Cursor, Codex, Copilot, Gemini CLI and generic), the connection tester (`connectionTest.js`), Try a Tool (`ToolTester.js`), the Activity Log and the Products & Store tab.
 - `templates/product-module/`: the drop-in MCP module for sibling products (`docs/PRODUCT_MODULE_TEMPLATE.md`).
-- **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 10, Pro 14 (adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
+- **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 15, Pro 19 (adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`; both editions have the opt-in Builder toolset `get-block-catalog`, `validate-block-attributes`, `insert-block`, `list-ready-patterns`, `insert-ready-pattern`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
 
 **Active context:** full state and cross-repo context live in `docs/MEMORY.md`.
 
@@ -118,3 +118,15 @@ Still open:
 - **Phase by phase delivery.** One phase and one file at a time, as listed in PRD §13.
 - **Green suite before a coding step is finished.** `composer test`, `npm run test:js` and `composer lint` all pass.
 - **No unapproved commits.** Never run `git commit` unless the owner says so. No AI attribution in commit messages.
+
+
+## 7. Code reuse across editions and products
+
+A product's Free and Pro editions run the same code, and the next products (WP Carousel, then the rest) reuse it with few or minor changes. Full rule: PRD §20.
+
+- **Data, not code, differs.** Edition and product differences live in constants and config arrays (block lists, enums, design rules, presets, the pattern `pro` flag, `Module::EDITION`). No `if ( 'pro' === … )` in shared logic; the only edition check allowed is the one-owner guard (PRD §9, E119). Pro-only tools join through `{prefix}/mcp_loaded` and `{prefix}/mcp_ability_names`.
+- **Generic engine in the template.** Shared code lives in `templates/product-module/` (the MCP module, and the `Builder/` folder for Build with AI). A product copies it and supplies only its data.
+- **One change, every copy, same turn.** When shared code changes in `testimonial-pro`, make the same change in `testimonial-free` (and the reverse) in the same turn. Check it with a normalised diff (namespace, text domain and slug replaced), so only the expected lines differ, and run both editions' tests. If the fix is generic, put it in the template too, and list the products not yet updated in `docs/MEMORY.md`.
+- **No runtime dependency.** Products never call Kit code, and the Kit never calls product classes (D6). Reuse means copying the template.
+- **Shared package decision at Phase 8.** WP Carousel makes three products, the D3 trigger for a namespace-prefixed shared package. Raise it with the owner then; don't build it earlier.
+- **Parity is tested.** Shared behaviour gets a test that runs in every edition (for example the `BuildPipeline` JS/PHP parity fixtures). Passing in one edition and failing in the other is not done.
