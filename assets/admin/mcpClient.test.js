@@ -109,9 +109,23 @@ describe( 'openSession', () => {
 
 		expect( opened.ok ).toBe( false );
 		expect( opened.error.state ).toBe( 'rejected' );
-		expect( opened.error.message ).toMatch( /Authorization header/ );
+		expect( opened.error.message ).toMatch( /in front of WordPress/ );
 		expect( opened.tools ).toEqual( [] );
 		expect( calls ).toHaveLength( 1 );
+	} );
+
+	test( 'a refusal that carries the server hint tells the tester the host removes the header', async () => {
+		const { fetchImpl } = server( [
+			{ status: 401, body: { host_config_hint: 'x' } },
+		] );
+
+		const opened = await openSession( product, login, { fetchImpl } );
+
+		expect( opened.ok ).toBe( false );
+		expect( opened.error.state ).toBe( 'rejected' );
+		expect( opened.error.message ).toMatch(
+			/not passing the Authorization header/
+		);
 	} );
 
 	test( 'a server that signs in but then refuses the tool list reports that', async () => {
@@ -374,7 +388,10 @@ describe( 'callTool', () => {
 						messages: [
 							{
 								role: 'user',
-								content: { type: 'text', text: 'Generated prompt' },
+								content: {
+									type: 'text',
+									text: 'Generated prompt',
+								},
 							},
 						],
 					},

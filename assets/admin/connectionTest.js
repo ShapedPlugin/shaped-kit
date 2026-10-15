@@ -16,9 +16,12 @@ const TIMEOUT_MS = 15000;
 /**
  * Turn what came back into a result.
  *
- * A 401 is ambiguous on purpose: WordPress reads the password from PHP_AUTH_USER and PHP_AUTH_PW, which
- * PHP fills only from the Authorization header, and some hosts remove that header. The answer then looks
- * exactly like a wrong password, so the message names both.
+ * A 401 says what it means in three ways, and each gets its own sentence:
+ * - JSON with `host_config_hint`: the server found no credentials in the request (neither an Authorization
+ *   header nor PHP_AUTH_USER), so the host removed the header. The browser did send it. See `TransportGuard`.
+ * - JSON without it: the header arrived and WordPress refused the username or password.
+ * - Not JSON: WordPress always answers in JSON, so something in front of it (HTTP basic auth on the whole
+ *   site, a firewall) answered before the request got there.
  *
  * @param {number}  status HTTP status.
  * @param {*}       body   Decoded JSON body, or null when it was not JSON.
@@ -46,21 +49,32 @@ export const interpret = ( status, body ) => {
 	}
 
 	if ( status === 401 ) {
-		const hint = body?.host_config_hint
-			? ` ${ body.host_config_hint }`
-			: ' ' +
-			  __(
-					'If your host strips Authorization (FastCGI/reverse proxies), add "SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1" in Apache .htaccess, or "fastcgi_param HTTP_AUTHORIZATION $http_authorization;" in Nginx.',
-					'shaped-kit'
-			  );
-		return {
-			state: 'rejected',
-			message:
+		let message;
+
+		if ( body && typeof body === 'object' && body.host_config_hint ) {
+			message =
 				__(
-					'Not accepted. Either the username or application password is wrong, or your host removes the Authorization header before WordPress sees it.',
+					'Your server is not passing the Authorization header to WordPress, so the username and password never arrived. This is a server setting, not a wrong password.',
 					'shaped-kit'
-				) + hint,
-		};
+				) +
+				' ' +
+				__(
+					'Fix it in the server settings. Apache: save Settings > Permalinks with a pretty structure (WordPress then writes the rule into .htaccess if it can), or add SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1 to .htaccess. Nginx: add fastcgi_param HTTP_AUTHORIZATION $http_authorization; to the PHP location block and reload.',
+					'shaped-kit'
+				);
+		} else if ( body && typeof body === 'object' ) {
+			message = __(
+				'The username or application password was not accepted. Check that the username is the account the password was made for, and that the password was not revoked (creating a new Shaped Kit password replaces the earlier ones). Spaces in the password are fine.',
+				'shaped-kit'
+			);
+		} else {
+			message = __(
+				'Something in front of WordPress answered 401 before the request reached this plugin, such as password protection on the whole site (HTTP basic auth on a staging site), a firewall or a security plugin. WordPress never saw the credentials.',
+				'shaped-kit'
+			);
+		}
+
+		return { state: 'rejected', message };
 	}
 
 	if ( status === 403 ) {

@@ -42,11 +42,59 @@ describe( 'interpret', () => {
 		expect( interpret( status, body ).state ).toBe( state );
 	} );
 
-	test( 'a 401 names both a wrong password and a host that strips the header', () => {
-		const { message } = interpret( 401, null );
+	describe( 'a 401', () => {
+		const hint =
+			'If you sent credentials, your web server may be stripping the Authorization header.';
 
-		expect( message ).toMatch( /wrong/ );
-		expect( message ).toMatch( /Authorization header/ );
+		test( 'with the server hint says the host removes the header, not that the password is wrong, and gives the fix', () => {
+			const { state, message } = interpret( 401, {
+				code: 'rest_forbidden',
+				host_config_hint: hint,
+			} );
+
+			expect( state ).toBe( 'rejected' );
+			expect( message ).toMatch( /not passing the Authorization header/ );
+			expect( message ).toMatch( /not a wrong password/ );
+			expect( message ).toContain( 'HTTP_AUTHORIZATION' );
+			expect( message ).toContain( 'fastcgi_param' );
+			expect( message ).not.toMatch( /was not accepted/ );
+		} );
+
+		test( 'from WordPress without the hint says the username or password was refused, and does not blame the host', () => {
+			const { state, message } = interpret( 401, {
+				code: 'rest_forbidden',
+			} );
+
+			expect( state ).toBe( 'rejected' );
+			expect( message ).toMatch(
+				/username or application password was not accepted/
+			);
+			expect( message ).toMatch( /revoked/ );
+			expect( message ).not.toMatch( /Authorization header/ );
+		} );
+
+		test.each( [
+			[ 'null', null ],
+			[ 'undefined', undefined ],
+			[ 'a string', '<html>401</html>' ],
+		] )(
+			'that is not JSON (%s) says something in front of WordPress answered',
+			( label, body ) => {
+				const { state, message } = interpret( 401, body );
+
+				expect( state ).toBe( 'rejected' );
+				expect( message ).toMatch( /in front of WordPress/ );
+				expect( message ).not.toMatch(
+					/not accepted|Authorization header/
+				);
+			}
+		);
+
+		test( 'an empty hint is no hint', () => {
+			expect(
+				interpret( 401, { host_config_hint: '' } ).message
+			).toMatch( /was not accepted/ );
+		} );
 	} );
 
 	test( 'a result next to an error is not a success', () => {
@@ -117,11 +165,14 @@ describe( 'testConnection', () => {
 	test( 'a failure on another origin names CORS as a possible cause, not as the cause (E116)', async () => {
 		const originalLocation = window.location;
 		delete window.location;
-		window.location = new URL( 'https://admin.example.com/wp-admin/admin.php' );
+		window.location = new URL(
+			'https://admin.example.com/wp-admin/admin.php'
+		);
 
 		const crossOriginProduct = {
 			...product,
-			endpoint_url: 'https://site.example.com/wp-json/location-weather/mcp',
+			endpoint_url:
+				'https://site.example.com/wp-json/location-weather/mcp',
 		};
 
 		let result;
@@ -162,6 +213,17 @@ describe( 'testConnection', () => {
 
 		expect( result.state ).toBe( 'unreachable' );
 		expect( result.message ).toMatch( /No answer within/ );
+	} );
+
+	test( 'a 401 carrying the server hint comes back as a host problem', async () => {
+		const result = await testConnection( product, login, {
+			fetchImpl: answer( 401, { host_config_hint: 'x' } ),
+		} );
+
+		expect( result.state ).toBe( 'rejected' );
+		expect( result.message ).toMatch(
+			/not passing the Authorization header/
+		);
 	} );
 
 	test( 'the password is never put in the result', async () => {
