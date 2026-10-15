@@ -113,9 +113,10 @@ class CatalogClient {
 	/**
 	 * Fetches and verifies remote catalog and its detached signature.
 	 *
+	 * @param string[]|null $keys Base64 public keys to trust. Only tests pass this; the plugin always uses `trusted_public_keys()`.
 	 * @return array|null Validated catalog array or null on any verification failure.
 	 */
-	public static function fetch_remote_catalog() {
+	public static function fetch_remote_catalog( $keys = null ) {
 		// If ext-sodium is missing, refuse remote execution and fallback safely (SE04).
 		if ( ! function_exists( 'sodium_crypto_sign_verify_detached' ) ) {
 			return null;
@@ -155,13 +156,8 @@ class CatalogClient {
 			return null;
 		}
 
-		// Verify Ed25519 signature against pinned primary key or rotation key.
-		$is_valid = self::verify_signature( $catalog_body, $sig_body, CatalogData::PUBLIC_KEY_BASE64 );
-		if ( ! $is_valid && defined( 'CatalogData::NEXT_PUBLIC_KEY_BASE64' ) ) {
-			$is_valid = self::verify_signature( $catalog_body, $sig_body, CatalogData::NEXT_PUBLIC_KEY_BASE64 );
-		}
-
-		if ( ! $is_valid ) {
+		// Verify Ed25519 signature against the pinned key or the rotation key.
+		if ( ! self::signature_is_trusted( $catalog_body, $sig_body, $keys ) ) {
 			return null;
 		}
 
@@ -193,6 +189,33 @@ class CatalogClient {
 		}
 
 		return $validated;
+	}
+
+	/**
+	 * The public keys a catalog may be signed with: the pinned key, then the rotation key when one is set.
+	 *
+	 * @return string[] Base64 public keys.
+	 */
+	public static function trusted_public_keys() {
+		return array_values( array_filter( array( CatalogData::PUBLIC_KEY_BASE64, CatalogData::NEXT_PUBLIC_KEY_BASE64 ) ) );
+	}
+
+	/**
+	 * Whether a signature is valid under any trusted key.
+	 *
+	 * @param string        $payload   Catalog JSON payload string.
+	 * @param string        $signature Base64-encoded signature.
+	 * @param string[]|null $keys      Base64 public keys to try. Defaults to `trusted_public_keys()`.
+	 * @return bool
+	 */
+	public static function signature_is_trusted( $payload, $signature, $keys = null ) {
+		foreach ( null === $keys ? self::trusted_public_keys() : $keys as $key ) {
+			if ( self::verify_signature( $payload, $signature, $key ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

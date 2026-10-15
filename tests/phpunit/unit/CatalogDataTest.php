@@ -121,4 +121,37 @@ class CatalogDataTest extends TestCase {
 		$valid = shaped_kit_verify_catalog_signature( $catalog_json, $corrupted, $keys['public'] );
 		$this->assertFalse( $valid );
 	}
+
+	/**
+	 * Test that validate_product_entry preserves package_url for self-updates (Bug 1).
+	 */
+	public function test_validate_product_entry_preserves_package_url() {
+		$entry = array(
+			'slug'           => 'shaped-kit',
+			'name'           => 'Shaped Kit',
+			'edition'        => 'free',
+			'product_family' => 'shaped-kit',
+			'stable_version' => '1.0.0',
+			'stable_sha256'  => str_repeat( 'a', 64 ),
+			'package_url'    => 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit-1.0.0.zip',
+		);
+
+		$validated = CatalogData::validate_product_entry( $entry );
+		$this->assertNotNull( $validated );
+		$this->assertArrayHasKey( 'package_url', $validated );
+		$this->assertSame( 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit-1.0.0.zip', $validated['package_url'] );
+
+		// Bundled catalog check: shaped-kit entry retains package_url after catalog validation.
+		$catalog = CatalogData::validate_catalog( CatalogData::get_bundled_catalog() );
+		$this->assertNotNull( $catalog );
+		$kit = null;
+		foreach ( $catalog['products'] as $p ) {
+			if ( 'shaped-kit' === $p['slug'] ) {
+				$kit = $p;
+				break;
+			}
+		}
+		$this->assertNotNull( $kit );
+		$this->assertSame( 'https://api.shapedplugin.com/kit/v1/releases/shaped-kit.zip', $kit['package_url'] );
+	}
 }

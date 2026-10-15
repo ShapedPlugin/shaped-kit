@@ -149,7 +149,25 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$data = wp_scripts()->get_data( DashboardPage::SCRIPT_HANDLE, 'data' );
 
 		$this->assertSame( 1, preg_match( '/=\s*(\{.*\});/s', $data, $match ) );
-		$this->assertSame( array( 'restUrl', 'storeRestUrl', 'version' ), array_keys( json_decode( $match[1], true ) ), 'No nonce: wp-api-fetch carries and refreshes it.' );
+		$this->assertSame( array( 'restUrl', 'storeRestUrl', 'storeLive', 'version' ), array_keys( json_decode( $match[1], true ) ), 'No nonce: wp-api-fetch carries and refreshes it.' );
 		$this->assertStringNotContainsString( wp_create_nonce( 'wp_rest' ), $data );
+	}
+
+	public function test_the_page_is_told_the_store_is_off_unless_it_is_switched_on(): void {
+		$flag = function () {
+			DashboardPage::enqueue( $this->page_hook(), $this->asset_file );
+			$data = wp_scripts()->get_data( DashboardPage::SCRIPT_HANDLE, 'data' );
+			preg_match( '/=\s*(\{.*\});/s', $data, $match );
+			wp_dequeue_script( DashboardPage::SCRIPT_HANDLE );
+			wp_deregister_script( DashboardPage::SCRIPT_HANDLE );
+
+			return json_decode( $match[1], true )['storeLive'];
+		};
+
+		$this->assertSame( '0', $flag(), 'Off by default: the page hides the Store tab.' );
+
+		add_filter( 'shaped_kit/store_live', '__return_true' );
+		$this->assertSame( '1', $flag() );
+		remove_all_filters( 'shaped_kit/store_live' );
 	}
 }

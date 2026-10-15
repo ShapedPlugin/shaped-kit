@@ -6,12 +6,18 @@
  * - `pre_set_site_transient_update_plugins`: Injects update object when newer version exists in catalog.
  * - `plugins_api`: Returns plugin metadata popup details.
  * - `upgrader_pre_download`: Enforces pre-unpack SHA-256 verification on Shaped Kit's own download package.
- * - Nonce-protected force update check: `admin.php?shaped_kit_check_update=1`.
+ * - "Check for update" link in the plugin's row on the Plugins screen (`plugin_row_meta`, as FluentHub does), and the
+ *   nonce-protected force check it points at: `plugins.php?shaped_kit_check_update=1&_wpnonce=…`.
+ *
+ * Everything but the download check does nothing while the Store is off (StoreGate). The download check stays
+ * on: it only ever acts on a Kit update some other source put in the update list, and it refuses what it cannot verify.
  *
  * Source citations:
  * - pre_set_site_transient_update_plugins filter: wp-includes/update.php:121
  * - plugins_api filter: wp-admin/includes/plugin-install.php:143
- * - upgrader_pre_download filter: wp-admin/includes/class-wp-upgrader.php:322
+ * - plugin_row_meta filter: wp-admin/includes/class-wp-plugins-list-table.php:1341 (args: meta, file, data, status)
+ * - wp_nonce_url(): wp-includes/functions.php:1875; wp_admin_notice(): wp-includes/functions.php:9307
+ * - upgrader_pre_download filter: wp-admin/includes/class-wp-upgrader.php:322 (any reply other than false is used as the download, :323-325)
  * - plugin_basename(): wp-includes/plugin.php:833
  * - wp_safe_redirect(): wp-includes/pluggable.php:1515
  *
@@ -46,6 +52,9 @@ class SelfUpdater {
 
 		if ( is_admin() ) {
 			add_action( 'admin_init', array( __CLASS__, 'handle_force_check' ) );
+			add_filter( 'plugin_row_meta', array( __CLASS__, 'filter_row_meta' ), 10, 2 );
+			add_action( 'admin_notices', array( __CLASS__, 'checked_notice' ) );
+			add_action( 'network_admin_notices', array( __CLASS__, 'checked_notice' ) );
 		}
 	}
 
@@ -60,6 +69,11 @@ class SelfUpdater {
 			$transient = new \stdClass();
 		}
 
+		// Store off: no catalog request, no update offered.
+		if ( ! StoreGate::is_live() ) {
+			return $transient;
+		}
+
 		$matched = self::get_kit_catalog_entry();
 		if ( ! $matched || empty( $matched['stable_version'] ) ) {
 			return $transient;
@@ -70,9 +84,11 @@ class SelfUpdater {
 
 		$file = defined( 'SHAPED_KIT_FILE' ) ? plugin_basename( SHAPED_KIT_FILE ) : 'shaped-kit/shaped-kit.php';
 
-		// If a newer version exists in catalog.
-		if ( version_compare( $current_version, $target_version, '<' ) ) {
-			$package_url = ! empty( $matched['package_url'] ) ? $matched['package_url'] : '';
+		$package_url = ! empty( $matched['package_url'] ) ? $matched['package_url'] : '';
+
+		// A newer version counts only when the catalog says where to get it. An update with no package would show
+		// a notice that cannot be acted on, so it is not offered.
+		if ( '' !== $package_url && version_compare( $current_version, $target_version, '<' ) ) {
 
 			$update_obj = (object) array(
 				'id'            => 'shaped-kit',
@@ -95,7 +111,7 @@ class SelfUpdater {
 
 			$transient->response[ $file ] = $update_obj;
 		} elseif ( isset( $transient->response[ $file ] ) ) {
-			// Ensure no stale update remains in response.
+			// Ensure no stale update remains in response (up to date, or nothing to download).
 			unset( $transient->response[ $file ] );
 		}
 
@@ -115,7 +131,7 @@ class SelfUpdater {
 			return $res;
 		}
 
-		if ( empty( $args->slug ) || self::SLUG !== $args->slug ) {
+		if ( empty( $args->slug ) || self::SLUG !== $args->slug || ! StoreGate::is_live() ) {
 			return $res;
 		}
 
@@ -170,9 +186,27 @@ class SelfUpdater {
 			return $reply;
 		}
 
+		// Another filter already refused the download: leave its refusal as it is.
+		if ( is_wp_error( $reply ) ) {
+			return $reply;
+		}
+
 		$matched = self::get_kit_catalog_entry();
 		if ( ! $matched || empty( $matched['stable_sha256'] ) ) {
-			return $reply;
+			return new \WP_Error(
+				'unverified_package',
+				__( 'Shaped Kit update package cannot be verified: missing catalog checksum.', 'shaped-kit' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// Another filter already fetched the package (a mirror, a cache). Core would unpack whatever path it
+		// returns, so it gets the same checksum check as a file the Kit downloads itself. The download host
+		// is not ours to judge here: the file is already on disk and the checksum is what vouches for it.
+		if ( is_string( $reply ) && '' !== $reply ) {
+			$verified = PackageVerifier::verify_checksum( $reply, $matched['stable_sha256'] );
+
+			return is_wp_error( $verified ) ? $verified : $reply;
 		}
 
 		// Validate host allowlist (SE06).
@@ -201,18 +235,20 @@ class SelfUpdater {
 	}
 
 	/**
-	 * Handles manual force-check link action (`admin.php?shaped_kit_check_update=1`).
+	 * Handles the force-check link (`plugins.php?shaped_kit_check_update=1`, nonce `shaped_kit_force_check_update`).
+	 * It works on any admin page, like FluentHub's, because it runs on `admin_init`.
 	 *
-	 * @return void
+	 * @param bool $terminate Whether to terminate request with exit. Defaults to true.
+	 * @return bool True if force check executed, false otherwise.
 	 */
-	public static function handle_force_check() {
+	public static function handle_force_check( $terminate = true ) {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( empty( $_GET['shaped_kit_check_update'] ) ) {
-			return;
+			return false;
 		}
 
-		if ( ! current_user_can( 'update_plugins' ) ) {
-			return;
+		if ( ! current_user_can( 'update_plugins' ) || ! StoreGate::is_live() ) {
+			return false;
 		}
 
 		check_admin_referer( 'shaped_kit_force_check_update' );
@@ -227,8 +263,83 @@ class SelfUpdater {
 		// Force core to check updates on next page load.
 		delete_site_transient( 'update_plugins' );
 
-		wp_safe_redirect( admin_url( 'plugins.php?shaped_kit_checked=1' ) );
-		exit;
+		// Back to the Plugins screen filtered to the Kit, so its row (with an update, if there is one) is what is seen.
+		wp_safe_redirect( self::plugins_screen_url( array( 'shaped_kit_checked' => '1' ) ) );
+		if ( $terminate ) {
+			exit;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Adds "Check for update" to the Kit's row on the Plugins screen. It is shown only to someone the check would
+	 * accept (`update_plugins`) and only while the Store is on, so it is never a link that does nothing.
+	 *
+	 * @param string[] $links       The row's meta links.
+	 * @param string   $plugin_file The row's plugin file.
+	 * @return string[]
+	 */
+	public static function filter_row_meta( $links, $plugin_file ) {
+		$kit_file = defined( 'SHAPED_KIT_FILE' ) ? plugin_basename( SHAPED_KIT_FILE ) : 'shaped-kit/shaped-kit.php';
+
+		if ( $plugin_file !== $kit_file || ! StoreGate::is_live() || ! current_user_can( 'update_plugins' ) ) {
+			return $links;
+		}
+
+		$url = esc_url( wp_nonce_url( self::plugins_screen_url( array( 'shaped_kit_check_update' => '1' ), false ), 'shaped_kit_force_check_update' ) );
+
+		$links['shaped_kit_check_update'] = '<a href="' . $url . '">' . esc_html__( 'Check for update', 'shaped-kit' ) . '</a>';
+
+		return $links;
+	}
+
+	/**
+	 * Says the check ran, on the Plugins screen the force check sends the user back to. The message is fixed
+	 * text: nothing from the request is printed.
+	 *
+	 * @return void
+	 */
+	public static function checked_notice() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['shaped_kit_checked'] ) || ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen || ! in_array( $screen->id, array( 'plugins', 'plugins-network' ), true ) ) {
+			return;
+		}
+
+		wp_admin_notice(
+			esc_html__( 'Checked for a Shaped Kit update. If a newer version is available, it is listed in the Shaped Kit row below.', 'shaped-kit' ),
+			array(
+				'type'        => 'info',
+				'dismissible' => true,
+			)
+		);
+	}
+
+	/**
+	 * The Plugins screen of where the user is (the network's in the network admin), with extra query arguments.
+	 *
+	 * @param array<string, string> $args   Query arguments to add.
+	 * @param bool                  $filter Whether to also narrow the list to the Kit and show every status.
+	 * @return string
+	 */
+	private static function plugins_screen_url( $args, $filter = true ) {
+		if ( $filter ) {
+			$args = array_merge(
+				array(
+					's'             => 'shaped-kit',
+					'plugin_status' => 'all',
+				),
+				$args
+			);
+		}
+
+		return add_query_arg( $args, is_network_admin() ? network_admin_url( 'plugins.php' ) : admin_url( 'plugins.php' ) );
 	}
 
 	/**

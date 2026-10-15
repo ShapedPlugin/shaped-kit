@@ -19,6 +19,7 @@ namespace ShapedKit\Rest;
 
 use ShapedKit\Store\CatalogClient;
 use ShapedKit\Store\Installer;
+use ShapedKit\Store\StoreGate;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -156,12 +157,12 @@ class StoreController {
 	}
 
 	/**
-	 * Permission check for reading store catalog.
+	 * Permission check for reading store catalog. Every Store permission also needs the Store to be on (StoreGate).
 	 *
-	 * @return bool
+	 * @return bool|\WP_Error
 	 */
 	public static function can_manage_store() {
-		return current_user_can( 'manage_options' );
+		return StoreGate::allow( current_user_can( 'manage_options' ) );
 	}
 
 	/**
@@ -174,16 +175,16 @@ class StoreController {
 		if ( is_wp_error( $can ) ) {
 			return $can;
 		}
-		return true;
+		return StoreGate::allow( true );
 	}
 
 	/**
 	 * Permission check for activating plugins.
 	 *
-	 * @return bool
+	 * @return bool|\WP_Error
 	 */
 	public static function can_activate_plugins() {
-		return current_user_can( 'activate_plugins' );
+		return StoreGate::allow( current_user_can( 'activate_plugins' ) );
 	}
 
 	/**

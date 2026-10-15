@@ -49,6 +49,7 @@ const loaded = () => container.querySelector( '[data-loaded="true"]' );
 beforeEach( () => {
 	fetchOverview.mockReset();
 	switchProduct.mockReset();
+	delete window.shapedKitAdmin;
 } );
 
 /** An overview with one product that is on or off, as the server would report it. */
@@ -215,7 +216,9 @@ test( 'clicking a product tab focuses on that product and updates the active car
 	await settle();
 
 	// Initially displays first product
-	expect( container.querySelector( 'h2' ).textContent ).toBe( 'Location Weather' );
+	expect( container.querySelector( 'h2' ).textContent ).toBe(
+		'Location Weather'
+	);
 	const tabs = container.querySelectorAll( '.shaped-kit-product-tab' );
 	expect( tabs ).toHaveLength( 2 );
 
@@ -226,7 +229,9 @@ test( 'clicking a product tab focuses on that product and updates the active car
 	await settle();
 
 	// Should now display Real Testimonials card
-	expect( container.querySelector( 'h2' ).textContent ).toBe( 'Real Testimonials' );
+	expect( container.querySelector( 'h2' ).textContent ).toBe(
+		'Real Testimonials'
+	);
 } );
 
 test( 'a switch asks for the opposite state, is locked meanwhile, and ends on the answer the server sent', async () => {
@@ -368,12 +373,56 @@ test( 'switching the last product off takes its text out of the panel', async ()
 } );
 
 test( 'a link asking to connect a product selects it on the first read, if the product exists', () => {
-	const products = [ { slug: 'location-weather' }, { slug: 'real-testimonials' } ];
+	const products = [
+		{ slug: 'location-weather' },
+		{ slug: 'real-testimonials' },
+	];
 
-	expect( requestedProduct( '?page=shaped-kit&connect=real-testimonials' ) ).toBe( 'real-testimonials' );
+	expect(
+		requestedProduct( '?page=shaped-kit&connect=real-testimonials' )
+	).toBe( 'real-testimonials' );
 	expect( requestedProduct( '?page=shaped-kit' ) ).toBe( '' );
-	expect( pickProduct( '', products, 'real-testimonials' ) ).toBe( 'real-testimonials' );
-	expect( pickProduct( '', products, 'no-such-product' ) ).toBe( 'location-weather' );
-	expect( pickProduct( 'location-weather', products, 'real-testimonials' ) ).toBe( 'location-weather' );
+	expect( pickProduct( '', products, 'real-testimonials' ) ).toBe(
+		'real-testimonials'
+	);
+	expect( pickProduct( '', products, 'no-such-product' ) ).toBe(
+		'location-weather'
+	);
+	expect(
+		pickProduct( 'location-weather', products, 'real-testimonials' )
+	).toBe( 'location-weather' );
 	expect( pickProduct( 'gone', [], 'real-testimonials' ) ).toBe( '' );
+} );
+
+describe( 'the Store tab', () => {
+	const tabs = () =>
+		[ ...container.querySelectorAll( '.nav-tab' ) ].map(
+			( tab ) => tab.textContent
+		);
+
+	test.each( [
+		[ 'is told the Store is off', { storeLive: '0' } ],
+		[ 'is told nothing', undefined ],
+		[ 'gets a truthy-looking but not-on value', { storeLive: 'false' } ],
+	] )( 'is hidden when the page %s', async ( label, config ) => {
+		window.shapedKitAdmin = config;
+		fetchOverview.mockResolvedValue( site( true ) );
+
+		await mount();
+
+		expect( tabs() ).toEqual( [ 'AI & MCP Products', 'Activity Log' ] );
+	} );
+
+	test( 'is shown when the page says the Store is on', async () => {
+		window.shapedKitAdmin = { storeLive: '1' };
+		fetchOverview.mockResolvedValue( site( true ) );
+
+		await mount();
+
+		expect( tabs() ).toEqual( [
+			'AI & MCP Products',
+			'Products & Store',
+			'Activity Log',
+		] );
+	} );
 } );

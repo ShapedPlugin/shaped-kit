@@ -44,6 +44,9 @@ class MultisiteBehaviorIntegrationTest extends WP_UnitTestCase {
 			}
 		);
 
+		// These tests are about what the Store does when it is on (it is off by default, see StoreGate).
+		add_filter( 'shaped_kit/store_live', '__return_true' );
+
 		$this->user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->user_id );
 	}

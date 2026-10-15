@@ -95,6 +95,8 @@ final class DashboardPage {
 			array(
 				'restUrl'      => esc_url_raw( rest_url( McpController::REST_NAMESPACE . McpController::ROUTE ) ),
 				'storeRestUrl' => esc_url_raw( rest_url( McpController::REST_NAMESPACE . '/store' ) ),
+				// A string: wp_localize_script() turns every scalar into one (class-wp-scripts.php:651-659), and false would arrive as ''.
+				'storeLive'    => \ShapedKit\Store\StoreGate::is_live() ? '1' : '0',
 				'version'      => SHAPED_KIT_VERSION,
 			)
 		);

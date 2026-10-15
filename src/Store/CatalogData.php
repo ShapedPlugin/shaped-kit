@@ -244,6 +244,7 @@ class CatalogData {
 			'description'    => isset( $entry['description'] ) ? (string) $entry['description'] : '',
 			'stable_version' => (string) $entry['stable_version'],
 			'stable_sha256'  => strtolower( (string) $entry['stable_sha256'] ),
+			'package_url'    => ! empty( $entry['package_url'] ) ? (string) $entry['package_url'] : null,
 			'beta_version'   => ! empty( $entry['beta_version'] ) ? (string) $entry['beta_version'] : null,
 			'beta_url'       => ! empty( $entry['beta_url'] ) ? (string) $entry['beta_url'] : null,
 			'beta_sha256'    => ! empty( $entry['beta_sha256'] ) ? strtolower( (string) $entry['beta_sha256'] ) : null,

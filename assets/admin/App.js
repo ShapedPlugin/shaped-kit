@@ -15,7 +15,8 @@ import StorePanel from './StorePanel';
  * @param {string} search `window.location.search`.
  * @return {string} Product slug, or ''.
  */
-export const requestedProduct = ( search = '' ) => new URLSearchParams( search ).get( 'connect' ) || '';
+export const requestedProduct = ( search = '' ) =>
+	new URLSearchParams( search ).get( 'connect' ) || '';
 
 /**
  * Which product the dashboard shows: the one already chosen while it still exists, else the one a
@@ -27,7 +28,9 @@ export const requestedProduct = ( search = '' ) => new URLSearchParams( search )
  * @return {string} Slug to select, or ''.
  */
 export const pickProduct = ( current, products, requested ) => {
-	const exists = ( slug ) => Boolean( slug ) && products.some( ( product ) => product.slug === slug );
+	const exists = ( slug ) =>
+		Boolean( slug ) &&
+		products.some( ( product ) => product.slug === slug );
 
 	if ( exists( current ) ) {
 		return current;
@@ -51,6 +54,9 @@ export const pickProduct = ( current, products, requested ) => {
  * A failed read keeps the last good overview on screen with the error above it.
  */
 const App = () => {
+	// The server sends '1' or '0' (wp_localize_script() makes every scalar a string). The Store has a tab only
+	// while it is on; until then its catalog is placeholder data and its buttons would lead nowhere.
+	const storeLive = window.shapedKitAdmin?.storeLive === '1';
 	const [ activeTab, setActiveTab ] = useState( 'products' );
 	const [ selectedProductSlug, setSelectedProductSlug ] = useState( '' );
 	const [ overview, setOverview ] = useState( null );
@@ -76,7 +82,11 @@ const App = () => {
 				if ( request === latest.current ) {
 					setOverview( data );
 					setSelectedProductSlug( ( current ) =>
-						pickProduct( current, data?.products || [], requested.current )
+						pickProduct(
+							current,
+							data?.products || [],
+							requested.current
+						)
 					);
 				}
 			} )
@@ -130,7 +140,12 @@ const App = () => {
 
 	// Opened from a link to connect one product: bring its connect panel into view, once.
 	useEffect( () => {
-		if ( overview && requested.current && ! scrolled.current && connectRef.current?.scrollIntoView ) {
+		if (
+			overview &&
+			requested.current &&
+			! scrolled.current &&
+			connectRef.current?.scrollIntoView
+		) {
 			scrolled.current = true;
 			connectRef.current.scrollIntoView( { block: 'start' } );
 		}
@@ -190,24 +205,40 @@ const App = () => {
 
 			{ overview && (
 				<div className="shaped-kit-body" data-loaded="true">
-					<nav className="nav-tab-wrapper shaped-kit-nav-tabs" aria-label={ __( 'Dashboard navigation', 'shaped-kit' ) }>
+					<nav
+						className="nav-tab-wrapper shaped-kit-nav-tabs"
+						aria-label={ __(
+							'Dashboard navigation',
+							'shaped-kit'
+						) }
+					>
 						<button
 							type="button"
-							className={ `nav-tab ${ activeTab === 'products' ? 'nav-tab-active' : '' }` }
+							className={ `nav-tab ${
+								activeTab === 'products' ? 'nav-tab-active' : ''
+							}` }
 							onClick={ () => setActiveTab( 'products' ) }
 						>
 							{ __( 'AI & MCP Products', 'shaped-kit' ) }
 						</button>
+						{ storeLive && (
+							<button
+								type="button"
+								className={ `nav-tab ${
+									activeTab === 'store'
+										? 'nav-tab-active'
+										: ''
+								}` }
+								onClick={ () => setActiveTab( 'store' ) }
+							>
+								{ __( 'Products & Store', 'shaped-kit' ) }
+							</button>
+						) }
 						<button
 							type="button"
-							className={ `nav-tab ${ activeTab === 'store' ? 'nav-tab-active' : '' }` }
-							onClick={ () => setActiveTab( 'store' ) }
-						>
-							{ __( 'Products & Store', 'shaped-kit' ) }
-						</button>
-						<button
-							type="button"
-							className={ `nav-tab ${ activeTab === 'logs' ? 'nav-tab-active' : '' }` }
+							className={ `nav-tab ${
+								activeTab === 'logs' ? 'nav-tab-active' : ''
+							}` }
 							onClick={ () => setActiveTab( 'logs' ) }
 						>
 							{ __( 'Activity Log', 'shaped-kit' ) }
@@ -227,12 +258,18 @@ const App = () => {
 
 							<div className="shaped-kit-cards">
 								{ ( overview.products || [] )
-									.filter( ( product ) => ! selectedProductSlug || product.slug === selectedProductSlug )
+									.filter(
+										( product ) =>
+											! selectedProductSlug ||
+											product.slug === selectedProductSlug
+									)
 									.map( ( product ) => (
 										<ProductCard
 											key={ product.slug }
 											product={ product }
-											busy={ Boolean( busy[ product.slug ] ) }
+											busy={ Boolean(
+												busy[ product.slug ]
+											) }
 											onSwitch={ handleSwitch }
 										/>
 									) ) }
@@ -247,9 +284,11 @@ const App = () => {
 						</>
 					) }
 
-					{ activeTab === 'store' && <StorePanel /> }
+					{ storeLive && activeTab === 'store' && <StorePanel /> }
 
-					{ activeTab === 'logs' && <ActivityLog products={ overview.products || [] } /> }
+					{ activeTab === 'logs' && (
+						<ActivityLog products={ overview.products || [] } />
+					) }
 				</div>
 			) }
 		</div>
