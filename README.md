@@ -13,17 +13,36 @@ Shaped Kit is the official companion and bridge plugin for ShapedPlugin products
 
 ### Highlights
 
+#### 🎛️ Unified Workspace & Controls
+
 - **Unified AI & MCP Dashboard:** A dedicated command center in WordPress Admin (**ShapedPlugin → AI & MCP**) with live statistics, product cards, ability selectors, and connection wizards.
+
 - **Dedicated Product Endpoints:** Every product exposes its own isolated MCP server endpoint (`/wp-json/{slug}/mcp`), preventing namespace collisions and token bloating across plugins.
-- **Build with AI (Block Builder & Ready Patterns):** Enables AI clients to inspect block schemas (`get-block-catalog`), validate and sanitize attribute sets without editor corruption (`validate-block-attributes`), safely insert Gutenberg blocks (`insert-block`), and apply designer-crafted layout patterns (`list-ready-patterns`, `insert-ready-pattern`).
-- **Native MCP Prompts Protocol:** First-class support for MCP Prompts (`prompts/list`, `prompts/get`), serving interactive, step-by-step guidance prompts (such as `build-testimonial-block`) to steer AI agents through complex multi-stage tasks.
+
+- **Built-in Tool Explorer, Tester & Starter Rails:** Interactive Try-a-Tool inspector, live Connection Tester, and one-click **Starter Pills** (`Try a starter:`) that immediately populate valid, pre-tested JSON configurations without manual typing.
+
 - **Client Snippet Generator & Deep-Linking:** One-click configurations tailored for **Claude Code, Claude Desktop, Cursor, OpenAI Codex, GitHub Copilot, Gemini CLI**, and generic HTTP MCP clients, with deep-linking from product settings tabs directly into the connect drawer.
+
+#### 🤖 Autonomous AI Block Builder & Prompts
+
+- **Build with AI (Block Builder & Ready Patterns):** Enables AI clients to inspect block schemas (`get-block-catalog`), validate and sanitize attribute sets without editor corruption (`validate-block-attributes`), safely insert Gutenberg blocks (`insert-block`), apply custom free-form color palettes, and use designer-crafted layout patterns (`list-ready-patterns`, `insert-ready-pattern`).
+
+- **Native MCP Prompts Protocol:** First-class support for MCP Prompts (`prompts/list`, `prompts/get`), serving interactive, step-by-step guidance prompts (such as `build-testimonial-block`) to steer AI agents through complex multi-stage tasks.
+
 - **Opt-In Ability Toolsets & Token Economy:** Granular controls to expose only relevant toolsets (`Core / Read-Only`, `Management`, `Destructive`, `Builder`), reducing LLM context window token consumption by up to 70%.
+
+#### 🛡️ Enterprise Safety & Observability
+
 - **WriteGuard Two-Step Confirmation:** Mutating or destructive actions (such as permanent deletion, existing page modifications, or global cache purges) cannot be triggered in a single hit. The AI client must execute a preview dry-run to receive an HMAC-bound 32-character confirmation token before confirming.
+
 - **TransportGuard & Clean-Transport Shield (E88):** Strips any stray PHP notices, warnings, or plugin markup printed prior to or during MCP REST responses, guaranteeing pristine JSON-RPC / SSE transport streams for AI clients.
+
 - **Activity Log & Audit Trail:** Real-time oversight of all AI tool invocations. Records timestamp, client identity, ability name, execution latency, and result status (`ok`, `confirmed`, `denied`, `confirmation_required`, `error`) with strict zero-PII masking (parameter keys only).
+
+#### 🔌 Architecture & Ecosystem
+
 - **Replaceable MCP Adapter Fallback:** Bundles the official `WordPress/mcp-adapter` (pinned to v0.7.0) with conflict-free step-aside logic if another plugin supplies the adapter.
-- **Built-in Tool Explorer & Tester:** Interactive Try-a-Tool inspector and live Connection Tester to verify authentication before connecting your AI client.
+
 - **Products & Store Track:** Offline-first catalog loader with Ed25519 cryptographic detached signatures and SHA-256 package hash verification for ShapedPlugin betas, addons, and updates.
 
 ---
@@ -32,8 +51,8 @@ Shaped Kit is the official companion and bridge plugin for ShapedPlugin products
 
 | Product | Edition | Dedicated Endpoint | Abilities Count | Toolset Groups |
 |---|---|---|---|---|
-| **Real Testimonials** | Free & Pro | `/wp-json/real-testimonials/mcp` | Free: 15 / Pro: 19 + 1 Prompt | `Core` (Views, Categories, Forms, Context), `Management` (Create, Update), `Destructive` (Delete with WriteGuard), `Builder` (Catalog, Validation, Block & Pattern Insertion, MCP Prompt) |
-| **Location Weather** | Free & Pro | `/wp-json/location-weather/mcp` | Free: 10 / Pro: 11 | `Core` (Templates, Context, Cache), `Management` (Create, Update, Duplicate), `Destructive` (Delete, Global Cache Purge) |
+| **Real Testimonials** | Free & Pro | `/wp-json/real-testimonials/mcp` | Free: 16 / Pro: 20 + 1 Prompt | `Core` (Views, Categories, Forms, Context), `Management` (Create, Update, Bulk Import), `Destructive` (Delete with WriteGuard), `Builder` (Catalog, Validation, Custom Colors, Block & Pattern Insertion, MCP Prompt) |
+| **Location Weather** | Free & Pro | `/wp-json/location-weather/mcp` | Free: 10 / Pro: 11 | `Core` (Templates, Context, Cache), `Management` (Create Celsius/Fahrenheit, Update, Duplicate), `Destructive` (Delete, Global Cache Purge with WriteGuard), `Cloud` (Pro Styble Cloud & AI Assistant) |
 | **WP Carousel** | *Coming Soon* | `/wp-json/wp-carousel/mcp` | In Development | Layout templates, carousel blocks, and media query controls |
 
 ---
@@ -42,7 +61,8 @@ Shaped Kit is the official companion and bridge plugin for ShapedPlugin products
 
 #### 1. MCP Connector & Client Generator
 Connect any AI assistant using standard WordPress Application Passwords:
-- **Instant Mints:** Generate dedicated Application Passwords with one click, securely returned once (`Cache-Control: no-store`) and never persisted in plain text.
+- **Instant Mints & Time-Limited Persistence:** Generate a dedicated Application Password with one click, returned once by the server (`Cache-Control: no-store`). WordPress stores only its hash. So a refresh does not lose it, the browser keeps it in `localStorage` for up to 8 hours, then drops it; **Clear** removes it at once. A new password is saved before the earlier Shaped Kit ones are revoked, and passwords you made yourself are never touched.
+- **One-Click Credential Pruning:** Revoke every Shaped Kit application password with the **Revoke all Shaped Kit passwords** button to keep your user profile clean. Passwords you made yourself are never touched.
 - **Product Settings Tab Deep-Linking:** Direct deep-link button from each product's "MCP for AI Agents" settings tab to Shaped Kit's connection wizard with pre-selected product context.
 - **Client Configuration Snippets:**
   - **Claude Code CLI:** Ready-to-run terminal commands using `@automattic/mcp-wordpress-remote`.
@@ -67,10 +87,11 @@ Prevents accidental or rogue data loss by AI models:
 #### 4. AI Block Builder & Ready Patterns (`Builder` Toolset)
 Unlocks Gutenberg block assembly for AI models without opening the block editor:
 - **`get-block-catalog`:** Introspects block schemas, supported attributes, design rules, layout presets, and card design options without loading Gutenberg JS.
-- **`validate-block-attributes`:** Performs dry-run attribute sanitization against the catalog schema. Returns cleaned attributes, strips unsupported attributes, and reports precise reasons for any dropped keys.
+- **`validate-block-attributes`:** Performs dry-run attribute sanitization against the catalog schema. Supports free-form custom styling (dark backgrounds, custom title/text/star colors) while safely dropping unknown or invalid keys.
 - **`insert-block`:** Inserts or replaces blocks in target pages with atomic database transactions, block markup verification, and post lock checks. Protected by WriteGuard when editing existing published content.
 - **`list-ready-patterns`:** Searches and filters the designer pattern library with layout categories, tags, and edition paywall indicators.
 - **`insert-ready-pattern`:** Instantly applies a selected ready-made pattern into a target page with atomic safety.
+- **Starter Rails (`Try a starter:`):** Quick-load pills (`[ Autoplay Carousel ]`, `[ Four-Column Grid ]`, `[ Dark Theme & Colors ]`) ready to run directly in the dashboard.
 
 #### 5. Native MCP Prompts Protocol (`prompts/list` & `prompts/get`)
 Provides interactive prompt templates projected through the official MCP Prompts specification (adapter $\ge$ 0.5.0):
@@ -104,11 +125,12 @@ Provides a shared, robust foundation for all ShapedPlugin products:
 The admin interface is mounted under **ShapedPlugin → AI & MCP** with three primary views:
 
 1. **AI & MCP Products:**
+   - Quick Product Selector bar (`[ All ] [ Real Testimonials ] [ Location Weather ]`) with automatic live runner synchronization.
    - Overview strip showing active adapter version, products on/off count, total available tools, and registered prompt templates.
    - Per-product cards with dedicated endpoint URLs, individual on/off toggles, and tool counters.
-   - **"View tools & sample prompts"** drawer displaying all registered abilities with human-readable explanations and 3+ realistic copy-paste prompts per tool.
-   - Interactive **Connect a client** drawer (with deep-link support), **Connection Tester**, and **Try a tool** live runner.
-2. **Products & Store:**
+   - **"View tools & sample prompts"** drawer displaying all registered abilities with human-readable explanations, starter preset shortcuts, and 3+ realistic copy-paste prompts per tool.
+   - Interactive **Connect a client** drawer (with Application Password generation, refresh persistence, and 1-click revocation), **Connection Tester**, and **Try a tool** live runner with auto-filled sample JSON and starter pills.
+2. **Products & Store** *(off until the release pipeline is live; the tab, the Store routes and the update checks stay hidden or answer 503)*:
    - Catalog browser for ShapedPlugin ecosystem plugins, beta builds, and addons.
    - Pinned Ed25519 public key verification and SHA-256 package hash integrity validation.
 3. **Activity Log:**
@@ -174,7 +196,7 @@ npm run package:verify
 
 - **No Remote Telemetry:** Shaped Kit makes zero outbound calls to ShapedPlugin servers.
 - **Local Execution:** All MCP operations run locally between your WordPress server and your authenticated AI client.
-- **Application Passwords:** Keys are displayed only once in your browser session and are never written to unencrypted database tables.
+- **Application Passwords:** WordPress shows a new password only once and stores only a hash of it. The dashboard keeps the plain text in this browser for up to 8 hours (so a refresh does not lose it), never on the server, and removes it on expiry, on **Clear**, and when you revoke.
 - **Zero-PII Logs:** The internal activity log strips all values, storing only argument schema keys.
 
 ---
