@@ -1,6 +1,6 @@
 {
 	"name": "shaped-kit",
-	"version": "0.2.0-beta.1",
+	"version": "0.2.0-beta.2",
 	"private": true,
 	"description": "Shaped Kit admin dashboard (React).",
 	"license": "GPL-2.0-or-later",
