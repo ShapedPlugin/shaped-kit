@@ -184,6 +184,11 @@ class Rest_Controller {
 		 */
 		$guide_url = esc_url_raw( (string) apply_filters( 'template_prefix/mcp_setup_guide_url', '' ) );
 
+		// What the Quick Connect command needs: the signed-in user's login (not a secret) and where an application
+		// password is made. Only the login is filled in; the password is never known here.
+		$user                = wp_get_current_user();
+		$passwords_available = $user->exists() && function_exists( 'wp_is_application_passwords_available_for_user' ) && wp_is_application_passwords_available_for_user( $user );
+
 		return array(
 			'guide_url'    => '' !== $guide_url ? $guide_url : null,
 			'slug'         => $entry['slug'],
@@ -195,6 +200,12 @@ class Rest_Controller {
 			'endpoint_url' => $entry['endpoint_url'],
 			'tools_count'  => $entry['tools_count'],
 			'adapter'      => array_merge( $source, array( 'version' => $entry['adapter_version'] ) ),
+			'connect'      => array(
+				'user_login'          => $user->exists() ? (string) $user->user_login : '',
+				'passwords_available' => $passwords_available,
+				'passwords_url'       => admin_url( 'profile.php#application-passwords-section' ),
+				'kit_url'             => $kit_active ? admin_url( 'admin.php?page=' . self::KIT_PAGE . '&connect=' . Module::SLUG ) : null,
+			),
 			'kit'          => array(
 				'active'        => $kit_active,
 				'dashboard_url' => $kit_active ? admin_url( 'admin.php?page=' . self::KIT_PAGE ) : null,

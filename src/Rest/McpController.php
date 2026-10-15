@@ -78,14 +78,25 @@ class McpController {
 			self::REST_NAMESPACE,
 			self::ROUTE . '/app-password',
 			array(
-				'methods'             => 'POST',
-				'callback'            => array( __CLASS__, 'create_app_password' ),
-				'permission_callback' => array( __CLASS__, 'can_manage' ),
-				'args'                => array(
-					'name' => array(
-						'type'      => 'string',
-						'maxLength' => 100,
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( __CLASS__, 'create_app_password' ),
+					'permission_callback' => array( __CLASS__, 'can_manage' ),
+					'args'                => array(
+						'name'             => array(
+							'type'      => 'string',
+							'maxLength' => 100,
+						),
+						'replace_previous' => array(
+							'type'    => 'boolean',
+							'default' => false,
+						),
 					),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( __CLASS__, 'revoke_app_passwords' ),
+					'permission_callback' => array( __CLASS__, 'can_manage' ),
 				),
 			)
 		);
@@ -236,12 +247,15 @@ class McpController {
 	 * The reply carries a secret, so it is marked not to be stored by any cache on the way. The user is
 	 * always the one signed in; nothing in the request can name another.
 	 *
-	 * @param \WP_REST_Request $request The request, optionally holding `name`.
+	 * @param \WP_REST_Request $request The request, optionally holding `name` and `replace_previous`.
 	 *
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public static function create_app_password( $request ) {
-		$created = AppPasswords::create( (string) $request['name'] );
+		$name             = isset( $request['name'] ) ? (string) $request['name'] : '';
+		$replace_previous = ! empty( $request['replace_previous'] );
+
+		$created = AppPasswords::create( $name, $replace_previous );
 
 		if ( is_wp_error( $created ) ) {
 			return $created;
@@ -251,6 +265,31 @@ class McpController {
 		$response->header( 'Cache-Control', 'no-store' );
 
 		return $response;
+	}
+
+	/**
+	 * `DELETE`: revoke any previously created Shaped Kit MCP application passwords for the signed-in user.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public static function revoke_app_passwords() {
+		$revoked = AppPasswords::revoke_previous_passwords();
+
+		return rest_ensure_response(
+			array(
+				'revoked' => $revoked,
+				'message' => sprintf(
+					/* translators: %d: number of application passwords revoked. */
+					_n(
+						'%d Shaped Kit application password revoked.',
+						'%d Shaped Kit application passwords revoked.',
+						$revoked,
+						'shaped-kit'
+					),
+					$revoked
+				),
+			)
+		);
 	}
 
 	/**

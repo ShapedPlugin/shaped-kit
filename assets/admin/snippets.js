@@ -94,7 +94,7 @@ const toBase64 = ( text ) =>
  * @param {string} value Any text.
  * @return {string} The text with every single quote closed, escaped and reopened.
  */
-const shellQuote = ( value ) => value.replace( /'/g, "'\\''" );
+export const shellQuote = ( value ) => String( value ).replace( /'/g, "'\\''" );
 
 /**
  * The credentials as the snippets use them. WordPress ignores the spaces in an application password

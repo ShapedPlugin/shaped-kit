@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
-import { createAppPassword, describeError } from './api';
+import { __, _n, sprintf } from '@wordpress/i18n';
+import { createAppPassword, describeError, revokeAppPasswords } from './api';
 import { testConnection } from './connectionTest';
+import {
+	PASSWORD_TTL_MS,
+	clearPassword,
+	loadPassword,
+	savePassword,
+	storageKeyFor,
+} from './passwordStore';
 import { buildSnippet, clients } from './snippets';
 import ToolTester from './ToolTester';
 
@@ -92,16 +99,25 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 	);
 	const list = clients();
 
+	const storageKey = storageKeyFor( support.user_login );
+
 	const [ scope, setScope ] = useState( 'selected' ); // 'selected' | 'all'
 	const [ username, setUsername ] = useState( support.user_login || '' );
-	const [ password, setPassword ] = useState( '' );
+	// The password a refresh would lose, kept for a while by `passwordStore`.
+	const [ kept ] = useState( () => loadPassword( storageKey ) );
+	const [ password, setPassword ] = useState( kept.password );
+	const [ expiresAt, setExpiresAt ] = useState( kept.expiresAt );
 	const [ showPassword, setShowPassword ] = useState( false );
 	const [ client, setClient ] = useState( list[ 0 ].key );
 	const [ localDev, setLocalDev ] = useState( () =>
-		allEnabledProducts.some( ( product ) => isLocalSite( product.endpoint_url ) )
+		allEnabledProducts.some( ( product ) =>
+			isLocalSite( product.endpoint_url )
+		)
 	);
 	const [ isCreating, setIsCreating ] = useState( false );
+	const [ isRevoking, setIsRevoking ] = useState( false );
 	const [ created, setCreated ] = useState( null );
+	const [ revokedNotice, setRevokedNotice ] = useState( '' );
 	const [ error, setError ] = useState( '' );
 	const [ copied, setCopied ] = useState( false );
 	const [ results, setResults ] = useState( null );
@@ -109,11 +125,37 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 	const latestTest = useRef( 0 );
 	const isTesting = pendingTests > 0;
 
+	const updatePassword = ( val ) => {
+		setPassword( val );
+		setExpiresAt( savePassword( storageKey, val ) );
+	};
+
+	// When the time is up the password goes from the page as well as from storage.
+	useEffect( () => {
+		if ( ! expiresAt ) {
+			return undefined;
+		}
+
+		const timer = setTimeout(
+			() => {
+				clearPassword( storageKey );
+				setPassword( '' );
+				setExpiresAt( 0 );
+			},
+			Math.max( expiresAt - Date.now(), 0 )
+		);
+
+		return () => clearTimeout( timer );
+	}, [ expiresAt, storageKey ] );
+
 	// Determine active products for the snippet based on scope:
 	const selectedProduct = useMemo(
 		() =>
 			( overview?.products || [] ).find(
-				( p ) => p.slug === selectedProductSlug && p.enabled && p.endpoint_url
+				( p ) =>
+					p.slug === selectedProductSlug &&
+					p.enabled &&
+					p.endpoint_url
 			),
 		[ overview, selectedProductSlug ]
 	);
@@ -137,15 +179,37 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 		setIsCreating( true );
 		setError( '' );
 		setCreated( null );
+		setRevokedNotice( '' );
 
-		createAppPassword()
+		createAppPassword( '', true )
 			.then( ( made ) => {
 				setUsername( made.username );
-				setPassword( made.password );
+				updatePassword( made.password );
 				setCreated( made );
 			} )
 			.catch( ( failure ) => setError( describeError( failure ) ) )
 			.finally( () => setIsCreating( false ) );
+	};
+
+	const handleRevoke = () => {
+		setIsRevoking( true );
+		setError( '' );
+		setRevokedNotice( '' );
+
+		revokeAppPasswords()
+			.then( ( result ) => {
+				updatePassword( '' );
+				setCreated( null );
+				setRevokedNotice(
+					result?.message ||
+						__(
+							'Shaped Kit application passwords revoked.',
+							'shaped-kit'
+						)
+				);
+			} )
+			.catch( ( failure ) => setError( describeError( failure ) ) )
+			.finally( () => setIsRevoking( false ) );
 	};
 
 	// What was typed or switched on is what a result was about. When either changes, the result is
@@ -192,7 +256,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 						<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
 						<p className="shaped-kit-card-note">
 							{ __(
-								'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in.',
+								'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in. Creating a new one replaces your earlier Shaped Kit passwords.',
 								'shaped-kit'
 							) }
 						</p>
@@ -212,8 +276,30 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 										'shaped-kit'
 								  ) }
 						</button>
+						<button
+							type="button"
+							className="button"
+							onClick={ handleRevoke }
+							disabled={ ! support.available || isRevoking }
+							title={ __(
+								'Delete every password Shaped Kit made for your user, including the one saved in this browser. Passwords you made yourself are not touched.',
+								'shaped-kit'
+							) }
+						>
+							{ isRevoking
+								? __( 'Revoking…', 'shaped-kit' )
+								: __(
+										'Revoke all Shaped Kit passwords',
+										'shaped-kit'
+								  ) }
+						</button>
 						{ support.manage_url && (
-							<a href={ support.manage_url } className="button">
+							<a
+								href={ support.manage_url }
+								className="button"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
 								{ __( 'Manage passwords', 'shaped-kit' ) }
 							</a>
 						) }
@@ -236,6 +322,24 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 							),
 							created.name
 						) }
+						{ created.revoked > 0 &&
+							' ' +
+								sprintf(
+									/* translators: %d: how many earlier passwords were revoked. */
+									_n(
+										'It replaced %d earlier Shaped Kit password. A client still using that one needs this new password.',
+										'It replaced %d earlier Shaped Kit passwords. A client still using one of them needs this new password.',
+										created.revoked,
+										'shaped-kit'
+									),
+									created.revoked
+								) }
+					</p>
+				) }
+
+				{ revokedNotice && (
+					<p className="shaped-kit-created" role="status">
+						{ revokedNotice }
 					</p>
 				) }
 
@@ -270,7 +374,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 								// which left the field and the text below it disagreeing.
 								autoComplete="new-password"
 								onChange={ ( event ) =>
-									setPassword( event.target.value )
+									updatePassword( event.target.value )
 								}
 							/>
 							<button
@@ -285,9 +389,37 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 									? __( 'Hide', 'shaped-kit' )
 									: __( 'Show', 'shaped-kit' ) }
 							</button>
+							{ password && (
+								<button
+									type="button"
+									className="button"
+									title={ __(
+										'Remove the password from this page and this browser',
+										'shaped-kit'
+									) }
+									onClick={ () => updatePassword( '' ) }
+								>
+									{ __( 'Clear', 'shaped-kit' ) }
+								</button>
+							) }
 						</span>
 					</label>
 				</div>
+
+				{ expiresAt > 0 && (
+					<p className="shaped-kit-card-note shaped-kit-password-note">
+						{ sprintf(
+							/* translators: %d: hours the password stays in this browser. */
+							_n(
+								'Saved in this browser for up to %d hour, so a refresh keeps it. Clear removes it now.',
+								'Saved in this browser for up to %d hours, so a refresh keeps it. Clear removes it now.',
+								PASSWORD_TTL_MS / 3600000,
+								'shaped-kit'
+							),
+							PASSWORD_TTL_MS / 3600000
+						) }
+					</p>
+				) }
 
 				<div className="shaped-kit-connect-subnav">
 					<div className="shaped-kit-tabs" role="tablist">
@@ -309,10 +441,19 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 					</div>
 
 					{ selectedProduct && allEnabledProducts.length > 1 && (
-						<div className="shaped-kit-scope-selector" role="group" aria-label={ __( 'Snippet configuration scope', 'shaped-kit' ) }>
+						<div
+							className="shaped-kit-scope-selector"
+							role="group"
+							aria-label={ __(
+								'Snippet configuration scope',
+								'shaped-kit'
+							) }
+						>
 							<button
 								type="button"
-								className={ `shaped-kit-scope-btn ${ scope === 'selected' ? 'is-active' : '' }` }
+								className={ `shaped-kit-scope-btn ${
+									scope === 'selected' ? 'is-active' : ''
+								}` }
 								onClick={ () => setScope( 'selected' ) }
 							>
 								{ sprintf(
@@ -323,7 +464,9 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 							</button>
 							<button
 								type="button"
-								className={ `shaped-kit-scope-btn ${ scope === 'all' ? 'is-active' : '' }` }
+								className={ `shaped-kit-scope-btn ${
+									scope === 'all' ? 'is-active' : ''
+								}` }
 								onClick={ () => setScope( 'all' ) }
 							>
 								{ sprintf(
@@ -336,7 +479,8 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 					) }
 				</div>
 
-				{ ( client === 'claude-desktop' || client === 'gemini-cli' ) && (
+				{ ( client === 'claude-desktop' ||
+					client === 'gemini-cli' ) && (
 					<label className="shaped-kit-check">
 						<input
 							type="checkbox"
@@ -413,6 +557,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 				products={ products }
 				username={ username }
 				password={ password }
+				selectedProductSlug={ selectedProductSlug }
 			/>
 		</>
 	);

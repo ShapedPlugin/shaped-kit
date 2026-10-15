@@ -192,3 +192,48 @@ test( 'copying a prompt puts the prompt text on the clipboard', async () => {
 	expect( promptCopyBtn.textContent ).toContain( 'Copied' );
 } );
 
+test( 'it renders sample JSON inputs and expected success outputs in tool cards', async () => {
+	const writeText = jest.fn( () => Promise.resolve() );
+	Object.assign( navigator, { clipboard: { writeText } } );
+
+	await render( { product: product() } );
+	const toggleBtn = container.querySelector( '.shaped-kit-tools-toggle' );
+	await act( async () => toggleBtn.click() );
+
+	const sampleBlocks = container.querySelectorAll( '.shaped-kit-tool-sample-block' );
+	expect( sampleBlocks.length ).toBeGreaterThan( 0 );
+
+	const copyJsonBtn = container.querySelector( '.shaped-kit-tool-sample-head .shaped-kit-prompt-copy-btn' );
+	expect( copyJsonBtn ).not.toBeNull();
+	expect( copyJsonBtn.textContent ).toContain( 'Copy JSON' );
+
+	await act( async () => copyJsonBtn.click() );
+	expect( writeText ).toHaveBeenCalled();
+	expect( copyJsonBtn.textContent ).toContain( 'Copied' );
+
+	const expectedDetails = container.querySelectorAll( '.shaped-kit-tool-expected-details' );
+	expect( expectedDetails.length ).toBeGreaterThan( 0 );
+	expect( container.textContent ).toContain( 'Expected Success Output (HTTP 200)' );
+} );
+
+test( 'it filters out Pro tools when edition is free and displays Pro badge when edition is pro', async () => {
+	// 1. Free edition
+	await render( { product: product( { edition: 'free', tools_count: 10 } ) } );
+	const toggleBtn = container.querySelector( '.shaped-kit-tools-toggle' );
+	await act( async () => toggleBtn.click() );
+
+	const freeToolCards = container.querySelectorAll( '.shaped-kit-tool-card' );
+	expect( freeToolCards.length ).toBe( 10 );
+	expect( container.textContent ).not.toContain( 'location-weather/get-cloud-status' );
+
+	// 2. Pro edition
+	await render( { product: product( { edition: 'pro', tools_count: 11 } ) } );
+	const toggleBtnPro = container.querySelector( '.shaped-kit-tools-toggle' );
+	await act( async () => toggleBtnPro.click() );
+
+	const proToolCards = container.querySelectorAll( '.shaped-kit-tool-card' );
+	expect( proToolCards.length ).toBe( 11 );
+	expect( container.textContent ).toContain( 'location-weather/get-cloud-status' );
+	expect( container.querySelector( '.shaped-kit-badge-pro' ) ).not.toBeNull();
+} );
+

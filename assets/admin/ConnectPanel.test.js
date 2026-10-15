@@ -8,7 +8,7 @@
 import { createRoot } from '@wordpress/element';
 import { act } from 'react';
 import ConnectPanel, { isLocalSite } from './ConnectPanel';
-import { createAppPassword } from './api';
+import { createAppPassword, revokeAppPasswords } from './api';
 import { testConnection } from './connectionTest';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,6 +16,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 jest.mock( './api', () => ( {
 	describeError: jest.fn( ( error ) => `described: ${ error.message }` ),
 	createAppPassword: jest.fn(),
+	revokeAppPasswords: jest.fn(),
 } ) );
 
 jest.mock( './connectionTest', () => ( {
@@ -94,8 +95,13 @@ const type = async ( input, value ) => {
 	} );
 };
 
+const HOUR = 60 * 60 * 1000;
+
 beforeEach( () => {
+	window.localStorage.clear();
+	window.sessionStorage.clear();
 	createAppPassword.mockReset();
+	revokeAppPasswords.mockReset();
 	testConnection.mockReset();
 } );
 
@@ -499,5 +505,179 @@ describe( 'Try a tool', () => {
 		);
 
 		expect( tester().dataset.products ).toBe( '' );
+	} );
+} );
+
+describe( 'password persistence and cleanup', () => {
+	const KEY = 'shaped_kit_app_pass_admin';
+	const keep = ( password, msFromNow = HOUR ) =>
+		window.localStorage.setItem(
+			KEY,
+			JSON.stringify( { p: password, e: Date.now() + msFromNow } )
+		);
+	const stored = () => JSON.parse( window.localStorage.getItem( KEY ) );
+
+	test( 'a refresh keeps the password: it is restored from storage', async () => {
+		keep( 'saved-pass-1234' );
+
+		await render( overview() );
+
+		expect( passwordInput().value ).toBe( 'saved-pass-1234' );
+		expect( snippet() ).toContain( 'saved-pass-1234' );
+		expect( container.textContent ).toContain(
+			'Saved in this browser for up to 8 hours'
+		);
+	} );
+
+	test( 'a saved password that has expired is not restored and is removed', async () => {
+		keep( 'too-old', -1000 );
+
+		await render( overview() );
+
+		expect( passwordInput().value ).toBe( '' );
+		expect( window.localStorage.getItem( KEY ) ).toBeNull();
+		expect( container.textContent ).not.toContain(
+			'Saved in this browser'
+		);
+	} );
+
+	test( 'an old plain-text value from before the time limit is dropped, not trusted', async () => {
+		window.localStorage.setItem( KEY, 'plain-old-value' );
+
+		await render( overview() );
+
+		expect( passwordInput().value ).toBe( '' );
+		expect( window.localStorage.getItem( KEY ) ).toBeNull();
+	} );
+
+	test( 'typing saves it with an expiry no more than 8 hours ahead, and Clear removes it', async () => {
+		await render( overview() );
+
+		await type( passwordInput(), 'typed-pass-5678' );
+		expect( stored().p ).toBe( 'typed-pass-5678' );
+		expect( stored().e - Date.now() ).toBeLessThanOrEqual( 8 * HOUR );
+		expect( stored().e - Date.now() ).toBeGreaterThan( 7 * HOUR );
+
+		const clearBtn = button( /Clear/ );
+		expect( clearBtn ).toBeDefined();
+		await act( async () => clearBtn.click() );
+
+		expect( passwordInput().value ).toBe( '' );
+		expect( window.localStorage.getItem( KEY ) ).toBeNull();
+		expect( container.textContent ).not.toContain(
+			'Saved in this browser'
+		);
+	} );
+
+	test( 'when the time is up the page forgets it too, without a refresh', async () => {
+		jest.useFakeTimers();
+		try {
+			keep( 'about-to-expire', 1000 );
+
+			await render( overview() );
+			expect( passwordInput().value ).toBe( 'about-to-expire' );
+
+			await act( async () => {
+				jest.advanceTimersByTime( 1500 );
+			} );
+
+			expect( passwordInput().value ).toBe( '' );
+			expect( window.localStorage.getItem( KEY ) ).toBeNull();
+		} finally {
+			jest.useRealTimers();
+		}
+	} );
+
+	test( 'creating a password saves it, replaces the earlier ones, and says how many', async () => {
+		createAppPassword.mockResolvedValueOnce( {
+			username: 'admin',
+			password: 'new-pass-9999',
+			name: 'Shaped Kit MCP',
+			uuid: 'uuid-1',
+			revoked: 2,
+		} );
+
+		await render( overview() );
+
+		await act( async () =>
+			button( /Create application password/ ).click()
+		);
+		await settle();
+
+		expect( createAppPassword ).toHaveBeenCalledWith( '', true );
+		expect( passwordInput().value ).toBe( 'new-pass-9999' );
+		expect( stored().p ).toBe( 'new-pass-9999' );
+		expect( container.textContent ).toContain(
+			'It replaced 2 earlier Shaped Kit passwords'
+		);
+	} );
+
+	test( 'with nothing replaced it does not talk about replacing', async () => {
+		createAppPassword.mockResolvedValueOnce( {
+			username: 'admin',
+			password: 'first-pass',
+			name: 'Shaped Kit MCP',
+			uuid: 'uuid-1',
+			revoked: 0,
+		} );
+
+		await render( overview() );
+		await act( async () =>
+			button( /Create application password/ ).click()
+		);
+		await settle();
+
+		expect( container.textContent ).not.toContain( 'It replaced' );
+	} );
+
+	test( 'the panel says up front that a new password replaces the earlier ones', async () => {
+		await render( overview() );
+
+		expect( container.textContent ).toContain(
+			'Creating a new one replaces your earlier Shaped Kit passwords'
+		);
+	} );
+
+	test( 'revoking calls the route, clears the saved password and says what happened', async () => {
+		keep( 'to-be-revoked' );
+		revokeAppPasswords.mockResolvedValueOnce( {
+			revoked: 5,
+			message: '5 Shaped Kit application passwords revoked.',
+		} );
+
+		await render( overview() );
+		expect( passwordInput().value ).toBe( 'to-be-revoked' );
+
+		const revokeBtn = button( /Revoke all Shaped Kit passwords/ );
+		expect( revokeBtn ).toBeDefined();
+		await act( async () => revokeBtn.click() );
+		await settle();
+
+		expect( revokeAppPasswords ).toHaveBeenCalled();
+		expect( passwordInput().value ).toBe( '' );
+		expect( window.localStorage.getItem( KEY ) ).toBeNull();
+		expect(
+			container.querySelector( '[role="status"]' ).textContent
+		).toContain( '5 Shaped Kit application passwords revoked.' );
+	} );
+
+	test( 'with browser storage blocked the password still works until the page closes', async () => {
+		const blocked = jest
+			.spyOn( Storage.prototype, 'setItem' )
+			.mockImplementation( () => {
+				throw new Error( 'blocked' );
+			} );
+		try {
+			await render( overview() );
+			await type( passwordInput(), 'memory-only' );
+
+			expect( passwordInput().value ).toBe( 'memory-only' );
+			expect( snippet() ).toContain( 'memory-only' );
+			expect( container.textContent ).not.toContain(
+				'Saved in this browser'
+			);
+		} finally {
+			blocked.mockRestore();
+		}
 	} );
 } );

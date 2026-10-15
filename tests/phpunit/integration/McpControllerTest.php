@@ -240,6 +240,39 @@ final class McpControllerTest extends WP_UnitTestCase {
 		remove_all_filters( 'wp_is_application_passwords_available' );
 	}
 
+	public function test_replace_previous_is_reported_and_only_revokes_this_kits_passwords(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_true' );
+		$this->sign_in_as( 'administrator' );
+
+		$first  = $this->create_password()->get_data();
+		$second = $this->create_password( array( 'replace_previous' => true ) );
+
+		$this->assertSame( 1, $second->get_data()['revoked'] );
+		$this->assertNull( WP_Application_Passwords::get_user_application_password( get_current_user_id(), $first['uuid'] ) );
+		$this->assertSame( 'no-store', $second->get_headers()['Cache-Control'] );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
+	public function test_revoking_is_for_administrators_only_and_returns_the_count(): void {
+		add_filter( 'wp_is_application_passwords_available', '__return_true' );
+		$this->sign_in_as( 'administrator' );
+		$this->create_password();
+		$this->create_password();
+
+		$admin = rest_do_request( new WP_REST_Request( 'DELETE', '/shaped-kit/v1/mcp/app-password' ) );
+		$this->assertSame( 200, $admin->get_status() );
+		$this->assertSame( 2, $admin->get_data()['revoked'] );
+
+		$this->sign_in_as( 'editor' );
+		$this->assertSame( 403, rest_do_request( new WP_REST_Request( 'DELETE', '/shaped-kit/v1/mcp/app-password' ) )->get_status() );
+
+		wp_set_current_user( 0 );
+		$this->assertSame( 401, rest_do_request( new WP_REST_Request( 'DELETE', '/shaped-kit/v1/mcp/app-password' ) )->get_status() );
+
+		remove_all_filters( 'wp_is_application_passwords_available' );
+	}
+
 	public function test_a_password_request_is_for_administrators_only(): void {
 		add_filter( 'wp_is_application_passwords_available', '__return_true' );
 

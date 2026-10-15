@@ -425,6 +425,35 @@
 		flex-wrap: wrap;
 	}
 
+	.shaped-kit-tool-title-group {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.shaped-kit-btn-test-shortcut {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11.5px !important;
+		height: 26px !important;
+		line-height: 24px !important;
+		padding: 0 10px !important;
+		color: #2271b1 !important;
+		border-color: #2271b1 !important;
+		background: #f0f6fc !important;
+		font-weight: 500 !important;
+		border-radius: 4px !important;
+		cursor: pointer;
+		transition: all 0.15s ease-in-out;
+
+		&:hover {
+			background: #2271b1 !important;
+			color: #ffffff !important;
+		}
+	}
+
 	.shaped-kit-tool-label {
 		font-size: 13.5px;
 		color: var(--sk-text);
@@ -502,6 +531,116 @@
 			background: var(--sk-off-soft);
 			border-color: #2271b1;
 			color: #2271b1;
+		}
+	}
+
+	.shaped-kit-tool-starters {
+		margin-top: 10px;
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 10px;
+	}
+
+	.shaped-kit-tool-starters-label {
+		font-size: 11.5px;
+		font-weight: 600;
+		color: #646970;
+	}
+
+	.shaped-kit-tool-starters-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.shaped-kit-tool-sample-block {
+		margin-top: 6px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.shaped-kit-tool-sample-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.shaped-kit-tool-sample-title {
+		font-size: 11.5px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		color: var(--sk-muted);
+	}
+
+	.shaped-kit-tool-sample-code,
+	.shaped-kit-tool-expected-code {
+		margin: 0;
+		padding: 10px 12px;
+		background: #ffffff;
+		border: 1px solid var(--sk-border);
+		border-radius: 4px;
+		font-family: monospace;
+		font-size: 12px;
+		line-height: 1.45;
+		color: #2c3338;
+		overflow-x: auto;
+		max-height: 220px;
+	}
+
+	.shaped-kit-tool-expected-details {
+		margin-top: 4px;
+
+		summary {
+			font-size: 11.5px;
+			font-weight: 600;
+			color: #50575e;
+			cursor: pointer;
+			user-select: none;
+			padding: 2px 0;
+
+			&:hover {
+				color: #2271b1;
+			}
+		}
+
+		.shaped-kit-tool-expected-code {
+			margin-top: 6px;
+		}
+	}
+
+	.shaped-kit-tool-sample-details {
+		margin-top: 10px;
+		border: 1px solid var(--sk-border);
+		border-radius: 6px;
+		background: #f6f7f7;
+		padding: 6px 10px;
+
+		&[open] {
+			background: #ffffff;
+			padding: 10px 12px;
+		}
+
+		.shaped-kit-tool-sample-summary {
+			font-size: 12px;
+			font-weight: 600;
+			color: #50575e;
+			cursor: pointer;
+			user-select: none;
+
+			&:hover {
+				color: #2271b1;
+			}
+		}
+
+		.shaped-kit-tool-sample-content {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			margin-top: 10px;
 		}
 	}
 
@@ -768,6 +907,124 @@
 		font-family: monospace;
 		font-size: 12.5px;
 		line-height: 1.5;
+	}
+
+	.shaped-kit-tester-args-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.shaped-kit-tester-args-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+
+		.shaped-kit-tester-args-title-group {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 8px;
+		}
+
+		.shaped-kit-sample-badge {
+			display: inline-flex;
+			align-items: center;
+			padding: 2px 8px;
+			background: #e0f2fe;
+			color: #0369a1;
+			font-size: 11px;
+			font-weight: 500;
+			border-radius: 10px;
+		}
+
+		label {
+			margin: 0;
+		}
+
+		.shaped-kit-reset-sample-btn {
+			padding: 0;
+			font-size: 12px;
+			cursor: pointer;
+			text-decoration: underline;
+
+			&:hover {
+				color: #135e96;
+			}
+		}
+	}
+
+	.shaped-kit-tester-presets {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px 10px;
+		margin-top: 8px;
+	}
+
+	.shaped-kit-tester-presets-label {
+		font-size: 12px;
+		color: #646970;
+		font-weight: 600;
+	}
+
+	.shaped-kit-tester-presets-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.shaped-kit-preset-btn {
+		font-size: 12px !important;
+		padding: 0 12px !important;
+		height: 26px !important;
+		line-height: 24px !important;
+		border-radius: 999px !important;
+		background: #f0f4f9 !important;
+		border: 1px solid #c3c4c7 !important;
+		color: #1d2327 !important;
+		font-weight: 500 !important;
+		cursor: pointer;
+		transition: all 0.15s ease !important;
+
+		&:hover {
+			background: #e6efff !important;
+			border-color: #005adf !important;
+			color: #005adf !important;
+		}
+	}
+
+	.shaped-kit-expected-output-details {
+		margin-top: 4px;
+
+		summary {
+			font-size: 12px;
+			font-weight: 500;
+			color: #50575e;
+			cursor: pointer;
+			user-select: none;
+
+			&:hover {
+				color: #2271b1;
+			}
+		}
+
+		pre {
+			box-sizing: border-box;
+			width: 100%;
+			max-height: 240px;
+			margin: 6px 0 0;
+			padding: 12px;
+			background: #ffffff;
+			border: 1px solid var(--sk-border);
+			border-radius: 4px;
+			overflow-x: auto;
+			font-family: monospace;
+			font-size: 12px;
+			line-height: 1.45;
+			color: #2c3338;
+		}
 	}
 
 	.shaped-kit-tester-result {

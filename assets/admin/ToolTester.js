@@ -6,6 +6,18 @@ import {
 	openSession,
 	parseArguments,
 } from './mcpClient';
+import { getProductTools } from './toolsCatalog';
+
+/**
+ * Normalise a tool name by replacing slashes with hyphens so that WordPress
+ * ability names (e.g. real-testimonials/get-context) and MCP wire names
+ * (e.g. real-testimonials-get-context) match identically.
+ *
+ * @param {string} name Tool or ability name.
+ * @return {string} Normalised name.
+ */
+export const normalizeToolName = ( name ) =>
+	( typeof name === 'string' ? name.replace( /\//g, '-' ) : '' );
 
 /**
  * What to show for a tool's answer. A tool replies with `structuredContent` (data) and `content` (the
@@ -40,12 +52,17 @@ export const formatResult = ( result ) => {
  * other than what is selected.
  *
  * @param {Object}  props          Component props.
- * @param {Array}   props.products Products that are on, each with `slug`, `name` and `endpoint_url`.
- * @param {string}  props.username The typed username.
- * @param {string}  props.password The typed application password.
+ * @param {Array}   props.products            Products that are on, each with `slug`, `name` and `endpoint_url`.
+ * @param {string}  props.username            The typed username.
+ * @param {string}  props.password            The typed application password.
+ * @param {string}  [props.selectedProductSlug] Currently active product tab or filter slug.
  */
-const ToolTester = ( { products, username, password } ) => {
-	const [ slug, setSlug ] = useState( products[ 0 ]?.slug || '' );
+const ToolTester = ( { products, username, password, selectedProductSlug } ) => {
+	const initialSlug =
+		selectedProductSlug && products.some( ( p ) => p.slug === selectedProductSlug )
+			? selectedProductSlug
+			: products[ 0 ]?.slug || '';
+	const [ slug, setSlug ] = useState( initialSlug );
 	const [ loaded, setLoaded ] = useState( null );
 	const [ toolName, setToolName ] = useState( '' );
 	const [ argsText, setArgsText ] = useState( '{}' );
@@ -59,6 +76,21 @@ const ToolTester = ( { products, username, password } ) => {
 	const login = { username, password };
 	const busy = pending > 0;
 	const tool = loaded?.tools.find( ( item ) => item.name === toolName );
+	const catalogTools = getProductTools( product?.slug || '' );
+	const catalogTool = catalogTools.find(
+		( item ) => normalizeToolName( item.name ) === normalizeToolName( toolName )
+	);
+
+	// Sync slug when selectedProductSlug prop changes from the top tab/selector bar
+	useEffect( () => {
+		if (
+			selectedProductSlug &&
+			selectedProductSlug !== slug &&
+			products.some( ( p ) => p.slug === selectedProductSlug )
+		) {
+			setSlug( selectedProductSlug );
+		}
+	}, [ selectedProductSlug, products ] );
 
 	// Anything loaded or answered is about the old product or credentials, so it goes, and so does any
 	// answer still on its way.
@@ -69,16 +101,50 @@ const ToolTester = ( { products, username, password } ) => {
 		setError( '' );
 	}, [ slug, username, password, products ] );
 
+	useEffect( () => {
+		const onTryTool = ( event ) => {
+			const { productSlug, toolName: targetName, presetArgs } = event.detail || {};
+
+			if ( productSlug && productSlug !== slug ) {
+				setSlug( productSlug );
+			}
+
+			const testerElement = document.querySelector( '.shaped-kit-tester' );
+			if ( testerElement ) {
+				testerElement.scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			}
+
+			if ( loaded?.tools?.length ) {
+				chooseTool( targetName, loaded.tools );
+				if ( presetArgs !== undefined ) {
+					setArgsText( JSON.stringify( presetArgs, null, 2 ) );
+				}
+			} else {
+				load( targetName, presetArgs );
+			}
+		};
+
+		window.addEventListener( 'shaped_kit_try_tool', onTryTool );
+		return () => window.removeEventListener( 'shaped_kit_try_tool', onTryTool );
+	}, [ slug, loaded, product, login ] );
+
 	const chooseTool = ( name, tools = loaded?.tools || [] ) => {
 		const chosen = tools.find( ( item ) => item.name === name );
+		const cat = getProductTools( product?.slug || '' ).find(
+			( item ) => normalizeToolName( item.name ) === normalizeToolName( name )
+		);
 
 		setToolName( name );
-		setArgsText( buildArgsTemplate( chosen?.inputSchema ) );
+		if ( cat && cat.sampleArgs !== undefined ) {
+			setArgsText( JSON.stringify( cat.sampleArgs, null, 2 ) );
+		} else {
+			setArgsText( buildArgsTemplate( chosen?.inputSchema ) );
+		}
 		setOutcome( null );
 		setError( '' );
 	};
 
-	const load = () => {
+	const load = ( initialToolName, initialArgs ) => {
 		const run = ++latest.current;
 
 		setPending( ( count ) => count + 1 );
@@ -98,7 +164,19 @@ const ToolTester = ( { products, username, password } ) => {
 				}
 
 				setLoaded( opened );
-				chooseTool( opened.tools[ 0 ]?.name || '', opened.tools );
+				const target =
+					typeof initialToolName === 'string' && initialToolName
+						? opened.tools.find(
+								( t ) =>
+									normalizeToolName( t.name ) ===
+									normalizeToolName( initialToolName )
+						  )?.name || opened.tools[ 0 ]?.name
+						: opened.tools[ 0 ]?.name;
+
+				chooseTool( target || '', opened.tools );
+				if ( initialArgs !== undefined ) {
+					setArgsText( JSON.stringify( initialArgs, null, 2 ) );
+				}
 			} )
 			.finally( () => setPending( ( count ) => count - 1 ) );
 	};
@@ -118,7 +196,20 @@ const ToolTester = ( { products, username, password } ) => {
 		setOutcome( null );
 		setError( '' );
 
-		callTool( product, login, loaded.session, toolName, parsed.value )
+		const isPrompt = tool?.componentType === 'prompt';
+		const caller = isPrompt
+			? callTool(
+					product,
+					login,
+					loaded.session,
+					toolName,
+					parsed.value,
+					undefined,
+					'prompt'
+			  )
+			: callTool( product, login, loaded.session, toolName, parsed.value );
+
+		caller
 			.then( ( called ) => {
 				if ( token !== latest.current ) {
 					return;
@@ -182,6 +273,16 @@ const ToolTester = ( { products, username, password } ) => {
 						: __( 'Load tools', 'shaped-kit' ) }
 				</button>
 			</div>
+ 
+			{ ! loaded && ! error && (
+				<p className="shaped-kit-card-note shaped-kit-tester-hint">
+					{ sprintf(
+						/* translators: %s: product name */
+						__( 'Click "Load tools" above to connect and explore live tools & starters for %s.', 'shaped-kit' ),
+						product.name
+					) }
+				</p>
+			) }
 
 			{ error && (
 				<p className="shaped-kit-connect-error" role="alert">
@@ -207,7 +308,13 @@ const ToolTester = ( { products, username, password } ) => {
 						>
 							{ loaded.tools.map( ( item ) => (
 								<option key={ item.name } value={ item.name }>
-									{ item.name }
+									{ item.componentType === 'prompt'
+										? sprintf(
+												/* translators: %s: prompt name */
+												__( '%s (Prompt)', 'shaped-kit' ),
+												item.name
+										  )
+										: item.name }
 								</option>
 							) ) }
 						</select>
@@ -219,17 +326,80 @@ const ToolTester = ( { products, username, password } ) => {
 						</p>
 					) }
 
-					<label>
-						<span>{ __( 'Arguments (JSON)', 'shaped-kit' ) }</span>
+					<div className="shaped-kit-tester-args-wrapper">
+						<div className="shaped-kit-tester-args-header">
+							<div className="shaped-kit-tester-args-title-group">
+								<label htmlFor="shaped-kit-tester-args-input">
+									<span>{ __( 'Arguments (JSON)', 'shaped-kit' ) }</span>
+								</label>
+								{ catalogTool?.sampleArgs !== undefined && (
+									<span className="shaped-kit-sample-badge">
+										{ __( 'Sample JSON auto-filled', 'shaped-kit' ) }
+									</span>
+								) }
+							</div>
+							{ catalogTool?.sampleArgs !== undefined && (
+								<button
+									type="button"
+									className="button button-link shaped-kit-reset-sample-btn"
+									onClick={ () =>
+										setArgsText(
+											JSON.stringify( catalogTool.sampleArgs, null, 2 )
+										)
+									}
+								>
+									{ __( 'Reset to sample', 'shaped-kit' ) }
+								</button>
+							) }
+						</div>
+
+						{ catalogTool?.samplePresets?.length > 0 && (
+							<div className="shaped-kit-tester-presets">
+								<span className="shaped-kit-tester-presets-label">
+									{ __( 'Try a starter / preset:', 'shaped-kit' ) }
+								</span>
+								<div className="shaped-kit-tester-presets-list">
+									{ catalogTool.samplePresets.map( ( preset, idx ) => (
+										<button
+											key={ idx }
+											type="button"
+											className="button button-secondary button-small shaped-kit-preset-btn"
+											onClick={ () =>
+												setArgsText(
+													JSON.stringify( preset.args, null, 2 )
+												)
+											}
+										>
+											{ preset.label }
+										</button>
+									) ) }
+								</div>
+							</div>
+						) }
+
 						<textarea
-							rows={ 5 }
+							id="shaped-kit-tester-args-input"
+							rows={ 6 }
 							spellCheck={ false }
 							value={ argsText }
 							onChange={ ( event ) =>
 								setArgsText( event.target.value )
 							}
 						/>
-					</label>
+
+						{ catalogTool?.expectedOutput !== undefined && (
+							<details className="shaped-kit-expected-output-details">
+								<summary className="shaped-kit-expected-output-summary">
+									{ __( 'Expected Success Output (HTTP 200)', 'shaped-kit' ) }
+								</summary>
+								<pre className="shaped-kit-expected-output-code">
+									<code>
+										{ JSON.stringify( catalogTool.expectedOutput, null, 2 ) }
+									</code>
+								</pre>
+							</details>
+						) }
+					</div>
 
 					<div>
 						<button
@@ -240,6 +410,8 @@ const ToolTester = ( { products, username, password } ) => {
 						>
 							{ busy
 								? __( 'Working…', 'shaped-kit' )
+								: tool?.componentType === 'prompt'
+								? __( 'Run prompt', 'shaped-kit' )
 								: __( 'Run tool', 'shaped-kit' ) }
 						</button>
 					</div>

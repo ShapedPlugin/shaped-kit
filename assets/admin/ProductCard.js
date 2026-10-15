@@ -18,7 +18,7 @@ const ProductCard = ( { product, busy = false, onSwitch } ) => {
 	const endpointRef = useRef( null );
 	const view = statusView( product.status );
 	const labelId = `shaped-kit-switch-${ product.slug }`;
-	const tools = getProductTools( product.slug );
+	const tools = getProductTools( product.slug, product.edition );
 
 	const copyEndpoint = async () => {
 		try {
@@ -159,8 +159,32 @@ const ProductCard = ( { product, busy = false, onSwitch } ) => {
 						{ tools.map( ( tool ) => (
 							<div key={ tool.name } className="shaped-kit-tool-card">
 								<div className="shaped-kit-tool-header">
-									<strong className="shaped-kit-tool-label">{ tool.label }</strong>
-									<code className="shaped-kit-tool-name">{ tool.name }</code>
+									<div className="shaped-kit-tool-title-group">
+										<strong className="shaped-kit-tool-label">{ tool.label }</strong>
+										{ tool.pro && (
+											<span className="shaped-kit-badge shaped-kit-badge-pro">
+												{ __( 'Pro', 'shaped-kit' ) }
+											</span>
+										) }
+										<code className="shaped-kit-tool-name">{ tool.name }</code>
+									</div>
+									<button
+										type="button"
+										className="button button-small shaped-kit-btn-test-shortcut"
+										title={ __( 'Open this tool in Try a tool', 'shaped-kit' ) }
+										onClick={ () => {
+											window.dispatchEvent(
+												new CustomEvent( 'shaped_kit_try_tool', {
+													detail: {
+														productSlug: product.slug,
+														toolName: tool.name,
+													},
+												} )
+											);
+										} }
+									>
+										⚡ { __( 'Try in Tester', 'shaped-kit' ) } →
+									</button>
 								</div>
 								<p className="shaped-kit-tool-desc">{ tool.summary }</p>
 								<div className="shaped-kit-tool-prompts">
@@ -185,6 +209,81 @@ const ProductCard = ( { product, busy = false, onSwitch } ) => {
 										) ) }
 									</ul>
 								</div>
+								{ tool.samplePresets?.length > 0 && (
+									<div className="shaped-kit-tool-starters">
+										<span className="shaped-kit-tool-starters-label">
+											{ __( 'Try a starter:', 'shaped-kit' ) }
+										</span>
+										<div className="shaped-kit-tool-starters-list">
+											{ tool.samplePresets.map( ( preset, pIdx ) => (
+												<button
+													key={ pIdx }
+													type="button"
+													className="button button-small shaped-kit-preset-btn"
+													title={ __( 'Open this starter in Try a tool', 'shaped-kit' ) }
+													onClick={ () => {
+														window.dispatchEvent(
+															new CustomEvent( 'shaped_kit_try_tool', {
+																detail: {
+																	productSlug: product.slug,
+																	toolName: tool.name,
+																	presetArgs: preset.args,
+																},
+															} )
+														);
+													} }
+												>
+													{ preset.label }
+												</button>
+											) ) }
+										</div>
+									</div>
+								) }
+								{ ( tool.sampleArgs !== undefined || tool.expectedOutput !== undefined ) && (
+									<details className="shaped-kit-tool-sample-details">
+										<summary className="shaped-kit-tool-sample-summary">
+											{ __( 'Sample JSON input & expected output', 'shaped-kit' ) }
+										</summary>
+										<div className="shaped-kit-tool-sample-content">
+											{ tool.sampleArgs !== undefined && (
+												<div className="shaped-kit-tool-sample-block">
+													<div className="shaped-kit-tool-sample-head">
+														<span className="shaped-kit-tool-sample-title">
+															{ __( 'Sample JSON input (for Try a tool):', 'shaped-kit' ) }
+														</span>
+														<button
+															type="button"
+															className="shaped-kit-prompt-copy-btn"
+															title={ __( 'Copy sample JSON', 'shaped-kit' ) }
+															onClick={ () =>
+																copyPrompt(
+																	JSON.stringify( tool.sampleArgs, null, 2 )
+																)
+															}
+														>
+															{ copiedPrompt === JSON.stringify( tool.sampleArgs, null, 2 )
+																? __( 'Copied', 'shaped-kit' )
+																: __( 'Copy JSON', 'shaped-kit' ) }
+														</button>
+													</div>
+													<pre className="shaped-kit-tool-sample-code">
+														<code>{ JSON.stringify( tool.sampleArgs, null, 2 ) }</code>
+													</pre>
+												</div>
+											) }
+											{ tool.expectedOutput !== undefined && (
+												<details className="shaped-kit-tool-expected-details">
+													<summary className="shaped-kit-tool-expected-summary">
+														{ __( 'Expected Success Output (HTTP 200)', 'shaped-kit' ) }
+													</summary>
+													<pre className="shaped-kit-tool-expected-code">
+														<code>{ JSON.stringify( tool.expectedOutput, null, 2 ) }</code>
+													</pre>
+												</details>
+											) }
+										</div>
+									</details>
+								) }
 							</div>
 						) ) }
 					</div>

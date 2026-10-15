@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import { describeError } from './api';
+import { shellQuote } from './snippets';
 
 /**
  * Reusable, DRY in-plugin MCP settings tab component for ShapedPlugin products.
@@ -138,13 +139,20 @@ const SharedProductSettingsTab = ( {
 		}
 	};
 
+	// The signed-in user's login fills the command in (not a secret); the password is always the owner's to paste.
+	const loginName = summary?.connect?.user_login || '';
+	const passwordsUnavailable = false === summary?.connect?.passwords_available;
+	const connectHref = productSlug && ! hubUrl.includes( 'connect=' )
+		? `${ hubUrl }${ hubUrl.includes( '?' ) ? '&' : '?' }connect=${ encodeURIComponent( productSlug ) }`
+		: hubUrl;
+
 	const cliCommand = summary?.endpoint_url
 		? [
 				'claude mcp add \\',
 				'  --transport stdio \\',
 				`  ${ productSlug || summary.slug || 'product' } \\`,
 				`  --env WP_API_URL=${ summary.endpoint_url } \\`,
-				"  --env WP_API_USERNAME='<your-username>' \\",
+				`  --env WP_API_USERNAME='${ shellQuote( loginName || '<your-username>' ) }' \\`,
 				"  --env WP_API_PASSWORD='<your-application-password>' \\",
 				'  --env OAUTH_ENABLED=false \\',
 				'  -- npx -y @automattic/mcp-wordpress-remote@latest',
@@ -421,27 +429,46 @@ const SharedProductSettingsTab = ( {
 					<h4 style={ { margin: '0 0 6px', fontSize: '15px', fontWeight: 600 } }>
 						{ __( 'Quick Connect (Claude Code CLI)', 'shaped-kit' ) }
 					</h4>
-					<p style={ { margin: '0 0 14px', color: '#646970', fontSize: '13px' } }>
-						{ __( 'Run this command in your terminal where Claude Code is installed to instantly register this product:', 'shaped-kit' ) }
-					</p>
+					{ passwordsUnavailable ? (
+						<p style={ { margin: '0 0 20px', color: '#646970', fontSize: '13px' } }>
+							{ __( 'Application passwords are not available on this site, so an AI client cannot sign in yet. They need HTTPS (or a local site) and must not be switched off by a plugin.', 'shaped-kit' ) }
+						</p>
+					) : (
+						<>
+							<ol style={ { margin: '0 0 14px', paddingLeft: '18px', color: '#646970', fontSize: '13px', lineHeight: 1.5 } }>
+								<li>
+									{ __( 'Create an application password. Shaped Kit does it in one click and fills in this command for you.', 'shaped-kit' ) }{ ' ' }
+									<a href={ connectHref } className="button button-small" style={ { marginLeft: '4px' } }>
+										{ __( 'Create password in Shaped Kit →', 'shaped-kit' ) }
+									</a>
+								</li>
+								<li>
+									{ loginName
+										? __( 'Replace <your-application-password> in the command below with it. Your username is already filled in.', 'shaped-kit' )
+										: __( 'Replace <your-username> and <your-application-password> in the command below.', 'shaped-kit' ) }
+								</li>
+								<li>{ __( 'Run the command in the terminal where Claude Code is installed.', 'shaped-kit' ) }</li>
+							</ol>
 
-					<div style={ { display: 'flex', gap: '8px', marginBottom: '20px' } }>
-						<input
-							type="text"
-							readOnly
-							value={ cliCommand }
-							style={ { flex: 1, height: '36px', padding: '0 12px', fontFamily: 'monospace', fontSize: '12.5px', background: '#f6f7f7' } }
-							onFocus={ ( e ) => e.target.select() }
-						/>
-						<button
-							type="button"
-							className="button"
-							style={ { height: '36px', padding: '0 16px' } }
-							onClick={ copyCliCommand }
-						>
-							{ copiedCommand ? __( 'Copied', 'shaped-kit' ) : __( 'Copy Command', 'shaped-kit' ) }
-						</button>
-					</div>
+							<div style={ { display: 'flex', gap: '8px', marginBottom: '20px' } }>
+								<input
+									type="text"
+									readOnly
+									value={ cliCommand }
+									style={ { flex: 1, height: '36px', padding: '0 12px', fontFamily: 'monospace', fontSize: '12.5px', background: '#f6f7f7' } }
+									onFocus={ ( e ) => e.target.select() }
+								/>
+								<button
+									type="button"
+									className="button"
+									style={ { height: '36px', padding: '0 16px' } }
+									onClick={ copyCliCommand }
+								>
+									{ copiedCommand ? __( 'Copied', 'shaped-kit' ) : __( 'Copy Command', 'shaped-kit' ) }
+								</button>
+							</div>
+						</>
+					) }
 
 					<div style={ { borderTop: '1px solid #f0f0f1', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' } }>
 						<div style={ { fontSize: '13px', color: '#646970' } }>

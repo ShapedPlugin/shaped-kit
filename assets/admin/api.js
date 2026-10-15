@@ -47,11 +47,25 @@ export const switchProduct = ( slug, enabled ) =>
  * @param {string=} name Name to show in the profile.
  * @return {Promise<{password: string, username: string, name: string, uuid: string}>} The credential.
  */
-export const createAppPassword = ( name = '' ) =>
+export const createAppPassword = ( name = '', replacePrevious = false ) =>
 	apiFetch( {
 		url: routeUrl( base(), 'app-password' ),
 		method: 'POST',
-		data: name ? { name } : {},
+		data: {
+			...( name ? { name } : {} ),
+			...( replacePrevious ? { replace_previous: true } : {} ),
+		},
+	} );
+
+/**
+ * Revoke existing Shaped Kit application passwords for the signed-in user.
+ *
+ * @return {Promise<{revoked: number, message: string}>}
+ */
+export const revokeAppPasswords = () =>
+	apiFetch( {
+		url: routeUrl( base(), 'app-password' ),
+		method: 'DELETE',
 	} );
 
 /**

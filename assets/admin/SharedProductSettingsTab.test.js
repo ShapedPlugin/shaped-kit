@@ -311,5 +311,63 @@ describe( 'SharedProductSettingsTab Component', () => {
 
 		expect( container.textContent ).toContain( 'Settings saved successfully.' );
 	} );
-} );
 
+	describe( 'Quick Connect command', () => {
+		const baseSummary = {
+			slug: 'real-testimonials',
+			name: 'Real Testimonials',
+			enabled: true,
+			endpoint_url: 'http://localhost:10003/wp-json/real-testimonials/mcp',
+			tools_count: 19,
+		};
+
+		const mountWith = async ( summary ) => {
+			global.fetch = jest.fn().mockResolvedValue( { ok: true, json: async () => summary } );
+			await mount( {
+				restUrl: '/wp-json/real-testimonials/v1/mcp',
+				productName: 'Real Testimonials',
+				productSlug: 'real-testimonials',
+			} );
+			await settle();
+		};
+
+		const commandInput = () => [ ...container.querySelectorAll( 'input[type="text"]' ) ].find( ( input ) => input.value.includes( 'claude mcp add' ) );
+
+		it( 'fills in the signed-in login and keeps the password a placeholder', async () => {
+			await mountWith( { ...baseSummary, connect: { user_login: 'admin', passwords_available: true } } );
+
+			const command = commandInput().value;
+			expect( command ).toContain( "--env WP_API_USERNAME='admin' \\" );
+			expect( command ).toContain( "--env WP_API_PASSWORD='<your-application-password>' \\" );
+			expect( container.textContent ).toContain( 'Your username is already filled in.' );
+		} );
+
+		it( 'keeps both placeholders when the login is not known', async () => {
+			await mountWith( baseSummary );
+
+			const command = commandInput().value;
+			expect( command ).toContain( "--env WP_API_USERNAME='<your-username>' \\" );
+			expect( container.textContent ).toContain( 'Replace <your-username> and <your-application-password>' );
+		} );
+
+		it( 'keeps a hostile login one quoted word', async () => {
+			await mountWith( { ...baseSummary, connect: { user_login: "x'; touch /tmp/pwned; echo '", passwords_available: true } } );
+
+			expect( commandInput().value ).toContain( "--env WP_API_USERNAME='x'\\''; touch /tmp/pwned; echo '\\''' \\" );
+		} );
+
+		it( 'opens the connect panel of this product in Shaped Kit', async () => {
+			await mountWith( { ...baseSummary, connect: { user_login: 'admin', passwords_available: true } } );
+
+			const link = [ ...container.querySelectorAll( 'a' ) ].find( ( anchor ) => anchor.textContent.includes( 'Create password in Shaped Kit' ) );
+			expect( link.getAttribute( 'href' ) ).toBe( 'admin.php?page=shaped-kit&connect=real-testimonials' );
+		} );
+
+		it( 'says so, and shows no command, when the site does not allow application passwords', async () => {
+			await mountWith( { ...baseSummary, connect: { user_login: 'admin', passwords_available: false } } );
+
+			expect( container.textContent ).toContain( 'Application passwords are not available on this site' );
+			expect( commandInput() ).toBeUndefined();
+		} );
+	} );
+} );

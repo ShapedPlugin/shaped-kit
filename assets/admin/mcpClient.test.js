@@ -173,6 +173,73 @@ describe( 'openSession', () => {
 			'Mcp-Session-Id'
 		);
 	} );
+
+	test( 'when capabilities.prompts is present, it also queries prompts/list and appends prompts', async () => {
+		const { fetchImpl, calls } = server( [
+			{
+				status: 200,
+				session: 'sess-p',
+				body: {
+					result: {
+						capabilities: { prompts: {} },
+						serverInfo: { name: 'X' },
+					},
+				},
+			},
+			{
+				status: 200,
+				body: {
+					result: {
+						tools: [ tool( 'rt-insert-block' ) ],
+					},
+				},
+			},
+			{
+				status: 200,
+				body: {
+					result: {
+						prompts: [
+							{
+								name: 'rt-build-block',
+								description: 'Build a block prompt',
+								arguments: [
+									{
+										name: 'request',
+										description: 'Prompt request',
+										required: true,
+									},
+								],
+							},
+						],
+					},
+				},
+			},
+		] );
+
+		const opened = await openSession( product, login, { fetchImpl } );
+
+		expect( opened.ok ).toBe( true );
+		expect( opened.tools ).toHaveLength( 2 );
+		expect( opened.tools[ 0 ].name ).toBe( 'rt-insert-block' );
+		expect( opened.tools[ 0 ].componentType ).toBe( 'tool' );
+		expect( opened.tools[ 1 ].name ).toBe( 'rt-build-block' );
+		expect( opened.tools[ 1 ].componentType ).toBe( 'prompt' );
+		expect( opened.tools[ 1 ].inputSchema ).toEqual( {
+			type: 'object',
+			properties: {
+				request: {
+					type: 'string',
+					description: 'Prompt request',
+				},
+			},
+			required: [ 'request' ],
+		} );
+		expect( calls.map( ( c ) => c.body.method ) ).toEqual( [
+			'initialize',
+			'tools/list',
+			'prompts/list',
+		] );
+	} );
 } );
 
 describe( 'callTool', () => {
@@ -295,6 +362,45 @@ describe( 'callTool', () => {
 
 		expect( fetchImpl ).not.toHaveBeenCalled();
 		expect( called.error.state ).toBe( 'incomplete' );
+	} );
+
+	test( 'it calls prompts/get when componentType is prompt', async () => {
+		const { fetchImpl, calls } = server( [
+			{
+				status: 200,
+				body: {
+					result: {
+						description: 'Ready prompt',
+						messages: [
+							{
+								role: 'user',
+								content: { type: 'text', text: 'Generated prompt' },
+							},
+						],
+					},
+				},
+			},
+		] );
+
+		const called = await callTool(
+			product,
+			login,
+			'sess-1',
+			'real-testimonials-build-testimonial-block',
+			{ request: 'Show 3 grid cards' },
+			{ fetchImpl },
+			'prompt'
+		);
+
+		expect( calls[ 0 ].body ).toMatchObject( {
+			method: 'prompts/get',
+			params: {
+				name: 'real-testimonials-build-testimonial-block',
+				arguments: { request: 'Show 3 grid cards' },
+			},
+		} );
+		expect( called.ok ).toBe( true );
+		expect( called.result.description ).toBe( 'Ready prompt' );
 	} );
 } );
 

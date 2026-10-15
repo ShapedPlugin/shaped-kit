@@ -118,6 +118,103 @@ final class AppPasswordsTest extends WP_UnitTestCase {
 		$this->assertSame( array(), WP_Application_Passwords::get_user_application_passwords( $this->admin_id ) );
 	}
 
+	/**
+	 * The names the signed-in administrator's passwords have now.
+	 *
+	 * @return string[]
+	 */
+	private function names(): array {
+		return array_values( wp_list_pluck( WP_Application_Passwords::get_user_application_passwords( $this->admin_id ), 'name' ) );
+	}
+
+	public function test_replacing_revokes_the_old_kit_password_and_keeps_the_new_one_working(): void {
+		$old = AppPasswords::create();
+		$new = AppPasswords::create( '', true );
+
+		$this->assertSame( 1, $new['revoked'] );
+		$this->assertSame( array( AppPasswords::DEFAULT_NAME ), $this->names(), 'One is left, and the name did not climb to "2".' );
+		$this->assertNull( WP_Application_Passwords::get_user_application_password( $this->admin_id, $old['uuid'] ) );
+		$this->assertIsArray( WP_Application_Passwords::get_user_application_password( $this->admin_id, $new['uuid'] ) );
+	}
+
+	public function test_a_failed_save_leaves_the_old_password_in_place(): void {
+		$old = AppPasswords::create();
+
+		// The first save of the user's passwords is the new one. Making it fail must not have revoked the old.
+		add_filter(
+			'update_user_metadata',
+			static function ( $check, $object_id, $meta_key ) {
+				return '_application_passwords' === $meta_key ? false : $check;
+			},
+			10,
+			3
+		);
+		$result = AppPasswords::create( '', true );
+		remove_all_filters( 'update_user_metadata' );
+
+		$this->assertWPError( $result );
+		$this->assertIsArray( WP_Application_Passwords::get_user_application_password( $this->admin_id, $old['uuid'] ), 'Never left with none.' );
+	}
+
+	public function test_replacing_spares_passwords_the_user_made_by_hand(): void {
+		WP_Application_Passwords::create_new_application_password( $this->admin_id, array( 'name' => 'Shaped Kit MCP - CI deploy bot' ) );
+		WP_Application_Passwords::create_new_application_password( $this->admin_id, array( 'name' => 'Cursor on laptop' ) );
+		AppPasswords::create();
+
+		$made = AppPasswords::create( '', true );
+
+		$this->assertSame( 1, $made['revoked'] );
+		$this->assertEqualsCanonicalizing(
+			array( 'Shaped Kit MCP - CI deploy bot', 'Cursor on laptop', AppPasswords::DEFAULT_NAME ),
+			$this->names()
+		);
+	}
+
+	public function test_a_custom_named_password_made_here_is_still_ours_to_revoke(): void {
+		AppPasswords::create( 'My Claude Desktop' );
+
+		$this->assertSame( 1, AppPasswords::revoke_previous_passwords() );
+		$this->assertSame( array(), $this->names() );
+	}
+
+	public function test_a_password_from_before_app_id_existed_is_matched_by_its_default_name(): void {
+		WP_Application_Passwords::create_new_application_password( $this->admin_id, array( 'name' => 'Shaped Kit MCP' ) );
+		WP_Application_Passwords::create_new_application_password( $this->admin_id, array( 'name' => 'Shaped Kit MCP 2' ) );
+
+		$this->assertSame( 2, AppPasswords::revoke_previous_passwords() );
+	}
+
+	public function test_revoking_touches_only_the_signed_in_users_passwords(): void {
+		$other = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $other );
+		AppPasswords::create();
+		wp_set_current_user( $this->admin_id );
+		AppPasswords::create();
+
+		$this->assertSame( 1, AppPasswords::revoke_previous_passwords() );
+		$this->assertCount( 1, WP_Application_Passwords::get_user_application_passwords( $other ), 'The other administrator keeps theirs.' );
+	}
+
+	public function test_only_a_real_deletion_is_counted(): void {
+		AppPasswords::create();
+		AppPasswords::create();
+
+		// Core could not save the deletion: nothing was revoked, and the answer must not claim it was.
+		add_filter(
+			'update_user_metadata',
+			static function ( $check, $object_id, $meta_key ) {
+				return '_application_passwords' === $meta_key ? false : $check;
+			},
+			10,
+			3
+		);
+		$count = AppPasswords::revoke_previous_passwords();
+		remove_all_filters( 'update_user_metadata' );
+
+		$this->assertSame( 0, $count );
+		$this->assertCount( 2, $this->names() );
+	}
+
 	public function test_support_reports_the_users_login_and_the_profile_link(): void {
 		$support = AppPasswords::support();
 

@@ -178,23 +178,78 @@ export const openSession = async ( product, login, options ) => {
 		};
 	}
 
-	const tools = Array.isArray( list.body.result.tools )
-		? list.body.result.tools
+	const tools = Array.isArray( list.body?.result?.tools )
+		? list.body.result.tools.map( ( t ) => ( {
+				...t,
+				componentType: 'tool',
+		  } ) )
 		: [];
 
-	return { ok: true, session: init.session, tools, error: null };
+	let prompts = [];
+	if ( init.body?.result?.capabilities?.prompts ) {
+		try {
+			const promptList = await rpc(
+				product,
+				login,
+				init.session,
+				'prompts/list',
+				{},
+				options
+			);
+			if (
+				! failure( promptList ) &&
+				Array.isArray( promptList.body?.result?.prompts )
+			) {
+				prompts = promptList.body.result.prompts.map( ( p ) => {
+					const props = {};
+					const req = [];
+					if ( Array.isArray( p.arguments ) ) {
+						p.arguments.forEach( ( arg ) => {
+							props[ arg.name ] = {
+								type: 'string',
+								description: arg.description || '',
+							};
+							if ( arg.required ) {
+								req.push( arg.name );
+							}
+						} );
+					}
+					return {
+						name: p.name,
+						description: p.description || '',
+						componentType: 'prompt',
+						inputSchema: {
+							type: 'object',
+							properties: props,
+							required: req,
+						},
+					};
+				} );
+			}
+		} catch ( e ) {
+			// Gracefully ignore prompt loading failure.
+		}
+	}
+
+	return {
+		ok: true,
+		session: init.session,
+		tools: [ ...tools, ...prompts ],
+		error: null,
+	};
 };
 
 /**
- * Call one tool.
+ * Call one tool or prompt.
  *
- * @param {Object}  product   A product with `endpoint_url`.
- * @param {Object}  login     The typed credentials.
- * @param {?string} session   The session from `openSession()`.
- * @param {string}  name      The tool's wire name, such as `location-weather-get-context`.
- * @param {Object}  args      The tool's arguments.
- * @param {Object=} options   Test hooks, passed to `rpc()`.
- * @return {Promise<{ok: boolean, result: *, isError: boolean, status: number, ms: number, error: ?Object}>} The tool's own answer, or the reason there is none. `isError` is the tool saying its call failed, which is still an answer.
+ * @param {Object}  product       A product with `endpoint_url`.
+ * @param {Object}  login         The typed credentials.
+ * @param {?string} session       The session from `openSession()`.
+ * @param {string}  name          The wire name, such as `location-weather-get-context`.
+ * @param {Object}  args          The tool or prompt arguments.
+ * @param {Object=} options       Test hooks, passed to `rpc()`.
+ * @param {string=} componentType Either 'tool' (default) or 'prompt'.
+ * @return {Promise<{ok: boolean, result: *, isError: boolean, status: number, ms: number, error: ?Object}>} The answer.
  */
 export const callTool = async (
 	product,
@@ -202,14 +257,16 @@ export const callTool = async (
 	session,
 	name,
 	args,
-	options
+	options,
+	componentType = 'tool'
 ) => {
+	const method = componentType === 'prompt' ? 'prompts/get' : 'tools/call';
 	const started = Date.now();
 	const answer = await rpc(
 		product,
 		login,
 		session,
-		'tools/call',
+		method,
 		{ name, arguments: args },
 		options
 	);
@@ -229,8 +286,8 @@ export const callTool = async (
 
 	return {
 		ok: true,
-		result: answer.body.result,
-		isError: answer.body.result.isError === true,
+		result: answer.body?.result,
+		isError: answer.body?.result?.isError === true,
 		status: answer.status,
 		ms,
 		error: null,

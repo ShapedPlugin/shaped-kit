@@ -104,7 +104,8 @@ const button = ( pattern ) =>
 const toolSelect = () =>
 	container.querySelector( '.shaped-kit-tester-body select' );
 const textarea = () => container.querySelector( 'textarea' );
-const output = () => container.querySelector( 'pre code' )?.textContent;
+const output = () =>
+	container.querySelector( '.shaped-kit-tester-result pre code' )?.textContent;
 
 /** Type into a controlled field. */
 const type = async ( element, value ) => {
@@ -254,12 +255,34 @@ describe( 'running a tool', () => {
 		return draw;
 	};
 
-	test( 'choosing a tool fills its required arguments as blanks', async () => {
+	test( 'choosing a tool fills its sample arguments from catalog', async () => {
 		await ready();
 
 		await choose( toolSelect(), 'location-weather-get-weather-template' );
 
-		expect( textarea().value ).toBe( '{\n  "id": 0\n}' );
+		expect( textarea().value ).toBe( '{\n  "id": 201\n}' );
+	} );
+
+	test( 'choosing an uncataloged tool fills its required arguments as blanks', async () => {
+		openSession.mockResolvedValueOnce(
+			opened( {
+				tools: [
+					{
+						name: 'unknown-custom-tool',
+						description: 'A tool not in catalog.',
+						inputSchema: {
+							type: 'object',
+							properties: { count: { type: 'integer' } },
+							required: [ 'count' ],
+						},
+					},
+				],
+			} )
+		);
+		await render();
+		await load();
+
+		expect( textarea().value ).toBe( '{\n  "count": 0\n}' );
 	} );
 
 	test( 'it calls the chosen tool with the typed arguments and the session, and shows the data and the timing', async () => {
@@ -470,3 +493,206 @@ test( 'with no product on, it draws nothing', async () => {
 
 	expect( container.textContent ).toBe( '' );
 } );
+
+test( 'it prefills sampleArgs from catalog, allows switching presets, and shows expected output', async () => {
+	const realTestimonialTools = [
+		{
+			name: 'real-testimonials/insert-block',
+			description: 'Save a built block into a new draft page.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					block: { type: 'string' },
+					attributes: { type: 'object' },
+					target: { type: 'object' },
+				},
+				required: [ 'block', 'attributes', 'target' ],
+			},
+		},
+	];
+
+	openSession.mockResolvedValueOnce( {
+		ok: true,
+		session: 'sess-rt',
+		tools: realTestimonialTools,
+		error: null,
+	} );
+
+	await render( {
+		products: [
+			{
+				slug: 'real-testimonials',
+				name: 'Real Testimonials',
+				endpoint_url: 'https://site.test/wp-json/real-testimonials/mcp',
+			},
+		],
+	} );
+
+	await load();
+
+	// Textarea is prefilled with sampleArgs (with target.new_draft), not empty stubs
+	const area = container.querySelector( 'textarea' );
+	expect( area.value ).toContain( '"block": "slider"' );
+	expect( area.value ).toContain( '"new_draft": "Customer Reviews"' );
+
+	// Presets are rendered
+	const presets = container.querySelectorAll( '.shaped-kit-preset-btn' );
+	expect( presets.length ).toBeGreaterThan( 0 );
+
+	// Click "With Custom Styling" preset
+	const customPreset = Array.from( presets ).find( ( btn ) =>
+		btn.textContent.includes( 'With Custom Styling' )
+	);
+	expect( customPreset ).toBeDefined();
+	await act( async () => customPreset.click() );
+
+	expect( area.value ).toContain( '"cardDesign": "design-one"' );
+
+	// Manually change the textarea, then click "Reset to sample"
+	await act( async () => {
+		area.value = '{"custom": true}';
+		area.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+	} );
+
+	const resetBtn = container.querySelector( '.shaped-kit-reset-sample-btn' );
+	expect( resetBtn ).not.toBeNull();
+	await act( async () => resetBtn.click() );
+
+	expect( area.value ).toContain( '"new_draft": "Customer Reviews"' );
+
+	// Expected output details are present
+	const expectedDetails = container.querySelector( '.shaped-kit-expected-output-details' );
+	expect( expectedDetails ).not.toBeNull();
+	expect( expectedDetails.textContent ).toContain( 'Expected Success Output (HTTP 200)' );
+	expect( expectedDetails.textContent ).toContain( '15001' );
+} );
+
+test( 'it matches wire names with hyphens to catalog tools and populates sampleArgs and presets', async () => {
+	const wireTools = [
+		{
+			name: 'real-testimonials-insert-block',
+			description: 'Save a built block into a new draft page.',
+			componentType: 'tool',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					block: { type: 'string' },
+					attributes: { type: 'object' },
+					target: { type: 'object' },
+				},
+				required: [ 'block', 'attributes', 'target' ],
+			},
+		},
+	];
+
+	openSession.mockResolvedValueOnce( {
+		ok: true,
+		session: 'sess-hyphen',
+		tools: wireTools,
+		error: null,
+	} );
+
+	await render( {
+		products: [
+			{
+				slug: 'real-testimonials',
+				name: 'Real Testimonials',
+				endpoint_url: 'https://site.test/wp-json/real-testimonials/mcp',
+			},
+		],
+	} );
+
+	await load();
+
+	// Matches catalog tool despite hyphen vs slash:
+	const area = container.querySelector( 'textarea' );
+	expect( area.value ).toContain( '"block": "slider"' );
+	expect( area.value ).toContain( '"new_draft": "Customer Reviews"' );
+
+	const presets = container.querySelectorAll( '.shaped-kit-preset-btn' );
+	expect( presets.length ).toBeGreaterThan( 0 );
+
+	const expectedDetails = container.querySelector( '.shaped-kit-expected-output-details' );
+	expect( expectedDetails ).not.toBeNull();
+	expect( expectedDetails.textContent ).toContain( '15001' );
+} );
+
+test( 'it renders prompt items with (Prompt) label and calls callTool with componentType prompt', async () => {
+	const items = [
+		{
+			name: 'real-testimonials-build-testimonial-block',
+			description: 'Build a testimonial block prompt',
+			componentType: 'prompt',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					request: { type: 'string', description: 'User request' },
+				},
+				required: [ 'request' ],
+			},
+		},
+	];
+
+	openSession.mockResolvedValueOnce( {
+		ok: true,
+		session: 'sess-p',
+		tools: items,
+		error: null,
+	} );
+
+	callTool.mockResolvedValueOnce(
+		answered( {
+			result: {
+				description: 'Ready prompt',
+				messages: [
+					{
+						role: 'user',
+						content: { type: 'text', text: 'Prompt generated' },
+					},
+				],
+			},
+		} )
+	);
+
+	await render( {
+		products: [
+			{
+				slug: 'real-testimonials',
+				name: 'Real Testimonials',
+				endpoint_url: 'https://site.test/wp-json/real-testimonials/mcp',
+			},
+		],
+	} );
+
+	await load();
+
+	// Select option has "(Prompt)" label
+	const select = toolSelect();
+	expect( select.options[ 0 ].textContent ).toContain( '(Prompt)' );
+
+	// Button text says "Run prompt"
+	const runBtn = button( /Run prompt/ );
+	expect( runBtn ).toBeDefined();
+
+	// Sample args for build-testimonial-block are prefilled
+	const area = container.querySelector( 'textarea' );
+	expect( area.value ).toContain(
+		'Build a 3-column carousel testimonial block'
+	);
+
+	// Running the prompt calls callTool with componentType = 'prompt'
+	await act( async () => runBtn.click() );
+	await settle();
+
+	expect( callTool ).toHaveBeenCalledWith(
+		expect.objectContaining( { slug: 'real-testimonials' } ),
+		expect.anything(),
+		'sess-p',
+		'real-testimonials-build-testimonial-block',
+		expect.objectContaining( { request: expect.any( String ) } ),
+		undefined,
+		'prompt'
+	);
+	expect( output() ).toContain( 'Prompt generated' );
+} );
+
