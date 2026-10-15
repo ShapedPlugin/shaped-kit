@@ -147,10 +147,13 @@ The admin interface is mounted under **ShapedPlugin → AI & MCP** with three pr
 - Any MCP-compliant AI client (Claude Code, Claude Desktop, Cursor, Copilot, etc.).
 
 #### Installation
-1. Download the latest `shaped-kit.zip` from the [Releases page](https://github.com/ShapedPlugin/shaped-kit/releases).
+1. Download the release zip, `shaped-kit-<version>.zip`, from the [Releases page](https://github.com/ShapedPlugin/shaped-kit/releases). **Do not use GitHub's "Source code (zip)" or the green "Code → Download ZIP" button:** they leave out the built dashboard (`build/` is not in git), so the page would show no dashboard.
 2. In WordPress Admin, navigate to **Plugins → Add New → Upload Plugin**.
-3. Select `shaped-kit.zip` and click **Install Now**, then **Activate Plugin**.
+3. Select the zip and click **Install Now**, then **Activate Plugin**.
 4. Access the dashboard under **ShapedPlugin → AI & MCP**.
+
+#### Running from source
+If you clone the repository instead of using a release zip, build the dashboard once: `npm ci && npm run build`. To make an installable zip from your checkout, run `npm run package` (it builds, zips and verifies the package).
 
 ---
 

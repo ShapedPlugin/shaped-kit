@@ -170,4 +170,39 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$this->assertSame( '1', $flag() );
 		remove_all_filters( 'shaped_kit/store_live' );
 	}
+
+	/**
+	 * What the page prints, for the signed-in user.
+	 *
+	 * @param string|null $asset_file Build asset file to check, or null for the plugin's own.
+	 * @return string
+	 */
+	private function rendered( $asset_file ): string {
+		ob_start();
+		DashboardPage::render( $asset_file );
+
+		return (string) ob_get_clean();
+	}
+
+	public function test_a_missing_build_says_why_instead_of_leaving_a_bare_heading(): void {
+		$html = $this->rendered( '/no/such/index.asset.php' );
+
+		$this->assertStringContainsString( '<div id="shaped-kit-dashboard"><h1>AI &amp; MCP</h1>', $html );
+		$this->assertStringContainsString( 'class="notice notice-error inline"', $html );
+		$this->assertStringContainsString( 'Source code', $html, 'It names the likely cause.' );
+		$this->assertStringContainsString( 'href="' . DashboardPage::RELEASES_URL . '"', $html, 'It links to the right zip.' );
+		$this->assertStringContainsString( '<code>npm ci &amp;&amp; npm run build</code>', $html, 'It gives the command for a source checkout.' );
+	}
+
+	public function test_a_present_build_prints_the_bare_mount_point_only(): void {
+		$html = $this->rendered( $this->asset_file );
+
+		$this->assertSame( '<div class="wrap"><div id="shaped-kit-dashboard"><h1>AI &amp; MCP</h1></div></div>', $html );
+	}
+
+	public function test_the_page_prints_nothing_to_someone_who_may_not_open_it(): void {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( '', $this->rendered( '/no/such/index.asset.php' ) );
+	}
 }
