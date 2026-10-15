@@ -3,7 +3,7 @@
  * Safe Beta Lifecycle Engine for Shaped Kit Store Track (Phase S3).
  *
  * Implements:
- * - One-time opt-in manual beta installation (FluentHub style).
+ * - One-time opt-in manual beta installation.
  * - Strict No-Downgrade Barrier (SE15): Blocks installation if current installed version >= target beta.
  * - Core Update Isolation (SE14): Guarantees that beta versions are NEVER injected into WordPress's
  *   `update_plugins` transient, preventing automated background update bleeding.

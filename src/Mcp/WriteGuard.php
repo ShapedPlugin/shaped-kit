@@ -8,8 +8,7 @@
  * 3. Atomic single-use token consumption via delete_option/delete_transient row check.
  * 4. Idempotency key replay protection (24h TTL).
  *
- * Reference: FluentCart Support/WriteGuard.php with intentional safety enhancements
- * for full argument hash verification and atomic deletion row-count checks.
+ * Safety properties: full argument hash verification and atomic deletion row-count checks.
  *
  * Source citations:
  * - delete_transient(): wp-includes/option.php:1380

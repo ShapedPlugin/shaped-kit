@@ -64,7 +64,7 @@
 
 	<!--
 		Hook names use "/" as a separator by design (PRD §7: shaped_kit/products,
-		{prefix}/mcp_loaded), the same convention as FluentCRM's fluent_crm/...
+		{prefix}/mcp_loaded), a hook-naming style many plugins use.
 		Allowed through the sniff's own option (WPCS 3.3.0), not by excluding it,
 		so other naming mistakes in hook names are still caught.
 	-->

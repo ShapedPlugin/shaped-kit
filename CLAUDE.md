@@ -16,8 +16,8 @@ This file is tracked in a public repository. Never put local paths, keys, licens
    - **Mandatory:** in the turn that writes or modifies code, name the exact `file:line` you read.
    - If something can't be verified in source, don't use it; record the open point in the PRD.
 2. **Reference implementation first (C2).**
-   - For any feature FluentCRM, FluentCart or FluentHub (`fluent-toolkit`) already has, read their version first and match its shape unless there is a documented reason to differ. PRD §0 maps each feature to the exact reference file; `docs/FLUENT_COMPARISON.md` records the differences.
-   - FluentHub is `https://github.com/WPManageNinja/fluent-toolkit`, not installed locally: clone it to a temporary scratch directory to read it, never onto the site.
+   - For any feature a reference product already has, read its version first and match its shape unless there is a documented reason to differ. PRD §0 names the reference products and maps each feature to the exact reference file; the comparison notes in `docs/` record the differences.
+   - A reference product that is not installed locally is cloned to a temporary scratch directory to read it, never onto the site.
    - Any difference needs an explicit written reason in the docs or PRD.
 3. **Probe, don't reason (C3).** An edge case or assumption counts as verified only when it has been run:
    - by an automated unit or integration test, or

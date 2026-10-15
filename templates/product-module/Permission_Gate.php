@@ -64,7 +64,7 @@ class Permission_Gate {
 	 *
 	 * Contract:
 	 * Returns `true` or a `WP_Error`, NEVER `false`.
-	 * FluentHub and generic consumers treat any non-WP_Error response as success.
+	 * Generic consumers treat any non-WP_Error response as success.
 	 * Returning `false` on denial would cause the UI to display a failed toggle as successful (E94 / B6).
 	 *
 	 * @param mixed $enabled Requested state: boolean, or string representations (1, 0, "true", "false", "yes", "no", "on", "off").

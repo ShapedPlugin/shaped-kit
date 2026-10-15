@@ -4,7 +4,7 @@
  *
  * Implements:
  * - Direct HTTP POST communication with EDD store endpoint (`edd_action=get_version`).
- * - Strictly NO query string transmission of license keys (unlike FluentHub's add_query_arg leakage).
+ * - Strictly NO query string transmission of license keys.
  * - Host allowlisting on package download URLs (`account.shapedplugin.com`).
  * - Read-only product license introspection from `location_weather_settings` and `sp_testimonial_pro_options`.
  * - Strictly zero database storage of license keys in Shaped Kit (`wp_options`, custom tables, or transients).

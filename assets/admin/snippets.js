@@ -1,8 +1,8 @@
 /**
  * The text an owner pastes into an AI client to connect it: one builder per client.
  *
- * Pure functions, so every client's format is tested on its own. The shapes follow what FluentHub's
- * MCP screen and FluentCRM's own MCP settings page show for the same clients.
+ * Pure functions, so every client's format is tested on its own. The shapes follow what each client
+ * documents for adding an MCP server.
  *
  * Nothing here stores or sends the password: it goes into the text the owner copies, and nowhere else.
  */

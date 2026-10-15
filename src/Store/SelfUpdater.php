@@ -6,7 +6,7 @@
  * - `pre_set_site_transient_update_plugins`: Injects update object when newer version exists in catalog.
  * - `plugins_api`: Returns plugin metadata popup details.
  * - `upgrader_pre_download`: Enforces pre-unpack SHA-256 verification on Shaped Kit's own download package.
- * - "Check for update" link in the plugin's row on the Plugins screen (`plugin_row_meta`, as FluentHub does), and the
+ * - "Check for update" link in the plugin's row on the Plugins screen (`plugin_row_meta`), and the
  *   nonce-protected force check it points at: `plugins.php?shaped_kit_check_update=1&_wpnonce=…`.
  *
  * Everything but the download check does nothing while the Store is off (StoreGate). The download check stays
@@ -236,7 +236,7 @@ class SelfUpdater {
 
 	/**
 	 * Handles the force-check link (`plugins.php?shaped_kit_check_update=1`, nonce `shaped_kit_force_check_update`).
-	 * It works on any admin page, like FluentHub's, because it runs on `admin_init`.
+	 * It works on any admin page because it runs on `admin_init`.
 	 *
 	 * @param bool $terminate Whether to terminate request with exit. Defaults to true.
 	 * @return bool True if force check executed, false otherwise.
