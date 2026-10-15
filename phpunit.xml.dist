@@ -25,5 +25,14 @@
 		<testsuite name="integration">
 			<directory>tests/phpunit/integration</directory>
 		</testsuite>
+		<!--
+			adapter     a product's real MCP server, run through one real adapter copy
+			            (prompts and tools on the wire). Not part of `composer test`: it
+			            needs SHAPED_KIT_PHPUNIT_BOOTSTRAP=adapter, and one process loads
+			            one copy. `composer test:adapter` runs it once per copy found.
+		-->
+		<testsuite name="adapter">
+			<directory>tests/phpunit/adapter</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

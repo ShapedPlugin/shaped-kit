@@ -12,6 +12,9 @@
  *   integration  Boots the WordPress test library and loads the plugin on
  *                `muplugins_loaded`. Skips cleanly (rather than fataling)
  *                when that library is not installed.
+ *   adapter      Integration's WordPress, but instead of the plugin, one real MCP
+ *                adapter copy (SHAPED_KIT_MCP_ADAPTER_DIR) and a product module
+ *                built on it. See adapter-support.php.
  *
  * @package ShapedKit
  */
@@ -24,7 +27,7 @@ $shaped_kit_mode = getenv( 'SHAPED_KIT_PHPUNIT_BOOTSTRAP' ) ? getenv( 'SHAPED_KI
  */
 
 $shaped_kit_wp_tests_dir = '';
-if ( 'integration' === $shaped_kit_mode ) {
+if ( in_array( $shaped_kit_mode, array( 'integration', 'adapter' ), true ) ) {
 	$shaped_kit_wp_tests_dir = getenv( 'WP_TESTS_DIR' );
 	if ( ! $shaped_kit_wp_tests_dir ) {
 		$shaped_kit_default = $shaped_kit_root . '/.wordpress-tests-lib';
@@ -61,9 +64,30 @@ if ( $shaped_kit_wp_tests_dir ) {
 		fwrite( STDERR, "Testing the package at {$shaped_kit_plugin_dir}\n" );
 	}
 
+	/*
+	 * Adapter mode swaps the plugin for one adapter copy. The plugin would load its own bundled
+	 * copy at include time and the copies share class names, so the two cannot meet in one process.
+	 */
+	$shaped_kit_adapter_dir = '';
+	if ( 'adapter' === $shaped_kit_mode ) {
+		$shaped_kit_adapter_dir = getenv( 'SHAPED_KIT_MCP_ADAPTER_DIR' ) ? rtrim( getenv( 'SHAPED_KIT_MCP_ADAPTER_DIR' ), '/\\' ) : $shaped_kit_root . '/libs/mcp-adapter';
+
+		if ( ! is_dir( $shaped_kit_adapter_dir . '/includes' ) ) {
+			fwrite( STDERR, "SHAPED_KIT_MCP_ADAPTER_DIR must point at an MCP adapter copy (the folder holding includes/). Got: {$shaped_kit_adapter_dir}\n" );
+			exit( 1 );
+		}
+
+		require_once __DIR__ . '/adapter-support.php';
+	}
+
 	tests_add_filter(
 		'muplugins_loaded',
-		static function () use ( $shaped_kit_plugin_dir ) {
+		static function () use ( $shaped_kit_plugin_dir, $shaped_kit_adapter_dir ) {
+			if ( $shaped_kit_adapter_dir ) {
+				shaped_kit_adapter_boot( $shaped_kit_adapter_dir );
+				return;
+			}
+
 			require_once $shaped_kit_plugin_dir . '/shaped-kit.php';
 		}
 	);
