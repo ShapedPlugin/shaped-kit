@@ -245,4 +245,15 @@ describe( 'buildSnippet', () => {
 			expect( buildSnippet( key, options() ) ).not.toBe( '' );
 		} );
 	} );
+
+	test( 'clients with known setup traps provide a proactive tip', () => {
+		const map = Object.fromEntries(
+			clients().map( ( item ) => [ item.key, item ] )
+		);
+
+		expect( map[ 'claude-code' ].tip ).toMatch( /claude mcp remove/ );
+		expect( map[ 'claude-desktop' ].tip ).toMatch( /Restart required/ );
+		expect( map.cursor.tip ).toMatch( /Restart required/ );
+		expect( map.copilot.tip ).toMatch( /Language model unavailable/ );
+	} );
 } );

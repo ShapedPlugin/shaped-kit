@@ -203,6 +203,51 @@ const StorePanel = () => {
 				</button>
 			</div>
 
+			<div
+				className="notice notice-info inline shaped-kit-store-devops-notice"
+				style={ {
+					margin: '0 0 20px',
+					padding: '14px 18px',
+					borderLeftColor: '#72aee6',
+					borderRadius: '4px',
+					background: '#f0f6fc',
+				} }
+			>
+				<h4
+					style={ {
+						margin: '0 0 6px',
+						fontSize: '13.5px',
+						fontWeight: 600,
+						color: '#1d2327',
+						display: 'flex',
+						alignItems: 'center',
+						gap: '8px',
+					} }
+				>
+					<span
+						className="dashicons dashicons-admin-tools"
+						style={ { color: '#2271b1', fontSize: '18px', width: '18px', height: '18px' } }
+					/>
+					{ __(
+						'DevOps Release Pipeline in Progress (Developer Preview)',
+						'shaped-kit'
+					) }
+				</h4>
+				<p
+					style={ {
+						margin: 0,
+						fontSize: '12.5px',
+						color: '#50575e',
+						lineHeight: 1.5,
+					} }
+				>
+					{ __(
+						'The Products & Store Hub is currently in developer preview mode using staging catalog placeholders. One-click installs, Pro license activations, and beta packages will be fully functional once the production release pipeline is deployed by DevOps (production Ed25519 signing keys, hosted catalog.json, and CDN release ZIPs with SHA-256 verification).',
+						'shaped-kit'
+					) }
+				</p>
+			</div>
+
 			{ error && (
 				<div className="notice notice-error inline" style={ { margin: '0 0 20px', padding: '10px 12px' } }>
 					<p style={ { margin: 0 } }>{ error }</p>

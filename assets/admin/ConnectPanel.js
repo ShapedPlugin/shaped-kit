@@ -56,7 +56,7 @@ const unavailableText = ( reason ) => {
 	switch ( reason ) {
 		case 'site_disabled':
 			return __(
-				'Application passwords are off on this site. WordPress needs HTTPS for them unless the site runs in a local environment.',
+				'Application passwords are off on this site. WordPress needs HTTPS for them, or on a dev machine set WP_ENVIRONMENT_TYPE=local in wp-config.php or environment variables. If behind a reverse proxy terminating SSL, ensure your proxy passes HTTP_X_FORWARDED_PROTO.',
 				'shaped-kit'
 			);
 		case 'user_disabled':
@@ -125,6 +125,31 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 	const latestTest = useRef( 0 );
 	const isTesting = pendingTests > 0;
 
+	const env = overview?.environment || {};
+	const envType = env.type || 'production';
+	const isSsl = Boolean( env.is_ssl );
+	const appPasswordsAvailable = Boolean(
+		env.app_passwords_available ?? support?.available
+	);
+
+	let authHeaderPassed = Boolean( env.authorization_header );
+	let authHeaderBlocked = false;
+
+	if ( results && Object.keys( results ).length > 0 ) {
+		const resList = Object.values( results );
+		const latest = resList[ resList.length - 1 ];
+		if ( latest.headerReached === false ) {
+			authHeaderBlocked = true;
+			authHeaderPassed = false;
+		} else if (
+			latest.headerReached === true ||
+			latest.state === 'ok'
+		) {
+			authHeaderPassed = true;
+			authHeaderBlocked = false;
+		}
+	}
+
 	const updatePassword = ( val ) => {
 		setPassword( val );
 		setExpiresAt( savePassword( storageKey, val ) );
@@ -181,7 +206,15 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 		setCreated( null );
 		setRevokedNotice( '' );
 
-		createAppPassword( '', true )
+		// One password per client, and making another never revokes the ones already in use: a client that
+		// is set up keeps working. Revoking is its own button.
+		createAppPassword(
+			sprintf(
+				/* translators: %s: the AI client the password is for, for example Claude Desktop. */
+				__( 'Shaped Kit MCP - %s', 'shaped-kit' ),
+				current?.label || ''
+			)
+		)
 			.then( ( made ) => {
 				setUsername( made.username );
 				updatePassword( made.password );
@@ -256,7 +289,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 						<h2>{ __( 'Connect a client', 'shaped-kit' ) }</h2>
 						<p className="shaped-kit-card-note">
 							{ __(
-								'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in. Creating a new one replaces your earlier Shaped Kit passwords.',
+								'Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in. Each password you create stays valid until you revoke it, so clients you already set up keep working. Make one per client.',
 								'shaped-kit'
 							) }
 						</p>
@@ -322,18 +355,6 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 							),
 							created.name
 						) }
-						{ created.revoked > 0 &&
-							' ' +
-								sprintf(
-									/* translators: %d: how many earlier passwords were revoked. */
-									_n(
-										'It replaced %d earlier Shaped Kit password. A client still using that one needs this new password.',
-										'It replaced %d earlier Shaped Kit passwords. A client still using one of them needs this new password.',
-										created.revoked,
-										'shaped-kit'
-									),
-									created.revoked
-								) }
 					</p>
 				) }
 
@@ -500,6 +521,16 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 
 				<p className="shaped-kit-card-note">{ current.note }</p>
 
+				{ current.tip && (
+					<div className="shaped-kit-client-tip" role="note">
+						<span
+							className="dashicons dashicons-info"
+							aria-hidden="true"
+						/>
+						<span>{ current.tip }</span>
+					</div>
+				) }
+
 				{ snippet ? (
 					<div className="shaped-kit-snippet">
 						<pre>
@@ -536,8 +567,28 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 											result.state
 										) }` }
 									>
-										<strong>{ result.name }</strong>
-										<span>{ result.message }</span>
+										<div className="shaped-kit-result-header">
+											<strong>{ result.name }</strong>
+											{ result.title && (
+												<span className="shaped-kit-result-badge">
+													{ result.title }
+												</span>
+											) }
+										</div>
+										<span className="shaped-kit-result-message">
+											{ result.message }
+										</span>
+										{ result.actionHint && (
+											<div className="shaped-kit-result-action">
+												<strong>
+													{ __(
+														'Fix:',
+														'shaped-kit'
+													) }
+												</strong>{ ' ' }
+												<span>{ result.actionHint }</span>
+											</div>
+										) }
 									</li>
 								) ) }
 							</ul>
@@ -551,6 +602,303 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 						) }
 					</p>
 				) }
+
+				<div className="shaped-kit-environment-check">
+					<div className="shaped-kit-environment-header">
+						<h4>
+							<span
+								className="dashicons dashicons-admin-generic"
+								aria-hidden="true"
+							/>
+							<span>
+								{ __(
+									'Environment & Server Diagnostics',
+									'shaped-kit'
+								) }
+							</span>
+						</h4>
+						<span className="shaped-kit-environment-subtitle">
+							{ __(
+								'Checks whether your host environment meets core MCP requirements',
+								'shaped-kit'
+							) }
+						</span>
+					</div>
+
+					<div className="shaped-kit-environment-grid">
+						<div className="shaped-kit-env-item">
+							<span className="shaped-kit-env-label">
+								{ __( 'Environment Type', 'shaped-kit' ) }
+							</span>
+							<span
+								className={ `shaped-kit-env-badge ${
+									envType === 'local'
+										? 'shaped-kit-env-badge-local'
+										: 'shaped-kit-env-badge-neutral'
+								}` }
+							>
+								{ envType }
+							</span>
+							<span className="shaped-kit-env-desc">
+								{ envType === 'local'
+									? __(
+											'Local environment active (WP_ENVIRONMENT_TYPE=local).',
+											'shaped-kit'
+									  )
+									: __(
+											'Non-local environment. Plain HTTP disables app passwords.',
+											'shaped-kit'
+									  ) }
+							</span>
+						</div>
+
+						<div className="shaped-kit-env-item">
+							<span className="shaped-kit-env-label">
+								{ __( 'SSL / HTTPS', 'shaped-kit' ) }
+							</span>
+							<span
+								className={ `shaped-kit-env-badge ${
+									isSsl
+										? 'shaped-kit-env-badge-good'
+										: 'shaped-kit-env-badge-warn'
+								}` }
+							>
+								{ isSsl
+									? __( 'Active (HTTPS)', 'shaped-kit' )
+									: __( 'Inactive (HTTP)', 'shaped-kit' ) }
+							</span>
+							<span className="shaped-kit-env-desc">
+								{ isSsl
+									? __(
+											'HTTPS is enabled for secure communication.',
+											'shaped-kit'
+									  )
+									: __(
+											'Plain HTTP. If behind an SSL proxy, forward HTTP_X_FORWARDED_PROTO.',
+											'shaped-kit'
+									  ) }
+							</span>
+						</div>
+
+						<div className="shaped-kit-env-item">
+							<span className="shaped-kit-env-label">
+								{ __( 'Application Passwords', 'shaped-kit' ) }
+							</span>
+							<span
+								className={ `shaped-kit-env-badge ${
+									appPasswordsAvailable
+										? 'shaped-kit-env-badge-good'
+										: 'shaped-kit-env-badge-bad'
+								}` }
+							>
+								{ appPasswordsAvailable
+									? __( 'Available', 'shaped-kit' )
+									: __( 'Disabled', 'shaped-kit' ) }
+							</span>
+							<span className="shaped-kit-env-desc">
+								{ appPasswordsAvailable
+									? __(
+											'Core application passwords are ready.',
+											'shaped-kit'
+									  )
+									: __(
+											'Disabled by WordPress. Requires HTTPS or WP_ENVIRONMENT_TYPE=local.',
+											'shaped-kit'
+									  ) }
+							</span>
+						</div>
+
+						<div className="shaped-kit-env-item">
+							<span className="shaped-kit-env-label">
+								{ __( 'Authorization Header', 'shaped-kit' ) }
+							</span>
+							<span
+								className={ `shaped-kit-env-badge ${
+									authHeaderPassed
+										? 'shaped-kit-env-badge-good'
+										: authHeaderBlocked
+										? 'shaped-kit-env-badge-bad'
+										: 'shaped-kit-env-badge-neutral'
+								}` }
+							>
+								{ authHeaderPassed
+									? __( 'Passed to PHP', 'shaped-kit' )
+									: authHeaderBlocked
+									? __( 'Blocked / Stripped', 'shaped-kit' )
+									: __( 'Probe via Doctor', 'shaped-kit' ) }
+							</span>
+							<span className="shaped-kit-env-desc">
+								{ authHeaderPassed
+									? __(
+											'Web server forwarded credentials to PHP successfully.',
+											'shaped-kit'
+									  )
+									: authHeaderBlocked
+									? __(
+											'Host stripped the header. Fix via .htaccess or nginx config.',
+											'shaped-kit'
+									  )
+									: __(
+											'Click "Test connection" to probe live header transmission.',
+											'shaped-kit'
+									  ) }
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<details className="shaped-kit-troubleshooting-guide">
+					<summary>
+						<span
+							className="dashicons dashicons-sos"
+							aria-hidden="true"
+						/>
+						<span>
+							{ __(
+								'Troubleshooting & Reconnection Guide (Got 401 Unauthorized or Connection Errors?)',
+								'shaped-kit'
+							) }
+						</span>
+					</summary>
+					<div className="shaped-kit-troubleshooting-content">
+						<div className="shaped-kit-troubleshooting-step">
+							<h4>
+								<span className="shaped-kit-step-badge">1</span>
+								{ __(
+									'Check WordPress & Application Passwords',
+									'shaped-kit'
+								) }
+							</h4>
+							<p>
+								{ __(
+									'Ensure the product toggle switch is turned ON above. If you get 401 Unauthorized, make sure you are logged in as an Administrator with manage_options permissions. Note that creating a new password does not revoke existing ones, but clicking "Revoke all Shaped Kit passwords" or deleting them on your Users → Profile page disables them permanently.',
+									'shaped-kit'
+								) }
+							</p>
+						</div>
+
+						<div className="shaped-kit-troubleshooting-step">
+							<h4>
+								<span className="shaped-kit-step-badge">2</span>
+								{ __(
+									'Check AI Client Configuration & CLI Quirks',
+									'shaped-kit'
+								) }
+							</h4>
+							<ul>
+								<li>
+									<strong>
+										{ __( 'Claude Desktop:', 'shaped-kit' ) }
+									</strong>{ ' ' }
+									{ __(
+										'Add the snippet into your claude_desktop_config.json under "mcpServers". Ensure no trailing comma on the final entry. If running on a local development site (.local, .test), ensure "NODE_TLS_REJECT_UNAUTHORIZED": "0" is present. Claude Desktop only reads config on launch: completely Quit (⌘Q / Alt+F4) and reopen it.',
+										'shaped-kit'
+									) }
+								</li>
+								<li>
+									<strong>
+										{ __( 'Claude Code CLI:', 'shaped-kit' ) }
+									</strong>{ ' ' }
+									{ __(
+										'Claude Code will silently ignore "claude mcp add" if the server already exists. If reconnecting with a new password, you must run "claude mcp remove <slug>" first, or edit ~/.claude.json directly.',
+										'shaped-kit'
+									) }
+								</li>
+								<li>
+									<strong>
+										{ __( 'Cursor & Codex:', 'shaped-kit' ) }
+									</strong>{ ' ' }
+									{ __(
+										'Paste into settings and reload the window ("Developer: Reload Window" in the command palette).',
+										'shaped-kit'
+									) }
+								</li>
+								<li>
+									<strong>
+										{ __(
+											'GitHub Copilot (VS Code & CLI):',
+											'shaped-kit'
+										) }
+									</strong>{ ' ' }
+									{ __(
+										'In VS Code, paste into .vscode/mcp.json or User settings. If chat reports "Language model unavailable", that is a GitHub account subscription or session issue: sign out and back in to your GitHub account in VS Code. If using the terminal Copilot CLI, it reads ~/.copilot/mcp-config.json; add servers via "copilot mcp add".',
+										'shaped-kit'
+									) }
+								</li>
+							</ul>
+						</div>
+
+						<div className="shaped-kit-troubleshooting-step">
+							<h4>
+								<span className="shaped-kit-step-badge">3</span>
+								{ __(
+									'Run the Connection Doctor',
+									'shaped-kit'
+								) }
+							</h4>
+							<p>
+								{ __(
+									'Click the "Test connection" button above. The diagnostic runner will verify whether WordPress accepts your credentials and whether your web server is stripping the HTTP Authorization header.',
+									'shaped-kit'
+								) }
+							</p>
+						</div>
+
+						<div className="shaped-kit-troubleshooting-step">
+							<h4>
+								<span className="shaped-kit-step-badge">4</span>
+								{ __(
+									'Local, Docker & Reverse Proxy Setup',
+									'shaped-kit'
+								) }
+							</h4>
+							<p>
+								{ __(
+									'Running on a local dev server (Local, Docker, XAMPP, MAMP) or behind an SSL reverse proxy? Here is how to configure WordPress:',
+									'shaped-kit'
+								) }
+							</p>
+							<ul>
+								<li>
+									<strong>
+										{ __(
+											'Plain HTTP on Local / Docker:',
+											'shaped-kit'
+										) }
+									</strong>{ ' ' }
+									{ __(
+										'WordPress disables Application Passwords on plain HTTP unless WP_ENVIRONMENT_TYPE is set to "local". In wp-config.php add: define( \'WP_ENVIRONMENT_TYPE\', \'local\' ); or set the environment variable "WP_ENVIRONMENT_TYPE=local" in your docker-compose.yml.',
+										'shaped-kit'
+									) }
+								</li>
+								<li>
+									<strong>
+										{ __(
+											'SSL Terminating at a Reverse Proxy:',
+											'shaped-kit'
+										) }
+									</strong>{ ' ' }
+									{ __(
+										'If SSL terminates at Nginx, Traefik, or Cloudflare, WordPress may detect plain HTTP. In wp-config.php before wp-settings.php add: if ( isset( $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) && \'https\' === $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) { $_SERVER[\'HTTPS\'] = \'on\'; } (Security note: only trust this header behind a trusted reverse proxy).',
+										'shaped-kit'
+									) }
+								</li>
+								<li>
+									<strong>
+										{ __(
+											'Server Stripping Authorization Header:',
+											'shaped-kit'
+										) }
+									</strong>{ ' ' }
+									{ __(
+										'Apache: save Settings > Permalinks, or add "SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1" to .htaccess. Nginx: ensure "fastcgi_param HTTP_AUTHORIZATION $http_authorization;" is in your PHP location block.',
+										'shaped-kit'
+									) }
+								</li>
+							</ul>
+						</div>
+					</div>
+				</details>
 			</section>
 
 			<ToolTester

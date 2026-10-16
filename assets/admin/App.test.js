@@ -410,7 +410,7 @@ describe( 'the Store tab', () => {
 
 		await mount();
 
-		expect( tabs() ).toEqual( [ 'AI & MCP Products', 'Activity Log' ] );
+		expect( tabs() ).toEqual( [ 'AI & MCP', 'Activity Log' ] );
 	} );
 
 	test( 'is shown when the page says the Store is on', async () => {
@@ -420,7 +420,7 @@ describe( 'the Store tab', () => {
 		await mount();
 
 		expect( tabs() ).toEqual( [
-			'AI & MCP Products',
+			'AI & MCP',
 			'Products & Store',
 			'Activity Log',
 		] );

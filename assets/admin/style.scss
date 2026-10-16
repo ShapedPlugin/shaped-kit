@@ -816,6 +816,34 @@
 		margin-top: 12px;
 	}
 
+	.shaped-kit-client-tip {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		margin-top: 10px;
+		padding: 8px 12px;
+		background: #eef5fc;
+		border-left: 3px solid #2271b1;
+		border-radius: 0 4px 4px 0;
+		color: #1d2327;
+		font-size: 12.5px;
+		line-height: 1.45;
+
+		.dashicons {
+			color: #2271b1;
+			font-size: 18px;
+			width: 18px;
+			height: 18px;
+			line-height: 18px;
+			margin-top: 1px;
+			flex-shrink: 0;
+		}
+
+		span:last-child {
+			flex: 1;
+		}
+	}
+
 	// The dark code box: the connect snippet and a tool's answer look alike.
 	.shaped-kit-snippet pre,
 	.shaped-kit-tester-result pre {
@@ -1079,6 +1107,256 @@
 			border-color: var(--sk-#{$tone});
 			background: var(--sk-#{$tone}-soft);
 			color: var(--sk-#{$tone});
+		}
+	}
+
+	.shaped-kit-result-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.shaped-kit-result-badge {
+		font-size: 11px;
+		font-weight: 600;
+		padding: 1px 8px;
+		border-radius: 12px;
+		background: rgba(0, 0, 0, 0.06);
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+
+	.shaped-kit-result-message {
+		font-size: 13px;
+	}
+
+	.shaped-kit-result-action {
+		margin-top: 6px;
+		padding: 6px 10px;
+		background: rgba(255, 255, 255, 0.7);
+		border-radius: 4px;
+		font-size: 12.5px;
+		line-height: 1.4;
+	}
+
+	.shaped-kit-environment-check {
+		margin-top: 24px;
+		border: 1px solid var(--sk-border);
+		border-radius: 8px;
+		background: #ffffff;
+		padding: 16px 20px;
+
+		.shaped-kit-environment-header {
+			margin-bottom: 14px;
+
+			h4 {
+				margin: 0 0 2px;
+				font-size: 13.5px;
+				font-weight: 600;
+				color: #1d2327;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+
+				.dashicons {
+					color: #2271b1;
+					font-size: 18px;
+					width: 18px;
+					height: 18px;
+				}
+			}
+
+			.shaped-kit-environment-subtitle {
+				font-size: 12px;
+				color: #646970;
+			}
+		}
+
+		.shaped-kit-environment-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+			gap: 14px;
+		}
+
+		.shaped-kit-env-item {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			padding: 12px;
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: 6px;
+
+			.shaped-kit-env-label {
+				font-size: 11.5px;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				color: #646970;
+			}
+
+			.shaped-kit-env-badge {
+				display: inline-flex;
+				align-items: center;
+				align-self: flex-start;
+				padding: 2px 8px;
+				border-radius: 4px;
+				font-size: 12px;
+				font-weight: 600;
+				margin: 2px 0 4px;
+
+				&.shaped-kit-env-badge-good {
+					background: var(--sk-good-soft);
+					color: var(--sk-good);
+				}
+
+				&.shaped-kit-env-badge-bad {
+					background: var(--sk-bad-soft);
+					color: var(--sk-bad);
+				}
+
+				&.shaped-kit-env-badge-warn {
+					background: var(--sk-warn-soft);
+					color: var(--sk-warn);
+				}
+
+				&.shaped-kit-env-badge-local {
+					background: #e0f2fe;
+					color: #0369a1;
+				}
+
+				&.shaped-kit-env-badge-neutral {
+					background: #f1f5f9;
+					color: #475569;
+				}
+			}
+
+			.shaped-kit-env-desc {
+				font-size: 11.5px;
+				line-height: 1.4;
+				color: #646970;
+			}
+		}
+	}
+
+	.shaped-kit-troubleshooting-guide {
+		margin-top: 24px;
+		border: 1px solid var(--sk-border);
+		border-radius: 8px;
+		background: #f8fafc;
+		overflow: hidden;
+		transition: border-color 0.15s ease-in-out;
+
+		&[open] {
+			background: #ffffff;
+			border-color: #c3c4c7;
+
+			summary {
+				border-bottom: 1px solid var(--sk-border);
+				background: #f0f4f9;
+			}
+		}
+
+		summary {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 12px 16px;
+			font-size: 13.5px;
+			font-weight: 600;
+			color: #1d2327;
+			cursor: pointer;
+			user-select: none;
+			outline: none;
+
+			&:hover {
+				color: #2271b1;
+			}
+
+			.dashicons {
+				color: #2271b1;
+				font-size: 18px;
+				width: 18px;
+				height: 18px;
+				line-height: 18px;
+			}
+		}
+
+		.shaped-kit-troubleshooting-content {
+			padding: 16px 20px;
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		.shaped-kit-troubleshooting-step {
+			h4 {
+				margin: 0 0 6px;
+				font-size: 13px;
+				font-weight: 600;
+				color: #1d2327;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.shaped-kit-step-badge {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				background: #2271b1;
+				color: #ffffff;
+				font-size: 11px;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			p {
+				margin: 0;
+				font-size: 12.5px;
+				line-height: 1.5;
+				color: #50575e;
+			}
+
+			code {
+				display: block;
+				margin: 6px 0;
+				padding: 6px 10px;
+				background: #f0f0f1;
+				border: 1px solid #dcdcde;
+				border-radius: 4px;
+				font-size: 11.5px;
+				font-family: monospace;
+				overflow-x: auto;
+			}
+
+			.shaped-kit-security-note {
+				display: block;
+				margin-top: 4px;
+				font-size: 11px;
+				color: #8c8f94;
+				font-style: italic;
+			}
+
+			ul {
+				margin: 6px 0 0;
+				padding-left: 20px;
+				font-size: 12.5px;
+				line-height: 1.5;
+				color: #50575e;
+
+				li {
+					margin-bottom: 6px;
+
+					&:last-child {
+						margin-bottom: 0;
+					}
+				}
+			}
 		}
 	}
 
