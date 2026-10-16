@@ -781,7 +781,6 @@ describe( 'password persistence and cleanup', () => {
 					type: 'local',
 					is_ssl: false,
 					app_passwords_available: true,
-					authorization_header: true,
 				},
 			} )
 		);
@@ -796,7 +795,7 @@ describe( 'password persistence and cleanup', () => {
 		expect( envSection.textContent ).toContain( 'local' );
 		expect( envSection.textContent ).toContain( 'Inactive (HTTP)' );
 		expect( envSection.textContent ).toContain( 'Available' );
-		expect( envSection.textContent ).toContain( 'Passed to PHP' );
+		expect( envSection.textContent ).toContain( 'Probe via Doctor' );
 	} );
 
 	test( 'renders Environment & Server Diagnostics with production HTTPS and disabled passwords', async () => {
@@ -806,7 +805,6 @@ describe( 'password persistence and cleanup', () => {
 					type: 'production',
 					is_ssl: false,
 					app_passwords_available: false,
-					authorization_header: false,
 				},
 				app_password: {
 					available: false,
@@ -835,6 +833,177 @@ describe( 'password persistence and cleanup', () => {
 			'Local, Docker & Reverse Proxy Setup'
 		);
 		expect( guide.textContent ).toContain( 'WP_ENVIRONMENT_TYPE' );
+		expect( guide.textContent ).toContain( 'X-Forwarded-Proto' );
 		expect( guide.textContent ).toContain( 'HTTP_X_FORWARDED_PROTO' );
+	} );
+
+	describe( 'Authorization header tile state mapping and aggregation', () => {
+		const authTile = () =>
+			[ ...container.querySelectorAll( '.shaped-kit-env-item' ) ].find(
+				( el ) => el.textContent.includes( 'Authorization Header' )
+			);
+
+		test( 'shows Probe via Doctor initially before any test is run', async () => {
+			await render( overview() );
+			const tile = authTile();
+			expect( tile.textContent ).toContain( 'Probe via Doctor' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-neutral' )
+			).not.toBeNull();
+		} );
+
+		test( 'maps headerStatus passed to Passed to PHP good badge', async () => {
+			testConnection.mockResolvedValueOnce( {
+				slug: 'location-weather',
+				state: 'ok',
+				headerStatus: 'passed',
+				headerReached: true,
+			} );
+			await render( overview() );
+			await type( passwordInput(), 'valid-pass' );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			const tile = authTile();
+			expect( tile.textContent ).toContain( 'Passed to PHP' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-good' )
+			).not.toBeNull();
+			expect( tile.textContent ).toContain(
+				'Web server forwarded credentials to PHP successfully.'
+			);
+		} );
+
+		test( 'maps host_blocked to Blocked by Host bad badge and blames host config', async () => {
+			testConnection.mockResolvedValueOnce( {
+				slug: 'location-weather',
+				state: 'rejected',
+				headerStatus: 'host_blocked',
+				headerReached: false,
+			} );
+			await render( overview() );
+			await type( passwordInput(), 'test-pass' );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			const tile = authTile();
+			expect( tile.textContent ).toContain( 'Blocked by Host' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-bad' )
+			).not.toBeNull();
+			expect( tile.textContent ).toContain(
+				'Host stripped the header. Fix via .htaccess or nginx config.'
+			);
+		} );
+
+		test( 'maps intercepted to Blocked Upstream warn badge without blaming host', async () => {
+			testConnection.mockResolvedValueOnce( {
+				slug: 'location-weather',
+				state: 'rejected',
+				headerStatus: 'intercepted',
+				headerReached: null,
+			} );
+			await render( overview() );
+			await type( passwordInput(), 'test-pass' );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			const tile = authTile();
+			expect( tile.textContent ).toContain( 'Blocked Upstream' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-warn' )
+			).not.toBeNull();
+			expect( tile.textContent ).toContain(
+				'Blocked before reaching WordPress'
+			);
+			expect( tile.textContent ).not.toContain(
+				'Host stripped the header'
+			);
+		} );
+
+		test( 'takes the worst state across multiple products instead of only the last result', async () => {
+			const products = [
+				product( { slug: 'product-ok', name: 'Product OK' } ),
+				product( { slug: 'product-bad', name: 'Product Bad' } ),
+			];
+
+			// Product 1 passes, Product 2 is blocked by host -> shows Blocked by Host
+			testConnection
+				.mockResolvedValueOnce( {
+					slug: 'product-ok',
+					state: 'ok',
+					headerStatus: 'passed',
+					headerReached: true,
+				} )
+				.mockResolvedValueOnce( {
+					slug: 'product-bad',
+					state: 'rejected',
+					headerStatus: 'host_blocked',
+					headerReached: false,
+				} );
+
+			await render( overview( { products } ) );
+			await type( passwordInput(), 'multi-pass' );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			let tile = authTile();
+			expect( tile.textContent ).toContain( 'Blocked by Host' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-bad' )
+			).not.toBeNull();
+
+			// Reverse order: Product 1 is blocked by host, Product 2 passes -> still shows Blocked by Host
+			testConnection
+				.mockResolvedValueOnce( {
+					slug: 'product-ok',
+					state: 'rejected',
+					headerStatus: 'host_blocked',
+					headerReached: false,
+				} )
+				.mockResolvedValueOnce( {
+					slug: 'product-bad',
+					state: 'ok',
+					headerStatus: 'passed',
+					headerReached: true,
+				} );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			tile = authTile();
+			expect( tile.textContent ).toContain( 'Blocked by Host' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-bad' )
+			).not.toBeNull();
+
+			// Passed + Intercepted -> shows Blocked Upstream
+			testConnection
+				.mockResolvedValueOnce( {
+					slug: 'product-ok',
+					state: 'ok',
+					headerStatus: 'passed',
+					headerReached: true,
+				} )
+				.mockResolvedValueOnce( {
+					slug: 'product-bad',
+					state: 'rejected',
+					headerStatus: 'intercepted',
+					headerReached: null,
+				} );
+
+			await act( async () => button( /Test connection/ ).click() );
+			await settle();
+
+			tile = authTile();
+			expect( tile.textContent ).toContain( 'Blocked Upstream' );
+			expect(
+				tile.querySelector( '.shaped-kit-env-badge-warn' )
+			).not.toBeNull();
+		} );
 	} );
 } );

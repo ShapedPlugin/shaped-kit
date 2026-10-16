@@ -38,11 +38,11 @@ export const clients = () => [
 		key: 'copilot',
 		label: __( 'GitHub Copilot', 'shaped-kit' ),
 		note: __(
-			'Paste this JSON into your VS Code MCP configuration (.vscode/mcp.json or User settings). If using the Copilot CLI in your terminal, configure servers in ~/.copilot/mcp-config.json or run `copilot mcp add`.',
+			'Paste this JSON into your VS Code MCP configuration (.vscode/mcp.json or User settings).',
 			'shaped-kit'
 		),
 		tip: __(
-			'Seeing "Language model unavailable"? That is a GitHub account/subscription issue in VS Code, not an MCP server error. Ensure you are signed in to a GitHub account with an active Copilot seat. For terminal CLI, use `copilot mcp add`.',
+			'Restart required: Reload the VS Code window after saving settings.',
 			'shaped-kit'
 		),
 	},
@@ -62,7 +62,7 @@ export const clients = () => [
 		key: 'claude-desktop',
 		label: __( 'Claude Desktop', 'shaped-kit' ),
 		note: __(
-			'Add these entries inside the "mcpServers" object of claude_desktop_config.json. If the file already has one, merge them into it rather than pasting a second object, and check there is no comma after the last entry. Then restart Claude Desktop. If it cannot find npx, replace "npx" with its full path (run `which npx`).',
+			'Add these entries inside the "mcpServers" object of claude_desktop_config.json. If connecting to a local HTTPS dev site with a self-signed certificate, add NODE_TLS_REJECT_UNAUTHORIZED: 0 (note: disables certificate checks). If the file already has one, merge them into it rather than pasting a second object, and check there is no comma after the last entry. Then restart Claude Desktop. If it cannot find npx, replace "npx" with its full path (run `which npx`).',
 			'shaped-kit'
 		),
 		tip: __(
@@ -72,13 +72,13 @@ export const clients = () => [
 	},
 	{
 		key: 'gemini-cli',
-		label: __( 'Gemini CLI / Antigravity', 'shaped-kit' ),
+		label: __( 'Gemini CLI', 'shaped-kit' ),
 		note: __(
-			'Paste this JSON into your Gemini CLI / Antigravity settings file (~/.gemini/settings.json).',
+			'Paste this JSON into your Gemini CLI settings file (~/.gemini/settings.json).',
 			'shaped-kit'
 		),
 		tip: __(
-			'CLI Shortcut: You can also register servers directly from your terminal by running `agy mcp add <slug> ...` or `gemini mcp add <slug> ...`.',
+			'Restart required: Reload your terminal or restart Gemini CLI after saving settings.',
 			'shaped-kit'
 		),
 	},
@@ -185,7 +185,9 @@ export const buildSnippet = (
 			return list
 				.map( ( product ) => {
 					const envFlags = [
-						localDev ? '  --env NODE_TLS_REJECT_UNAUTHORIZED=0 \\' : null,
+						localDev
+							? '  --env NODE_TLS_REJECT_UNAUTHORIZED=0 \\'
+							: null,
 						`  --env WP_API_URL=${ product.endpoint_url } \\`,
 						`  --env WP_API_USERNAME='${ shellQuote( user ) }' \\`,
 						`  --env WP_API_PASSWORD='${ shellQuote( secret ) }' \\`,
@@ -194,7 +196,11 @@ export const buildSnippet = (
 						.filter( Boolean )
 						.join( '\n' );
 
-					return `claude mcp add \\\n  --transport stdio \\\n  ${ product.slug } \\\n${ envFlags }\n  -- npx -y @automattic/mcp-wordpress-remote@latest`;
+					const tlsWarning = localDev
+						? '# Note: NODE_TLS_REJECT_UNAUTHORIZED=0 disables TLS certificate checks for local self-signed certificates.\n'
+						: '';
+
+					return `${ tlsWarning }claude mcp add \\\n  --transport stdio \\\n  ${ product.slug } \\\n${ envFlags }\n  -- npx -y @automattic/mcp-wordpress-remote@latest`;
 				} )
 				.join( '\n\n' );
 

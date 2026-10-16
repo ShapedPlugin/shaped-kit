@@ -47,27 +47,23 @@ describe( 'interpret', () => {
 			'If you sent credentials, your web server may be stripping the Authorization header.';
 
 		test( 'with the server hint says the host removes the header, not that the password is wrong, and gives the fix', () => {
-			const { state, message } = interpret( 401, {
+			const res = interpret( 401, {
 				code: 'rest_forbidden',
 				host_config_hint: hint,
 			} );
 
-			expect( state ).toBe( 'rejected' );
-			expect( message ).toMatch( /not passing the Authorization header/ );
-			expect( message ).toMatch( /not a wrong password/ );
-			expect( message ).toContain( 'HTTP_AUTHORIZATION' );
-			expect( message ).toContain( 'fastcgi_param' );
-			expect( message ).not.toMatch( /was not accepted/ );
-			expect(
-				interpret( 401, {
-					code: 'rest_forbidden',
-					host_config_hint: hint,
-				} ).headerReached
-			).toBe( false );
+			expect( res.state ).toBe( 'rejected' );
+			expect( res.message ).toMatch( /not passing the Authorization header/ );
+			expect( res.message ).toMatch( /not a wrong password/ );
+			expect( res.message ).toContain( 'HTTP_AUTHORIZATION' );
+			expect( res.message ).toContain( 'fastcgi_param' );
+			expect( res.message ).not.toMatch( /was not accepted/ );
+			expect( res.headerReached ).toBe( false );
+			expect( res.headerStatus ).toBe( 'host_blocked' );
 		} );
 
 		test( 'from WordPress without the hint says the username or password was refused, and does not blame the host', () => {
-			const { state, message, headerReached } = interpret( 401, {
+			const { state, message, headerReached, headerStatus } = interpret( 401, {
 				code: 'rest_forbidden',
 			} );
 
@@ -78,6 +74,7 @@ describe( 'interpret', () => {
 			expect( message ).toMatch( /revoked/ );
 			expect( message ).not.toMatch( /Authorization header/ );
 			expect( headerReached ).toBe( true );
+			expect( headerStatus ).toBe( 'passed' );
 		} );
 
 		test.each( [
@@ -87,13 +84,15 @@ describe( 'interpret', () => {
 		] )(
 			'that is not JSON (%s) says something in front of WordPress answered',
 			( label, body ) => {
-				const { state, message } = interpret( 401, body );
+				const { state, message, headerReached, headerStatus } = interpret( 401, body );
 
 				expect( state ).toBe( 'rejected' );
 				expect( message ).toMatch( /in front of WordPress/ );
 				expect( message ).not.toMatch(
 					/not accepted|Authorization header/
 				);
+				expect( headerReached ).toBeNull();
+				expect( headerStatus ).toBe( 'intercepted' );
 			}
 		);
 
