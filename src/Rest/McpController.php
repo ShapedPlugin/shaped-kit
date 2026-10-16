@@ -427,53 +427,25 @@ class McpController {
 	}
 
 	/**
-	 * Environment and connectivity diagnostics for the dashboard.
+	 * Environment diagnostics for the dashboard.
 	 *
 	 * Verified source:
 	 * - wp_get_environment_type(): wp-includes/load.php:250
 	 * - is_ssl(): wp-includes/load.php:1659
 	 * - wp_is_application_passwords_available(): wp-includes/user.php:5169
-	 * - Authorization header check: wp-includes/load.php:108-118, src/Mcp/TransportGuard.php:192-209
 	 *
-	 * @return array{type: string, is_ssl: bool, app_passwords_available: bool, authorization_header: bool}
+	 * Note: Authorization header presence cannot be checked on this request because
+	 * the dashboard calls this endpoint via cookie/nonce authentication. The live
+	 * connection test probes header reachability using HTTP Basic auth requests.
+	 *
+	 * @return array{type: string, is_ssl: bool, app_passwords_available: bool}
 	 */
 	public static function environment_status() {
 		return array(
 			'type'                    => function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : 'production',
 			'is_ssl'                  => is_ssl(),
 			'app_passwords_available' => function_exists( 'wp_is_application_passwords_available' ) ? wp_is_application_passwords_available() : false,
-			'authorization_header'    => self::has_authorization_header(),
 		);
-	}
-
-	/**
-	 * Check whether an Authorization header reached PHP on the current request.
-	 *
-	 * Verified source: wp-includes/load.php:108-118, src/Mcp/TransportGuard.php:192-209.
-	 *
-	 * @return bool
-	 */
-	public static function has_authorization_header() {
-		if ( ! empty( $_SERVER['HTTP_AUTHORIZATION'] ) || ! empty( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) || ! empty( $_SERVER['PHP_AUTH_USER'] ) ) {
-			return true;
-		}
-
-		if ( ! empty( $_SERVER['HTTP_X_AUTHORIZATION'] ) ) {
-			return true;
-		}
-
-		if ( function_exists( 'apache_request_headers' ) ) {
-			$headers = apache_request_headers();
-			if ( is_array( $headers ) ) {
-				foreach ( array( 'Authorization', 'authorization', 'AUTHORIZATION' ) as $key ) {
-					if ( ! empty( $headers[ $key ] ) ) {
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
 	}
 
 	/**

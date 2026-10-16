@@ -78,7 +78,6 @@ final class McpControllerTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'type', $data['environment'] );
 		$this->assertArrayHasKey( 'is_ssl', $data['environment'] );
 		$this->assertArrayHasKey( 'app_passwords_available', $data['environment'] );
-		$this->assertArrayHasKey( 'authorization_header', $data['environment'] );
 	}
 
 	public function test_an_editor_and_a_visitor_are_refused(): void {
@@ -420,54 +419,5 @@ final class McpControllerTest extends WP_UnitTestCase {
 		$this->assertSame( 'error', $res->get_data()['items'][0]['outcome'] );
 
 		\ShapedKit\Audit\LogTable::drop();
-	}
-
-	public function test_has_authorization_header_detects_server_globals(): void {
-		// phpcs:disable WordPress.Security.ValidatedSanitizedInput
-		$orig_auth  = $_SERVER['HTTP_AUTHORIZATION'] ?? null;
-		$orig_redir = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
-		$orig_xauth = $_SERVER['HTTP_X_AUTHORIZATION'] ?? null;
-		$orig_user  = $_SERVER['PHP_AUTH_USER'] ?? null;
-
-		try {
-			unset( $_SERVER['HTTP_AUTHORIZATION'], $_SERVER['REDIRECT_HTTP_AUTHORIZATION'], $_SERVER['HTTP_X_AUTHORIZATION'], $_SERVER['PHP_AUTH_USER'] );
-			$this->assertFalse( McpController::has_authorization_header() );
-
-			$_SERVER['HTTP_AUTHORIZATION'] = 'Basic YWRtaW46cGFzcw==';
-			$this->assertTrue( McpController::has_authorization_header() );
-
-			unset( $_SERVER['HTTP_AUTHORIZATION'] );
-			$_SERVER['REDIRECT_HTTP_AUTHORIZATION'] = 'Basic YWRtaW46cGFzcw==';
-			$this->assertTrue( McpController::has_authorization_header() );
-
-			unset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
-			$_SERVER['HTTP_X_AUTHORIZATION'] = 'Basic YWRtaW46cGFzcw==';
-			$this->assertTrue( McpController::has_authorization_header() );
-
-			unset( $_SERVER['HTTP_X_AUTHORIZATION'] );
-			$_SERVER['PHP_AUTH_USER'] = 'admin';
-			$this->assertTrue( McpController::has_authorization_header() );
-		} finally {
-			unset( $_SERVER['HTTP_X_AUTHORIZATION'] );
-			if ( null !== $orig_auth ) {
-				$_SERVER['HTTP_AUTHORIZATION'] = $orig_auth;
-			} else {
-				unset( $_SERVER['HTTP_AUTHORIZATION'] );
-			}
-			if ( null !== $orig_redir ) {
-				$_SERVER['REDIRECT_HTTP_AUTHORIZATION'] = $orig_redir;
-			} else {
-				unset( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
-			}
-			if ( null !== $orig_xauth ) {
-				$_SERVER['HTTP_X_AUTHORIZATION'] = $orig_xauth;
-			}
-			if ( null !== $orig_user ) {
-				$_SERVER['PHP_AUTH_USER'] = $orig_user;
-			} else {
-				unset( $_SERVER['PHP_AUTH_USER'] );
-			}
-		}
-		// phpcs:enable WordPress.Security.ValidatedSanitizedInput
 	}
 }

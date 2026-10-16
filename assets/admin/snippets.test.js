@@ -150,6 +150,13 @@ describe( 'buildSnippet', () => {
 		expect(
 			buildSnippet( 'cursor', options( { localDev: true } ) )
 		).not.toContain( 'TLS' );
+
+		const claudeCode = buildSnippet(
+			'claude-code',
+			options( { localDev: true } )
+		);
+		expect( claudeCode ).toContain( 'NODE_TLS_REJECT_UNAUTHORIZED=0' );
+		expect( claudeCode ).toContain( 'disables TLS certificate checks' );
 	} );
 
 	test( 'the generic snippet carries the header and a curl test', () => {
@@ -254,6 +261,6 @@ describe( 'buildSnippet', () => {
 		expect( map[ 'claude-code' ].tip ).toMatch( /claude mcp remove/ );
 		expect( map[ 'claude-desktop' ].tip ).toMatch( /Restart required/ );
 		expect( map.cursor.tip ).toMatch( /Restart required/ );
-		expect( map.copilot.tip ).toMatch( /Language model unavailable/ );
+		expect( map.copilot.tip ).toMatch( /Restart required/ );
 	} );
 } );

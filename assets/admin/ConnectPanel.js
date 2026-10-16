@@ -56,7 +56,7 @@ const unavailableText = ( reason ) => {
 	switch ( reason ) {
 		case 'site_disabled':
 			return __(
-				'Application passwords are off on this site. WordPress needs HTTPS for them, or on a dev machine set WP_ENVIRONMENT_TYPE=local in wp-config.php or environment variables. If behind a reverse proxy terminating SSL, ensure your proxy passes HTTP_X_FORWARDED_PROTO.',
+				'Application passwords are off on this site. WordPress needs HTTPS for them, or on a dev machine set WP_ENVIRONMENT_TYPE=local in wp-config.php or environment variables. If behind a reverse proxy terminating SSL, forward X-Forwarded-Proto and configure wp-config.php.',
 				'shaped-kit'
 			);
 		case 'user_disabled':
@@ -132,21 +132,29 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 		env.app_passwords_available ?? support?.available
 	);
 
-	let authHeaderPassed = Boolean( env.authorization_header );
+	let authHeaderPassed = false;
 	let authHeaderBlocked = false;
+	let authHeaderIntercepted = false;
 
 	if ( results && Object.keys( results ).length > 0 ) {
 		const resList = Object.values( results );
-		const latest = resList[ resList.length - 1 ];
-		if ( latest.headerReached === false ) {
+		const hasHostBlocked = resList.some(
+			( r ) => r.headerStatus === 'host_blocked' || ( r.headerReached === false && r.headerStatus !== 'intercepted' )
+		);
+		const hasIntercepted = resList.some(
+			( r ) => r.headerStatus === 'intercepted'
+		);
+		const hasPassed = resList.some(
+			( r ) => r.headerStatus === 'passed' || r.headerReached === true || r.state === 'ok'
+		);
+
+		// Prioritize the worst failure state across all tested products.
+		if ( hasHostBlocked ) {
 			authHeaderBlocked = true;
-			authHeaderPassed = false;
-		} else if (
-			latest.headerReached === true ||
-			latest.state === 'ok'
-		) {
+		} else if ( hasIntercepted ) {
+			authHeaderIntercepted = true;
+		} else if ( hasPassed ) {
 			authHeaderPassed = true;
-			authHeaderBlocked = false;
 		}
 	}
 
@@ -674,7 +682,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 											'shaped-kit'
 									  )
 									: __(
-											'Plain HTTP. If behind an SSL proxy, forward HTTP_X_FORWARDED_PROTO.',
+											'Plain HTTP. If behind an SSL proxy, forward X-Forwarded-Proto and configure wp-config.php.',
 											'shaped-kit'
 									  ) }
 							</span>
@@ -718,13 +726,17 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 										? 'shaped-kit-env-badge-good'
 										: authHeaderBlocked
 										? 'shaped-kit-env-badge-bad'
+										: authHeaderIntercepted
+										? 'shaped-kit-env-badge-warn'
 										: 'shaped-kit-env-badge-neutral'
 								}` }
 							>
 								{ authHeaderPassed
 									? __( 'Passed to PHP', 'shaped-kit' )
 									: authHeaderBlocked
-									? __( 'Blocked / Stripped', 'shaped-kit' )
+									? __( 'Blocked by Host', 'shaped-kit' )
+									: authHeaderIntercepted
+									? __( 'Blocked Upstream', 'shaped-kit' )
 									: __( 'Probe via Doctor', 'shaped-kit' ) }
 							</span>
 							<span className="shaped-kit-env-desc">
@@ -736,6 +748,11 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 									: authHeaderBlocked
 									? __(
 											'Host stripped the header. Fix via .htaccess or nginx config.',
+											'shaped-kit'
+									  )
+									: authHeaderIntercepted
+									? __(
+											'Blocked before reaching WordPress (e.g. firewall or site-wide basic auth).',
 											'shaped-kit'
 									  )
 									: __(
@@ -791,7 +808,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 										{ __( 'Claude Desktop:', 'shaped-kit' ) }
 									</strong>{ ' ' }
 									{ __(
-										'Add the snippet into your claude_desktop_config.json under "mcpServers". Ensure no trailing comma on the final entry. If running on a local development site (.local, .test), ensure "NODE_TLS_REJECT_UNAUTHORIZED": "0" is present. Claude Desktop only reads config on launch: completely Quit (⌘Q / Alt+F4) and reopen it.',
+										'Add the snippet into your claude_desktop_config.json under "mcpServers". Ensure no trailing comma on the final entry. If connecting to a local HTTPS dev site with a self-signed certificate, add "NODE_TLS_REJECT_UNAUTHORIZED": "0" (note: this disables certificate checks). Quit Claude Desktop completely (⌘Q / Alt+F4) and reopen it.',
 										'shaped-kit'
 									) }
 								</li>
@@ -800,7 +817,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 										{ __( 'Claude Code CLI:', 'shaped-kit' ) }
 									</strong>{ ' ' }
 									{ __(
-										'Claude Code will silently ignore "claude mcp add" if the server already exists. If reconnecting with a new password, you must run "claude mcp remove <slug>" first, or edit ~/.claude.json directly.',
+										'If you previously added the server, Claude Code will report that it already exists. Run "claude mcp remove <slug>" from the same directory or project scope before adding it again with new credentials.',
 										'shaped-kit'
 									) }
 								</li>
@@ -816,12 +833,12 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 								<li>
 									<strong>
 										{ __(
-											'GitHub Copilot (VS Code & CLI):',
+											'GitHub Copilot:',
 											'shaped-kit'
 										) }
 									</strong>{ ' ' }
 									{ __(
-										'In VS Code, paste into .vscode/mcp.json or User settings. If chat reports "Language model unavailable", that is a GitHub account subscription or session issue: sign out and back in to your GitHub account in VS Code. If using the terminal Copilot CLI, it reads ~/.copilot/mcp-config.json; add servers via "copilot mcp add".',
+										'In VS Code, paste into .vscode/mcp.json or User settings, then reload the window.',
 										'shaped-kit'
 									) }
 								</li>
@@ -879,7 +896,7 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 										) }
 									</strong>{ ' ' }
 									{ __(
-										'If SSL terminates at Nginx, Traefik, or Cloudflare, WordPress may detect plain HTTP. In wp-config.php before wp-settings.php add: if ( isset( $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) && \'https\' === $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) { $_SERVER[\'HTTPS\'] = \'on\'; } (Security note: only trust this header behind a trusted reverse proxy).',
+										'If SSL terminates at a reverse proxy (Nginx, Traefik, or Cloudflare), ensure your proxy forwards X-Forwarded-Proto. Because WordPress does not inspect this header automatically, in wp-config.php before wp-settings.php add: if ( isset( $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) && \'https\' === $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) { $_SERVER[\'HTTPS\'] = \'on\'; } (Security note: only trust this header behind a trusted reverse proxy).',
 										'shaped-kit'
 									) }
 								</li>
