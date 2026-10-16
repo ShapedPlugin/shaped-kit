@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { createAppPassword, describeError, revokeAppPasswords } from './api';
-import { testConnection } from './connectionTest';
+import { resultTone, summariseHeader, testConnection } from './connectionTest';
 import {
 	PASSWORD_TTL_MS,
 	clearPassword,
@@ -13,29 +13,19 @@ import { buildSnippet, clients } from './snippets';
 import ToolTester from './ToolTester';
 
 /**
- * The tone a test result is drawn in: green for a connection, amber for "type something first",
- * red for every way it can fail.
- *
- * @param {string} state A result's state from `connectionTest.js`.
- * @return {string} good, warn or bad.
- */
-const resultTone = ( state ) => {
-	if ( state === 'ok' ) {
-		return 'good';
-	}
-
-	return state === 'incomplete' ? 'warn' : 'bad';
-};
-
-/**
- * Whether an address is on a development machine, where a self-signed certificate is normal.
+ * Whether an address is on a development machine using HTTPS, where a self-signed certificate is normal.
  *
  * @param {string} url An endpoint address.
- * @return {boolean} True for localhost, a loopback address, or a .test, .local or .localhost name.
+ * @return {boolean} True for HTTPS with localhost, a loopback address, or a .test, .local or .localhost name.
  */
 export const isLocalSite = ( url ) => {
 	try {
-		const host = new URL( url ).hostname.toLowerCase();
+		const parsed = new URL( url );
+		if ( parsed.protocol !== 'https:' ) {
+			return false;
+		}
+
+		const host = parsed.hostname.toLowerCase();
 
 		return (
 			[ 'localhost', '127.0.0.1', '[::1]' ].includes( host ) ||
@@ -88,7 +78,7 @@ const unavailableText = ( reason ) => {
  * @param {Object} props.overview            The overview from the server.
  * @param {string} [props.selectedProductSlug] Currently active product slug from selector.
  */
-const ConnectPanel = ( { overview, selectedProductSlug } ) => {
+const ConnectPanel = ( { overview, selectedProductSlug, onNavigateTab } ) => {
 	const support = overview?.app_password || {};
 	const allEnabledProducts = useMemo(
 		() =>
@@ -132,31 +122,10 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 		env.app_passwords_available ?? support?.available
 	);
 
-	let authHeaderPassed = false;
-	let authHeaderBlocked = false;
-	let authHeaderIntercepted = false;
-
-	if ( results && Object.keys( results ).length > 0 ) {
-		const resList = Object.values( results );
-		const hasHostBlocked = resList.some(
-			( r ) => r.headerStatus === 'host_blocked' || ( r.headerReached === false && r.headerStatus !== 'intercepted' )
-		);
-		const hasIntercepted = resList.some(
-			( r ) => r.headerStatus === 'intercepted'
-		);
-		const hasPassed = resList.some(
-			( r ) => r.headerStatus === 'passed' || r.headerReached === true || r.state === 'ok'
-		);
-
-		// Prioritize the worst failure state across all tested products.
-		if ( hasHostBlocked ) {
-			authHeaderBlocked = true;
-		} else if ( hasIntercepted ) {
-			authHeaderIntercepted = true;
-		} else if ( hasPassed ) {
-			authHeaderPassed = true;
-		}
-	}
+	const headerState = summariseHeader( results );
+	const authHeaderPassed = headerState === 'passed';
+	const authHeaderBlocked = headerState === 'blocked';
+	const authHeaderIntercepted = headerState === 'intercepted';
 
 	const updatePassword = ( val ) => {
 		setPassword( val );
@@ -594,7 +563,9 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 														'shaped-kit'
 													) }
 												</strong>{ ' ' }
-												<span>{ result.actionHint }</span>
+												<span>
+													{ result.actionHint }
+												</span>
 											</div>
 										) }
 									</li>
@@ -764,158 +735,40 @@ const ConnectPanel = ( { overview, selectedProductSlug } ) => {
 					</div>
 				</div>
 
-				<details className="shaped-kit-troubleshooting-guide">
-					<summary>
+				<div className="shaped-kit-diagnostics-banner">
+					<div className="shaped-kit-diagnostics-banner-text">
 						<span
 							className="dashicons dashicons-sos"
 							aria-hidden="true"
 						/>
-						<span>
-							{ __(
-								'Troubleshooting & Reconnection Guide (Got 401 Unauthorized or Connection Errors?)',
-								'shaped-kit'
-							) }
-						</span>
-					</summary>
-					<div className="shaped-kit-troubleshooting-content">
-						<div className="shaped-kit-troubleshooting-step">
-							<h4>
-								<span className="shaped-kit-step-badge">1</span>
+						<div>
+							<strong>
 								{ __(
-									'Check WordPress & Application Passwords',
+									'Trouble connecting or got a 401 Unauthorized error?',
 									'shaped-kit'
 								) }
-							</h4>
+							</strong>
 							<p>
 								{ __(
-									'Ensure the product toggle switch is turned ON above. If you get 401 Unauthorized, make sure you are logged in as an Administrator with manage_options permissions. Note that creating a new password does not revoke existing ones, but clicking "Revoke all Shaped Kit passwords" or deleting them on your Users → Profile page disables them permanently.',
+									'Review web server configuration recipes, client quirks, and reverse proxy setup in the Diagnostics tab.',
 									'shaped-kit'
 								) }
 							</p>
-						</div>
-
-						<div className="shaped-kit-troubleshooting-step">
-							<h4>
-								<span className="shaped-kit-step-badge">2</span>
-								{ __(
-									'Check AI Client Configuration & CLI Quirks',
-									'shaped-kit'
-								) }
-							</h4>
-							<ul>
-								<li>
-									<strong>
-										{ __( 'Claude Desktop:', 'shaped-kit' ) }
-									</strong>{ ' ' }
-									{ __(
-										'Add the snippet into your claude_desktop_config.json under "mcpServers". Ensure no trailing comma on the final entry. If connecting to a local HTTPS dev site with a self-signed certificate, add "NODE_TLS_REJECT_UNAUTHORIZED": "0" (note: this disables certificate checks). Quit Claude Desktop completely (⌘Q / Alt+F4) and reopen it.',
-										'shaped-kit'
-									) }
-								</li>
-								<li>
-									<strong>
-										{ __( 'Claude Code CLI:', 'shaped-kit' ) }
-									</strong>{ ' ' }
-									{ __(
-										'If you previously added the server, Claude Code will report that it already exists. Run "claude mcp remove <slug>" from the same directory or project scope before adding it again with new credentials.',
-										'shaped-kit'
-									) }
-								</li>
-								<li>
-									<strong>
-										{ __( 'Cursor & Codex:', 'shaped-kit' ) }
-									</strong>{ ' ' }
-									{ __(
-										'Paste into settings and reload the window ("Developer: Reload Window" in the command palette).',
-										'shaped-kit'
-									) }
-								</li>
-								<li>
-									<strong>
-										{ __(
-											'GitHub Copilot:',
-											'shaped-kit'
-										) }
-									</strong>{ ' ' }
-									{ __(
-										'In VS Code, paste into .vscode/mcp.json or User settings, then reload the window.',
-										'shaped-kit'
-									) }
-								</li>
-							</ul>
-						</div>
-
-						<div className="shaped-kit-troubleshooting-step">
-							<h4>
-								<span className="shaped-kit-step-badge">3</span>
-								{ __(
-									'Run the Connection Doctor',
-									'shaped-kit'
-								) }
-							</h4>
-							<p>
-								{ __(
-									'Click the "Test connection" button above. The diagnostic runner will verify whether WordPress accepts your credentials and whether your web server is stripping the HTTP Authorization header.',
-									'shaped-kit'
-								) }
-							</p>
-						</div>
-
-						<div className="shaped-kit-troubleshooting-step">
-							<h4>
-								<span className="shaped-kit-step-badge">4</span>
-								{ __(
-									'Local, Docker & Reverse Proxy Setup',
-									'shaped-kit'
-								) }
-							</h4>
-							<p>
-								{ __(
-									'Running on a local dev server (Local, Docker, XAMPP, MAMP) or behind an SSL reverse proxy? Here is how to configure WordPress:',
-									'shaped-kit'
-								) }
-							</p>
-							<ul>
-								<li>
-									<strong>
-										{ __(
-											'Plain HTTP on Local / Docker:',
-											'shaped-kit'
-										) }
-									</strong>{ ' ' }
-									{ __(
-										'WordPress disables Application Passwords on plain HTTP unless WP_ENVIRONMENT_TYPE is set to "local". In wp-config.php add: define( \'WP_ENVIRONMENT_TYPE\', \'local\' ); or set the environment variable "WP_ENVIRONMENT_TYPE=local" in your docker-compose.yml.',
-										'shaped-kit'
-									) }
-								</li>
-								<li>
-									<strong>
-										{ __(
-											'SSL Terminating at a Reverse Proxy:',
-											'shaped-kit'
-										) }
-									</strong>{ ' ' }
-									{ __(
-										'If SSL terminates at a reverse proxy (Nginx, Traefik, or Cloudflare), ensure your proxy forwards X-Forwarded-Proto. Because WordPress does not inspect this header automatically, in wp-config.php before wp-settings.php add: if ( isset( $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) && \'https\' === $_SERVER[\'HTTP_X_FORWARDED_PROTO\'] ) { $_SERVER[\'HTTPS\'] = \'on\'; } (Security note: only trust this header behind a trusted reverse proxy).',
-										'shaped-kit'
-									) }
-								</li>
-								<li>
-									<strong>
-										{ __(
-											'Server Stripping Authorization Header:',
-											'shaped-kit'
-										) }
-									</strong>{ ' ' }
-									{ __(
-										'Apache: save Settings > Permalinks, or add "SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1" to .htaccess. Nginx: ensure "fastcgi_param HTTP_AUTHORIZATION $http_authorization;" is in your PHP location block.',
-										'shaped-kit'
-									) }
-								</li>
-							</ul>
 						</div>
 					</div>
-				</details>
+					{ onNavigateTab && (
+						<button
+							type="button"
+							className="button"
+							onClick={ () => onNavigateTab( 'diagnostics' ) }
+						>
+							{ __(
+								'View Diagnostics & Troubleshooting',
+								'shaped-kit'
+							) }
+						</button>
+					) }
+				</div>
 			</section>
 
 			<ToolTester

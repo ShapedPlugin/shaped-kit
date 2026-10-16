@@ -27,6 +27,49 @@ const TIMEOUT_MS = 15000;
  * @param {*}       body   Decoded JSON body, or null when it was not JSON.
  * @return {{state: string, message: string}} `state` is ok, rejected, forbidden, missing, error or unexpected.
  */
+/**
+ * The tone a test result is drawn in: green for a connection, amber for "type something first",
+ * red for every way it can fail.
+ *
+ * @param {string} state A result's state from this file.
+ * @return {string} good, warn or bad.
+ */
+export const resultTone = ( state ) => {
+	if ( state === 'ok' ) {
+		return 'good';
+	}
+
+	return state === 'incomplete' ? 'warn' : 'bad';
+};
+
+/**
+ * What a set of test results says about the Authorization header, worst case first: with several products
+ * one blocked answer outweighs the others. Both the Connect and the Diagnostics panel read it from here,
+ * so they cannot disagree.
+ *
+ * @param {Object[]|null} results Results from `testConnection()`, or null before any test.
+ * @return {'blocked'|'intercepted'|'passed'|'unknown'} The header's state.
+ */
+export const summariseHeader = ( results ) => {
+	const list = Object.values( results || {} );
+
+	if ( list.some( ( r ) => r.headerStatus === 'host_blocked' ) ) {
+		return 'blocked';
+	}
+
+	if ( list.some( ( r ) => r.headerStatus === 'intercepted' ) ) {
+		return 'intercepted';
+	}
+
+	if (
+		list.some( ( r ) => r.headerStatus === 'passed' || r.state === 'ok' )
+	) {
+		return 'passed';
+	}
+
+	return 'unknown';
+};
+
 export const interpret = ( status, body ) => {
 	if ( status === 200 && body && body.result && ! body.error ) {
 		return {
@@ -41,7 +84,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			),
 			headerStatus: 'passed',
-			headerReached: true,
 		};
 	}
 
@@ -58,7 +100,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			),
 			headerStatus: null,
-			headerReached: null,
 		};
 	}
 
@@ -67,7 +108,6 @@ export const interpret = ( status, body ) => {
 		let title;
 		let actionHint;
 		let headerStatus;
-		let headerReached;
 
 		if ( body && typeof body === 'object' && body.host_config_hint ) {
 			title = __( 'Authorization Header Blocked by Host', 'shaped-kit' );
@@ -86,7 +126,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			);
 			headerStatus = 'host_blocked';
-			headerReached = false;
 		} else if ( body && typeof body === 'object' ) {
 			title = __( 'Invalid or Revoked Credentials', 'shaped-kit' );
 			message = __(
@@ -98,7 +137,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			);
 			headerStatus = 'passed';
-			headerReached = true;
 		} else {
 			title = __( 'External 401 Interception', 'shaped-kit' );
 			message = __(
@@ -110,10 +148,15 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			);
 			headerStatus = 'intercepted';
-			headerReached = null;
 		}
 
-		return { state: 'rejected', title, message, actionHint, headerStatus, headerReached };
+		return {
+			state: 'rejected',
+			title,
+			message,
+			actionHint,
+			headerStatus,
+		};
 	}
 
 	if ( status === 403 ) {
@@ -129,7 +172,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			),
 			headerStatus: 'passed',
-			headerReached: true,
 		};
 	}
 
@@ -146,7 +188,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			),
 			headerStatus: null,
-			headerReached: null,
 		};
 	}
 
@@ -163,7 +204,6 @@ export const interpret = ( status, body ) => {
 				'shaped-kit'
 			),
 			headerStatus: null,
-			headerReached: null,
 		};
 	}
 
@@ -176,7 +216,6 @@ export const interpret = ( status, body ) => {
 			'shaped-kit'
 		),
 		headerStatus: null,
-		headerReached: null,
 	};
 };
 
@@ -256,7 +295,6 @@ export const testConnection = async (
 				'shaped-kit'
 			),
 			headerStatus: null,
-			headerReached: null,
 		};
 	}
 
@@ -299,7 +337,6 @@ export const testConnection = async (
 				'shaped-kit'
 			),
 			headerStatus: null,
-			headerReached: null,
 		};
 	} finally {
 		clearTimeout( timer );

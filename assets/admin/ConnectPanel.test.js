@@ -19,7 +19,9 @@ jest.mock( './api', () => ( {
 	revokeAppPasswords: jest.fn(),
 } ) );
 
+// Only the network call is replaced; the pure helpers (tone, header summary) stay real.
 jest.mock( './connectionTest', () => ( {
+	...jest.requireActual( './connectionTest' ),
 	testConnection: jest.fn(),
 } ) );
 
@@ -63,12 +65,12 @@ const overview = ( overrides = {} ) => ( {
 	...overrides,
 } );
 
-const render = async ( data ) => {
+const render = async ( data, props = {} ) => {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	root = createRoot( container );
 	await act( async () => {
-		root.render( <ConnectPanel overview={ data } /> );
+		root.render( <ConnectPanel overview={ data } { ...props } /> );
 	} );
 };
 
@@ -115,10 +117,14 @@ afterEach( () => {
 
 describe( 'isLocalSite', () => {
 	test.each( [
-		[ 'http://localhost:10003/wp-json/x', true ],
+		[ 'http://localhost:10003/wp-json/x', false ],
+		[ 'https://localhost:10003/wp-json/x', true ],
 		[ 'https://127.0.0.1/x', true ],
+		[ 'http://127.0.0.1/x', false ],
 		[ 'https://mysite.test/x', true ],
+		[ 'http://mysite.test/x', false ],
 		[ 'https://shop.local/x', true ],
+		[ 'http://shop.local/x', false ],
 		[ 'https://example.com/x', false ],
 		[ 'https://notlocalhost.com/x', false ],
 		[ 'https://test.example.com/x', false ],
@@ -255,16 +261,17 @@ test( 'choosing a client changes the text, and Copy puts exactly that text on th
 	expect( container.textContent ).toContain( 'Copied' );
 } );
 
-test( 'on a local site the self-signed option is already ticked, on a real site it is not', async () => {
+test( 'on a local HTTPS site the self-signed option is already ticked, on plain HTTP or a real site it is not', async () => {
 	const desktop = () =>
 		[ ...container.querySelectorAll( '[role="tab"]' ) ].find( ( t ) =>
 			/Claude Desktop/.test( t.textContent )
 		);
 
+	// Local HTTPS: ticked by default.
 	await render(
 		overview( {
 			products: [
-				product( { endpoint_url: 'http://localhost:10003/m' } ),
+				product( { endpoint_url: 'https://localhost:10003/m' } ),
 			],
 		} )
 	);
@@ -277,6 +284,24 @@ test( 'on a local site the self-signed option is already ticked, on a real site 
 	act( () => root.unmount() );
 	container.remove();
 
+	// Local plain HTTP: not ticked (no TLS certificate to bypass).
+	await render(
+		overview( {
+			products: [
+				product( { endpoint_url: 'http://localhost:10003/m' } ),
+			],
+		} )
+	);
+	await act( async () => desktop().click() );
+	expect( container.querySelector( '.shaped-kit-check input' ).checked ).toBe(
+		false
+	);
+	expect( snippet() ).not.toContain( 'NODE_TLS_REJECT_UNAUTHORIZED' );
+
+	act( () => root.unmount() );
+	container.remove();
+
+	// Remote HTTPS site: not ticked.
 	await render(
 		overview( {
 			products: [
@@ -483,9 +508,7 @@ describe( 'Test connection', () => {
 		expect( badge ).not.toBeNull();
 		expect( badge.textContent ).toBe( 'Invalid or Revoked Credentials' );
 
-		const action = container.querySelector(
-			'.shaped-kit-result-action'
-		);
+		const action = container.querySelector( '.shaped-kit-result-action' );
 		expect( action ).not.toBeNull();
 		expect( action.textContent ).toContain(
 			'Click "Create application password" above'
@@ -520,23 +543,25 @@ describe( 'troubleshooting and proactive client tips', () => {
 		).toContain( 'Restart required' );
 	} );
 
-	test( 'renders the 3-step troubleshooting recovery guide accordion', async () => {
-		await render( overview() );
+	test( 'renders the diagnostics banner with link to Diagnostics tab', async () => {
+		const onNavigateTab = jest.fn();
+		await render( overview(), { onNavigateTab } );
 
-		const guide = container.querySelector(
-			'details.shaped-kit-troubleshooting-guide'
+		const banner = container.querySelector(
+			'.shaped-kit-diagnostics-banner'
 		);
-		expect( guide ).not.toBeNull();
-		expect( guide.textContent ).toContain(
-			'Troubleshooting & Reconnection Guide'
+		expect( banner ).not.toBeNull();
+		expect( banner.textContent ).toContain(
+			'Trouble connecting or got a 401 Unauthorized error?'
 		);
-		expect( guide.textContent ).toContain(
-			'Check WordPress & Application Passwords'
+		expect( banner.textContent ).toContain(
+			'Review web server configuration recipes'
 		);
-		expect( guide.textContent ).toContain(
-			'Check AI Client Configuration & CLI Quirks'
-		);
-		expect( guide.textContent ).toContain( 'Run the Connection Doctor' );
+
+		const btn = banner.querySelector( 'button' );
+		expect( btn ).not.toBeNull();
+		await act( async () => btn.click() );
+		expect( onNavigateTab ).toHaveBeenCalledWith( 'diagnostics' );
 	} );
 } );
 
@@ -819,22 +844,6 @@ describe( 'password persistence and cleanup', () => {
 		);
 		expect( envSection.textContent ).toContain( 'production' );
 		expect( envSection.textContent ).toContain( 'Disabled' );
-		expect( envSection.textContent ).toContain( 'Probe via Doctor' );
-	} );
-
-	test( 'troubleshooting guide includes Step 4 with Local, Docker & Reverse Proxy Setup', async () => {
-		await render( overview() );
-
-		const guide = container.querySelector(
-			'.shaped-kit-troubleshooting-guide'
-		);
-		expect( guide ).not.toBeNull();
-		expect( guide.textContent ).toContain(
-			'Local, Docker & Reverse Proxy Setup'
-		);
-		expect( guide.textContent ).toContain( 'WP_ENVIRONMENT_TYPE' );
-		expect( guide.textContent ).toContain( 'X-Forwarded-Proto' );
-		expect( guide.textContent ).toContain( 'HTTP_X_FORWARDED_PROTO' );
 	} );
 
 	describe( 'Authorization header tile state mapping and aggregation', () => {
@@ -857,7 +866,6 @@ describe( 'password persistence and cleanup', () => {
 				slug: 'location-weather',
 				state: 'ok',
 				headerStatus: 'passed',
-				headerReached: true,
 			} );
 			await render( overview() );
 			await type( passwordInput(), 'valid-pass' );
@@ -880,7 +888,6 @@ describe( 'password persistence and cleanup', () => {
 				slug: 'location-weather',
 				state: 'rejected',
 				headerStatus: 'host_blocked',
-				headerReached: false,
 			} );
 			await render( overview() );
 			await type( passwordInput(), 'test-pass' );
@@ -903,7 +910,6 @@ describe( 'password persistence and cleanup', () => {
 				slug: 'location-weather',
 				state: 'rejected',
 				headerStatus: 'intercepted',
-				headerReached: null,
 			} );
 			await render( overview() );
 			await type( passwordInput(), 'test-pass' );
@@ -936,13 +942,11 @@ describe( 'password persistence and cleanup', () => {
 					slug: 'product-ok',
 					state: 'ok',
 					headerStatus: 'passed',
-					headerReached: true,
 				} )
 				.mockResolvedValueOnce( {
 					slug: 'product-bad',
 					state: 'rejected',
 					headerStatus: 'host_blocked',
-					headerReached: false,
 				} );
 
 			await render( overview( { products } ) );
@@ -963,13 +967,11 @@ describe( 'password persistence and cleanup', () => {
 					slug: 'product-ok',
 					state: 'rejected',
 					headerStatus: 'host_blocked',
-					headerReached: false,
 				} )
 				.mockResolvedValueOnce( {
 					slug: 'product-bad',
 					state: 'ok',
 					headerStatus: 'passed',
-					headerReached: true,
 				} );
 
 			await act( async () => button( /Test connection/ ).click() );
@@ -987,13 +989,11 @@ describe( 'password persistence and cleanup', () => {
 					slug: 'product-ok',
 					state: 'ok',
 					headerStatus: 'passed',
-					headerReached: true,
 				} )
 				.mockResolvedValueOnce( {
 					slug: 'product-bad',
 					state: 'rejected',
 					headerStatus: 'intercepted',
-					headerReached: null,
 				} );
 
 			await act( async () => button( /Test connection/ ).click() );

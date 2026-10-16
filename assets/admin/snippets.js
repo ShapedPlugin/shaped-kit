@@ -184,19 +184,23 @@ export const buildSnippet = (
 		case 'claude-code':
 			return list
 				.map( ( product ) => {
+					const isHttps = /^https:/i.test( product.endpoint_url );
+					const useTlsFlag = localDev && isHttps;
 					const envFlags = [
-						localDev
+						useTlsFlag
 							? '  --env NODE_TLS_REJECT_UNAUTHORIZED=0 \\'
 							: null,
 						`  --env WP_API_URL=${ product.endpoint_url } \\`,
 						`  --env WP_API_USERNAME='${ shellQuote( user ) }' \\`,
-						`  --env WP_API_PASSWORD='${ shellQuote( secret ) }' \\`,
+						`  --env WP_API_PASSWORD='${ shellQuote(
+							secret
+						) }' \\`,
 						'  --env OAUTH_ENABLED=false \\',
 					]
 						.filter( Boolean )
 						.join( '\n' );
 
-					const tlsWarning = localDev
+					const tlsWarning = useTlsFlag
 						? '# Note: NODE_TLS_REJECT_UNAUTHORIZED=0 disables TLS certificate checks for local self-signed certificates.\n'
 						: '';
 
@@ -246,7 +250,7 @@ export const buildSnippet = (
 						WP_API_USERNAME: user,
 						WP_API_PASSWORD: secret,
 						OAUTH_ENABLED: 'false',
-						...( localDev
+						...( localDev && /^https:/i.test( product.endpoint_url )
 							? { NODE_TLS_REJECT_UNAUTHORIZED: '0' }
 							: {} ),
 					},

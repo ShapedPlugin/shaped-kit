@@ -5,7 +5,12 @@
  * Authorization header explained as a wrong password only, a success reported for something that is not
  * an MCP server, a request that waits forever, and a password sent with nothing typed.
  */
-import { interpret, testConnection } from './connectionTest';
+import {
+	interpret,
+	resultTone,
+	summariseHeader,
+	testConnection,
+} from './connectionTest';
 
 const product = {
 	slug: 'location-weather',
@@ -53,17 +58,18 @@ describe( 'interpret', () => {
 			} );
 
 			expect( res.state ).toBe( 'rejected' );
-			expect( res.message ).toMatch( /not passing the Authorization header/ );
+			expect( res.message ).toMatch(
+				/not passing the Authorization header/
+			);
 			expect( res.message ).toMatch( /not a wrong password/ );
 			expect( res.message ).toContain( 'HTTP_AUTHORIZATION' );
 			expect( res.message ).toContain( 'fastcgi_param' );
 			expect( res.message ).not.toMatch( /was not accepted/ );
-			expect( res.headerReached ).toBe( false );
 			expect( res.headerStatus ).toBe( 'host_blocked' );
 		} );
 
 		test( 'from WordPress without the hint says the username or password was refused, and does not blame the host', () => {
-			const { state, message, headerReached, headerStatus } = interpret( 401, {
+			const { state, message, headerStatus } = interpret( 401, {
 				code: 'rest_forbidden',
 			} );
 
@@ -73,7 +79,6 @@ describe( 'interpret', () => {
 			);
 			expect( message ).toMatch( /revoked/ );
 			expect( message ).not.toMatch( /Authorization header/ );
-			expect( headerReached ).toBe( true );
 			expect( headerStatus ).toBe( 'passed' );
 		} );
 
@@ -84,14 +89,13 @@ describe( 'interpret', () => {
 		] )(
 			'that is not JSON (%s) says something in front of WordPress answered',
 			( label, body ) => {
-				const { state, message, headerReached, headerStatus } = interpret( 401, body );
+				const { state, message, headerStatus } = interpret( 401, body );
 
 				expect( state ).toBe( 'rejected' );
 				expect( message ).toMatch( /in front of WordPress/ );
 				expect( message ).not.toMatch(
 					/not accepted|Authorization header/
 				);
-				expect( headerReached ).toBeNull();
 				expect( headerStatus ).toBe( 'intercepted' );
 			}
 		);
@@ -290,5 +294,49 @@ describe( 'testConnection', () => {
 
 		expect( JSON.stringify( result ) ).not.toContain( 'abcdefgh' );
 		expect( JSON.stringify( result ) ).not.toContain( 'YWRtaW46' );
+	} );
+} );
+
+describe( 'summariseHeader', () => {
+	const passed = { state: 'ok', headerStatus: 'passed' };
+	const blocked = { state: 'rejected', headerStatus: 'host_blocked' };
+	const intercepted = { state: 'rejected', headerStatus: 'intercepted' };
+	const unreachable = { state: 'unreachable', headerStatus: null };
+
+	test( 'says nothing is known before a test and when no result says anything', () => {
+		expect( summariseHeader( null ) ).toBe( 'unknown' );
+		expect( summariseHeader( [] ) ).toBe( 'unknown' );
+		expect( summariseHeader( [ unreachable ] ) ).toBe( 'unknown' );
+	} );
+
+	test( 'a wrong password still means the header arrived', () => {
+		const wrongPassword = interpret( 401, { code: 'rest_forbidden' } );
+
+		expect( summariseHeader( [ wrongPassword ] ) ).toBe( 'passed' );
+	} );
+
+	test( 'with several products the worst answer wins, whatever the order', () => {
+		expect( summariseHeader( [ passed, blocked ] ) ).toBe( 'blocked' );
+		expect( summariseHeader( [ blocked, passed ] ) ).toBe( 'blocked' );
+		expect( summariseHeader( [ passed, intercepted ] ) ).toBe(
+			'intercepted'
+		);
+		expect( summariseHeader( [ intercepted, blocked ] ) ).toBe( 'blocked' );
+		expect( summariseHeader( [ unreachable, passed ] ) ).toBe( 'passed' );
+	} );
+} );
+
+describe( 'resultTone', () => {
+	test.each( [
+		[ 'ok', 'good' ],
+		[ 'incomplete', 'warn' ],
+		[ 'rejected', 'bad' ],
+		[ 'forbidden', 'bad' ],
+		[ 'missing', 'bad' ],
+		[ 'error', 'bad' ],
+		[ 'unreachable', 'bad' ],
+		[ 'unexpected', 'bad' ],
+	] )( '%s is drawn %s', ( state, tone ) => {
+		expect( resultTone( state ) ).toBe( tone );
 	} );
 } );

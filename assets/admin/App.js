@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 import ActivityLog from './ActivityLog';
 import { describeError, fetchOverview, switchProduct } from './api';
 import ConnectPanel from './ConnectPanel';
+import DiagnosticsPanel from './DiagnosticsPanel';
 import OverviewStrip from './OverviewStrip';
 import ProductCard from './ProductCard';
 import ProductSelectorBar from './ProductSelectorBar';
@@ -237,6 +238,17 @@ const App = () => {
 						<button
 							type="button"
 							className={ `nav-tab ${
+								activeTab === 'diagnostics'
+									? 'nav-tab-active'
+									: ''
+							}` }
+							onClick={ () => setActiveTab( 'diagnostics' ) }
+						>
+							{ __( 'Diagnostics', 'shaped-kit' ) }
+						</button>
+						<button
+							type="button"
+							className={ `nav-tab ${
 								activeTab === 'logs' ? 'nav-tab-active' : ''
 							}` }
 							onClick={ () => setActiveTab( 'logs' ) }
@@ -279,12 +291,20 @@ const App = () => {
 								<ConnectPanel
 									overview={ overview }
 									selectedProductSlug={ selectedProductSlug }
+									onNavigateTab={ setActiveTab }
 								/>
 							</div>
 						</>
 					) }
 
 					{ storeLive && activeTab === 'store' && <StorePanel /> }
+
+					{ activeTab === 'diagnostics' && (
+						<DiagnosticsPanel
+							overview={ overview }
+							onNavigateTab={ setActiveTab }
+						/>
+					) }
 
 					{ activeTab === 'logs' && (
 						<ActivityLog products={ overview.products || [] } />

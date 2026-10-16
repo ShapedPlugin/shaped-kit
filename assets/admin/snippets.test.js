@@ -68,7 +68,9 @@ describe( 'buildSnippet', () => {
 		expect( text ).toContain( 'claude mcp add' );
 		expect( text ).toContain( '--transport stdio' );
 		expect( text ).toContain( 'location-weather' );
-		expect( text ).toContain( `--env WP_API_URL=${ weather.endpoint_url }` );
+		expect( text ).toContain(
+			`--env WP_API_URL=${ weather.endpoint_url }`
+		);
 		expect( text ).toContain( "--env WP_API_USERNAME='admin'" );
 		expect( text ).toContain(
 			"--env WP_API_PASSWORD='abcdefghijklmnopqrstuvwx'"
@@ -157,6 +159,28 @@ describe( 'buildSnippet', () => {
 		);
 		expect( claudeCode ).toContain( 'NODE_TLS_REJECT_UNAUTHORIZED=0' );
 		expect( claudeCode ).toContain( 'disables TLS certificate checks' );
+	} );
+
+	test( 'TLS checks are omitted for plain HTTP endpoints even when localDev is true', () => {
+		const httpProduct = {
+			slug: 'location-weather',
+			name: 'Location Weather',
+			endpoint_url: 'http://localhost:10003/wp-json/location-weather/mcp',
+		};
+		const desktop = JSON.parse(
+			buildSnippet(
+				'claude-desktop',
+				options( { products: [ httpProduct ], localDev: true } )
+			)
+		).mcpServers[ 'location-weather' ].env;
+		expect( desktop ).not.toHaveProperty( 'NODE_TLS_REJECT_UNAUTHORIZED' );
+
+		const claudeCode = buildSnippet(
+			'claude-code',
+			options( { products: [ httpProduct ], localDev: true } )
+		);
+		expect( claudeCode ).not.toContain( 'NODE_TLS_REJECT_UNAUTHORIZED' );
+		expect( claudeCode ).not.toContain( 'disables TLS certificate checks' );
 	} );
 
 	test( 'the generic snippet carries the header and a curl test', () => {

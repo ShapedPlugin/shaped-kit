@@ -410,7 +410,11 @@ describe( 'the Store tab', () => {
 
 		await mount();
 
-		expect( tabs() ).toEqual( [ 'AI & MCP', 'Activity Log' ] );
+		expect( tabs() ).toEqual( [
+			'AI & MCP',
+			'Diagnostics',
+			'Activity Log',
+		] );
 	} );
 
 	test( 'is shown when the page says the Store is on', async () => {
@@ -422,7 +426,26 @@ describe( 'the Store tab', () => {
 		expect( tabs() ).toEqual( [
 			'AI & MCP',
 			'Products & Store',
+			'Diagnostics',
 			'Activity Log',
 		] );
+	} );
+
+	test( 'the Diagnostics tab renders the diagnostics panel when selected', async () => {
+		fetchOverview.mockResolvedValue( site( true ) );
+		await mount();
+
+		const diagTab = [ ...container.querySelectorAll( '.nav-tab' ) ].find(
+			( tab ) => tab.textContent.includes( 'Diagnostics' )
+		);
+		expect( diagTab ).not.toBeNull();
+		await act( async () => diagTab.click() );
+
+		expect(
+			container.querySelector( '.shaped-kit-diagnostics-tab' )
+		).not.toBeNull();
+		expect( container.textContent ).toContain(
+			'System Diagnostics & Connection Doctor'
+		);
 	} );
 } );
