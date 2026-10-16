@@ -30,10 +30,18 @@ class StoreGate {
 	/**
 	 * Whether the Store is on for this site.
 	 *
+	 * Verified source:
+	 * - wp_get_environment_type(): wp-includes/load.php:250
+	 *
 	 * @return bool
 	 */
 	public static function is_live() {
-		return (bool) apply_filters( 'shaped_kit/store_live', self::LIVE );
+		$default = self::LIVE;
+		if ( ! defined( 'WP_RUN_CORE_TESTS' ) && ! defined( 'WP_TESTS_DOMAIN' ) && function_exists( 'wp_get_environment_type' ) ) {
+			$default = self::LIVE || 'local' === wp_get_environment_type();
+		}
+
+		return (bool) apply_filters( 'shaped_kit/store_live', $default );
 	}
 
 	/**

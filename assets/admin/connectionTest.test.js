@@ -58,10 +58,16 @@ describe( 'interpret', () => {
 			expect( message ).toContain( 'HTTP_AUTHORIZATION' );
 			expect( message ).toContain( 'fastcgi_param' );
 			expect( message ).not.toMatch( /was not accepted/ );
+			expect(
+				interpret( 401, {
+					code: 'rest_forbidden',
+					host_config_hint: hint,
+				} ).headerReached
+			).toBe( false );
 		} );
 
 		test( 'from WordPress without the hint says the username or password was refused, and does not blame the host', () => {
-			const { state, message } = interpret( 401, {
+			const { state, message, headerReached } = interpret( 401, {
 				code: 'rest_forbidden',
 			} );
 
@@ -71,6 +77,7 @@ describe( 'interpret', () => {
 			);
 			expect( message ).toMatch( /revoked/ );
 			expect( message ).not.toMatch( /Authorization header/ );
+			expect( headerReached ).toBe( true );
 		} );
 
 		test.each( [
@@ -90,12 +97,63 @@ describe( 'interpret', () => {
 			}
 		);
 
+		test( 'returns informative title and actionHint for each 401 scenario', () => {
+			const hostBlocked = interpret( 401, {
+				code: 'rest_forbidden',
+				host_config_hint: hint,
+			} );
+			expect( hostBlocked.title ).toBe(
+				'Authorization Header Blocked by Host'
+			);
+			expect( hostBlocked.actionHint ).toMatch(
+				/Configure your web server/
+			);
+
+			const invalidCreds = interpret( 401, {
+				code: 'rest_forbidden',
+			} );
+			expect( invalidCreds.title ).toBe(
+				'Invalid or Revoked Credentials'
+			);
+			expect( invalidCreds.actionHint ).toMatch(
+				/Create application password/
+			);
+
+			const externalIntercept = interpret( 401, null );
+			expect( externalIntercept.title ).toBe(
+				'External 401 Interception'
+			);
+			expect( externalIntercept.actionHint ).toMatch(
+				/Ensure firewalls/
+			);
+		} );
+
 		test( 'an empty hint is no hint', () => {
 			expect(
 				interpret( 401, { host_config_hint: '' } ).message
 			).toMatch( /was not accepted/ );
 		} );
 	} );
+
+	test( 'a 200 with result returns ok state with title and actionHint', () => {
+		const res = interpret( 200, { result: { serverInfo: {} } } );
+		expect( res.state ).toBe( 'ok' );
+		expect( res.title ).toBe( 'Connected' );
+		expect( res.actionHint ).toMatch( /ready to use/ );
+	} );
+
+	test.each( [
+		[ 403, 'Access Forbidden', /manage_options/ ],
+		[ 404, 'Endpoint Not Found / Disabled', /Turn ON/ ],
+		[ 500, 'Server Error', /debug\.log/ ],
+	] )(
+		'status %s returns title %s and matching actionHint',
+		( status, expectedTitle, actionPattern ) => {
+			const res = interpret( status, null );
+			expect( res.title ).toBe( expectedTitle );
+			expect( res.actionHint ).toMatch( actionPattern );
+		}
+	);
 
 	test( 'a result next to an error is not a success', () => {
 		expect(

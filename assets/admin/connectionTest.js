@@ -27,31 +27,46 @@ const TIMEOUT_MS = 15000;
  * @param {*}       body   Decoded JSON body, or null when it was not JSON.
  * @return {{state: string, message: string}} `state` is ok, rejected, forbidden, missing, error or unexpected.
  */
-export const interpret = ( status, body ) => {
-	if ( status === 200 && body && body.result && ! body.error ) {
+export const interpret = (status, body) => {
+	if (status === 200 && body && body.result && !body.error) {
 		return {
 			state: 'ok',
+			title: __('Connected', 'shaped-kit'),
 			message: __(
 				'Connected. This endpoint accepted the username and password.',
 				'shaped-kit'
 			),
+			actionHint: __(
+				'Your credentials are valid and ready to use in your AI client.',
+				'shaped-kit'
+			),
+			headerReached: true,
 		};
 	}
 
-	if ( status === 200 ) {
+	if (status === 200) {
 		return {
 			state: 'unexpected',
+			title: __('Non-MCP Response', 'shaped-kit'),
 			message: __(
 				'The address answered, but not as an MCP server. Check that it is the right address.',
+				'shaped-kit'
+			),
+			actionHint: __(
+				'Verify the product endpoint URL in Settings.',
 				'shaped-kit'
 			),
 		};
 	}
 
-	if ( status === 401 ) {
+	if (status === 401) {
 		let message;
+		let title;
+		let actionHint;
+		let headerReached = true;
 
-		if ( body && typeof body === 'object' && body.host_config_hint ) {
+		if (body && typeof body === 'object' && body.host_config_hint) {
+			title = __('Authorization Header Blocked by Host', 'shaped-kit');
 			message =
 				__(
 					'Your server is not passing the Authorization header to WordPress, so the username and password never arrived. This is a server setting, not a wrong password.',
@@ -62,46 +77,79 @@ export const interpret = ( status, body ) => {
 					'Fix it in the server settings. Apache: save Settings > Permalinks with a pretty structure (WordPress then writes the rule into .htaccess if it can), or add SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1 to .htaccess. Nginx: add fastcgi_param HTTP_AUTHORIZATION $http_authorization; to the PHP location block and reload.',
 					'shaped-kit'
 				);
-		} else if ( body && typeof body === 'object' ) {
-			message = __(
-				'The username or application password was not accepted. Check that the username is the account the password was made for, and that the password was not revoked (creating a new Shaped Kit password replaces the earlier ones). Spaces in the password are fine.',
+			actionHint = __(
+				'Configure your web server (Apache or Nginx) to forward the Authorization header.',
 				'shaped-kit'
 			);
+			headerReached = false;
+		} else if (body && typeof body === 'object') {
+			title = __('Invalid or Revoked Credentials', 'shaped-kit');
+			message = __(
+				'The username or application password was not accepted. Check that the username is the account the password was made for, and that the password was not revoked (the Revoke button here, or deleting it on your profile page, stops it working for good). Spaces in the password are fine.',
+				'shaped-kit'
+			);
+			actionHint = __(
+				'Click "Create application password" above to get a fresh password, then copy the updated snippet.',
+				'shaped-kit'
+			);
+			headerReached = true;
 		} else {
+			title = __('External 401 Interception', 'shaped-kit');
 			message = __(
 				'Something in front of WordPress answered 401 before the request reached this plugin, such as password protection on the whole site (HTTP basic auth on a staging site), a firewall or a security plugin. WordPress never saw the credentials.',
 				'shaped-kit'
 			);
+			actionHint = __(
+				'Ensure firewalls or server-level HTTP auth do not block WordPress REST API routes.',
+				'shaped-kit'
+			);
+			headerReached = false;
 		}
 
-		return { state: 'rejected', message };
+		return { state: 'rejected', title, message, actionHint, headerReached };
 	}
 
-	if ( status === 403 ) {
+	if (status === 403) {
 		return {
 			state: 'forbidden',
+			title: __('Access Forbidden', 'shaped-kit'),
 			message: __(
 				'The password is right, but this account is not allowed to use MCP. Use an administrator account.',
 				'shaped-kit'
 			),
+			actionHint: __(
+				'Log in with an administrator account that has manage_options capability.',
+				'shaped-kit'
+			),
+			headerReached: true,
 		};
 	}
 
-	if ( status === 404 ) {
+	if (status === 404) {
 		return {
 			state: 'missing',
+			title: __('Endpoint Not Found / Disabled', 'shaped-kit'),
 			message: __(
 				'Nothing answers at this address. Check that the product is switched on and an adapter is loaded.',
+				'shaped-kit'
+			),
+			actionHint: __(
+				'Turn ON the toggle switch for this product above.',
 				'shaped-kit'
 			),
 		};
 	}
 
-	if ( status >= 500 ) {
+	if (status >= 500) {
 		return {
 			state: 'error',
+			title: __('Server Error', 'shaped-kit'),
 			message: __(
 				'The server failed while answering. Look at its error log.',
+				'shaped-kit'
+			),
+			actionHint: __(
+				'Inspect your PHP error log or WordPress debug.log for details.',
 				'shaped-kit'
 			),
 		};
@@ -109,7 +157,12 @@ export const interpret = ( status, body ) => {
 
 	return {
 		state: 'unexpected',
-		message: __( 'The server gave an unexpected answer.', 'shaped-kit' ),
+		title: __('Unexpected Response', 'shaped-kit'),
+		message: __('The server gave an unexpected answer.', 'shaped-kit'),
+		actionHint: __(
+			'Check the endpoint URL and server status.',
+			'shaped-kit'
+		),
 	};
 };
 
@@ -123,17 +176,17 @@ export const interpret = ( status, body ) => {
  * @param {string} endpointUrl The address that was called, used to tell whether it is on another origin.
  * @return {string} The sentence.
  */
-export const describeFailure = ( failure, endpointUrl = '' ) => {
-	if ( failure?.name === 'AbortError' ) {
+export const describeFailure = (failure, endpointUrl = '') => {
+	if (failure?.name === 'AbortError') {
 		return __(
 			'No answer within 15 seconds. The server may be slow or the address wrong.',
 			'shaped-kit'
 		);
 	}
 
-	if ( typeof window !== 'undefined' && endpointUrl ) {
+	if (typeof window !== 'undefined' && endpointUrl) {
 		try {
-			const endpointOrigin = new URL( endpointUrl ).origin;
+			const endpointOrigin = new URL(endpointUrl).origin;
 			if (
 				window.location &&
 				window.location.origin &&
@@ -144,7 +197,7 @@ export const describeFailure = ( failure, endpointUrl = '' ) => {
 					'shaped-kit'
 				);
 			}
-		} catch ( e ) {
+		} catch (e) {
 			// Fall through to standard message.
 		}
 	}
@@ -170,36 +223,41 @@ export const describeFailure = ( failure, endpointUrl = '' ) => {
 export const testConnection = async (
 	product,
 	{ username, password },
-	{ fetchImpl = window.fetch.bind( window ), timeout = TIMEOUT_MS } = {}
+	{ fetchImpl = window.fetch.bind(window), timeout = TIMEOUT_MS } = {}
 ) => {
 	const identity = { slug: product.slug, name: product.name || product.slug };
-	const { header, ready } = credentials( username, password );
+	const { header, ready } = credentials(username, password);
 
-	if ( ! ready ) {
+	if (!ready) {
 		return {
 			...identity,
 			state: 'incomplete',
+			title: __('Credentials Required', 'shaped-kit'),
 			message: __(
 				'Type the username and application password first.',
+				'shaped-kit'
+			),
+			actionHint: __(
+				'Click "Create application password" above to generate a password.',
 				'shaped-kit'
 			),
 		};
 	}
 
 	const controller = new window.AbortController();
-	const timer = setTimeout( () => controller.abort(), timeout );
+	const timer = setTimeout(() => controller.abort(), timeout);
 
 	try {
-		const response = await fetchImpl( product.endpoint_url, {
+		const response = await fetchImpl(product.endpoint_url, {
 			method: 'POST',
 			credentials: 'omit',
 			signal: controller.signal,
 			headers: {
-				Authorization: `Basic ${ header }`,
+				Authorization: `Basic ${header}`,
 				'Content-Type': 'application/json',
 				Accept: 'application/json, text/event-stream',
 			},
-			body: JSON.stringify( {
+			body: JSON.stringify({
 				jsonrpc: '2.0',
 				id: 1,
 				method: 'initialize',
@@ -208,19 +266,24 @@ export const testConnection = async (
 					capabilities: {},
 					clientInfo: { name: 'shaped-kit-test', version: '1' },
 				},
-			} ),
-		} );
+			}),
+		});
 
-		const body = await response.json().catch( () => null );
+		const body = await response.json().catch(() => null);
 
-		return { ...identity, ...interpret( response.status, body ) };
-	} catch ( failure ) {
+		return { ...identity, ...interpret(response.status, body) };
+	} catch (failure) {
 		return {
 			...identity,
 			state: 'unreachable',
-			message: describeFailure( failure, product.endpoint_url ),
+			title: __('Connection Failed / Unreachable', 'shaped-kit'),
+			message: describeFailure(failure, product.endpoint_url),
+			actionHint: __(
+				'Check that your site is running and that the endpoint URL is accessible from your network.',
+				'shaped-kit'
+			),
 		};
 	} finally {
-		clearTimeout( timer );
+		clearTimeout(timer);
 	}
 };

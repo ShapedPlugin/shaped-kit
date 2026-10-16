@@ -273,7 +273,7 @@ class AppPasswords {
 	private static function unavailable_message( $reason ) {
 		switch ( $reason ) {
 			case 'site_disabled':
-				return __( 'Application passwords are off on this site. WordPress needs HTTPS for them unless the site runs in a local environment.', 'shaped-kit' );
+				return __( 'Application passwords are off on this site. WordPress needs HTTPS for them, or on a dev machine set WP_ENVIRONMENT_TYPE=local in wp-config.php or environment variables. If behind a reverse proxy terminating SSL, forward X-Forwarded-Proto and configure wp-config.php.', 'shaped-kit' );
 			case 'user_disabled':
 				return __( 'Application passwords are off for your user account.', 'shaped-kit' );
 			case 'unsupported':

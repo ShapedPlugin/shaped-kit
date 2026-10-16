@@ -21,6 +21,10 @@ export const clients = () => [
 			'Paste into your terminal, then run `claude` and the tools appear under MCP servers.',
 			'shaped-kit'
 		),
+		tip: __(
+			'Updating an existing server? Claude Code ignores `claude mcp add` if the server name already exists. Run `claude mcp remove <slug>` first before adding it with a new password.',
+			'shaped-kit'
+		),
 	},
 	{
 		key: 'codex',
@@ -34,7 +38,11 @@ export const clients = () => [
 		key: 'copilot',
 		label: __( 'GitHub Copilot', 'shaped-kit' ),
 		note: __(
-			'Paste this JSON into the MCP configuration of VS Code.',
+			'Paste this JSON into your VS Code MCP configuration (.vscode/mcp.json or User settings). If using the Copilot CLI in your terminal, configure servers in ~/.copilot/mcp-config.json or run `copilot mcp add`.',
+			'shaped-kit'
+		),
+		tip: __(
+			'Seeing "Language model unavailable"? That is a GitHub account/subscription issue in VS Code, not an MCP server error. Ensure you are signed in to a GitHub account with an active Copilot seat. For terminal CLI, use `copilot mcp add`.',
 			'shaped-kit'
 		),
 	},
@@ -45,20 +53,32 @@ export const clients = () => [
 			'Paste this JSON into Cursor → Settings → MCP, then restart Cursor.',
 			'shaped-kit'
 		),
+		tip: __(
+			'Restart required: After pasting into Cursor settings, reload the Cursor window or restart Cursor.',
+			'shaped-kit'
+		),
 	},
 	{
 		key: 'claude-desktop',
 		label: __( 'Claude Desktop', 'shaped-kit' ),
 		note: __(
-			'Paste this JSON into claude_desktop_config.json, then restart Claude Desktop.',
+			'Add these entries inside the "mcpServers" object of claude_desktop_config.json. If the file already has one, merge them into it rather than pasting a second object, and check there is no comma after the last entry. Then restart Claude Desktop. If it cannot find npx, replace "npx" with its full path (run `which npx`).',
+			'shaped-kit'
+		),
+		tip: __(
+			'Restart required: Claude Desktop reads configuration only on startup. After saving the file, quit Claude Desktop completely (Quit ⌘Q / Alt+F4) and reopen it.',
 			'shaped-kit'
 		),
 	},
 	{
 		key: 'gemini-cli',
-		label: __( 'Gemini CLI', 'shaped-kit' ),
+		label: __( 'Gemini CLI / Antigravity', 'shaped-kit' ),
 		note: __(
-			'Paste this JSON into your Gemini CLI configuration file (~/.gemini/settings.json).',
+			'Paste this JSON into your Gemini CLI / Antigravity settings file (~/.gemini/settings.json).',
+			'shaped-kit'
+		),
+		tip: __(
+			'CLI Shortcut: You can also register servers directly from your terminal by running `agy mcp add <slug> ...` or `gemini mcp add <slug> ...`.',
 			'shaped-kit'
 		),
 	},

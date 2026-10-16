@@ -459,6 +459,85 @@ describe( 'Test connection', () => {
 
 		expect( button( /Test connection/ ) ).toBeUndefined();
 	} );
+
+	test( 'renders diagnostic title badge and fix action hint when present', async () => {
+		testConnection.mockImplementation( ( item ) =>
+			Promise.resolve( {
+				slug: item.slug,
+				name: item.name,
+				state: 'rejected',
+				title: 'Invalid or Revoked Credentials',
+				message:
+					'The username or application password was not accepted.',
+				actionHint:
+					'Click "Create application password" above to get a fresh password.',
+			} )
+		);
+		await render( overview() );
+		await type( passwordInput(), 'wrong-pass' );
+
+		await act( async () => button( /Test connection/ ).click() );
+		await settle();
+
+		const badge = container.querySelector( '.shaped-kit-result-badge' );
+		expect( badge ).not.toBeNull();
+		expect( badge.textContent ).toBe( 'Invalid or Revoked Credentials' );
+
+		const action = container.querySelector(
+			'.shaped-kit-result-action'
+		);
+		expect( action ).not.toBeNull();
+		expect( action.textContent ).toContain(
+			'Click "Create application password" above'
+		);
+	} );
+} );
+
+describe( 'troubleshooting and proactive client tips', () => {
+	test( 'shows proactive tip for Claude Code by default, and updates when switching tabs', async () => {
+		await render( overview() );
+
+		const tip = container.querySelector( '.shaped-kit-client-tip' );
+		expect( tip ).not.toBeNull();
+		expect( tip.textContent ).toContain( 'claude mcp remove' );
+
+		// Switch to Codex which has no tip
+		const codexTab = [
+			...container.querySelectorAll( '[role="tab"]' ),
+		].find( ( t ) => /Codex/.test( t.textContent ) );
+		await act( async () => codexTab.click() );
+		expect(
+			container.querySelector( '.shaped-kit-client-tip' )
+		).toBeNull();
+
+		// Switch to Claude Desktop which has restart tip
+		const desktopTab = [
+			...container.querySelectorAll( '[role="tab"]' ),
+		].find( ( t ) => /Claude Desktop/.test( t.textContent ) );
+		await act( async () => desktopTab.click() );
+		expect(
+			container.querySelector( '.shaped-kit-client-tip' ).textContent
+		).toContain( 'Restart required' );
+	} );
+
+	test( 'renders the 3-step troubleshooting recovery guide accordion', async () => {
+		await render( overview() );
+
+		const guide = container.querySelector(
+			'details.shaped-kit-troubleshooting-guide'
+		);
+		expect( guide ).not.toBeNull();
+		expect( guide.textContent ).toContain(
+			'Troubleshooting & Reconnection Guide'
+		);
+		expect( guide.textContent ).toContain(
+			'Check WordPress & Application Passwords'
+		);
+		expect( guide.textContent ).toContain(
+			'Check AI Client Configuration & CLI Quirks'
+		);
+		expect( guide.textContent ).toContain( 'Run the Connection Doctor' );
+	} );
 } );
 
 describe( 'Try a tool', () => {
@@ -588,53 +667,67 @@ describe( 'password persistence and cleanup', () => {
 		}
 	} );
 
-	test( 'creating a password saves it, replaces the earlier ones, and says how many', async () => {
+	// A client that is already set up holds the password it was given. Making another must leave that one
+	// alone (found 2026-10-16: one click revoked the passwords in Claude Code and Claude Desktop, and both
+	// answered 401). So the call carries a name and nothing else: a second argument would ask for a revoke.
+	test( 'creating a password saves it and never asks for the earlier ones to be revoked', async () => {
 		createAppPassword.mockResolvedValueOnce( {
 			username: 'admin',
 			password: 'new-pass-9999',
-			name: 'Shaped Kit MCP',
-			uuid: 'uuid-1',
-			revoked: 2,
-		} );
-
-		await render( overview() );
-
-		await act( async () =>
-			button( /Create application password/ ).click()
-		);
-		await settle();
-
-		expect( createAppPassword ).toHaveBeenCalledWith( '', true );
-		expect( passwordInput().value ).toBe( 'new-pass-9999' );
-		expect( stored().p ).toBe( 'new-pass-9999' );
-		expect( container.textContent ).toContain(
-			'It replaced 2 earlier Shaped Kit passwords'
-		);
-	} );
-
-	test( 'with nothing replaced it does not talk about replacing', async () => {
-		createAppPassword.mockResolvedValueOnce( {
-			username: 'admin',
-			password: 'first-pass',
-			name: 'Shaped Kit MCP',
+			name: 'Shaped Kit MCP - Claude Code',
 			uuid: 'uuid-1',
 			revoked: 0,
 		} );
 
 		await render( overview() );
+
 		await act( async () =>
 			button( /Create application password/ ).click()
 		);
 		await settle();
 
+		expect( createAppPassword ).toHaveBeenCalledTimes( 1 );
+		expect( createAppPassword ).toHaveBeenCalledWith(
+			'Shaped Kit MCP - Claude Code'
+		);
+		expect( passwordInput().value ).toBe( 'new-pass-9999' );
+		expect( stored().p ).toBe( 'new-pass-9999' );
 		expect( container.textContent ).not.toContain( 'It replaced' );
 	} );
 
-	test( 'the panel says up front that a new password replaces the earlier ones', async () => {
+	test( 'the password is named for the client that is selected', async () => {
+		createAppPassword.mockResolvedValue( {
+			username: 'admin',
+			password: 'desk-pass',
+			name: 'Shaped Kit MCP - Claude Desktop',
+			uuid: 'uuid-2',
+			revoked: 0,
+		} );
+
+		await render( overview() );
+		await act( async () =>
+			[ ...container.querySelectorAll( '[role="tab"]' ) ]
+				.find( ( tab ) => /Claude Desktop/.test( tab.textContent ) )
+				.click()
+		);
+		await act( async () =>
+			button( /Create application password/ ).click()
+		);
+		await settle();
+
+		expect( createAppPassword ).toHaveBeenCalledWith(
+			'Shaped Kit MCP - Claude Desktop'
+		);
+	} );
+
+	test( 'the panel says up front that earlier passwords keep working', async () => {
 		await render( overview() );
 
 		expect( container.textContent ).toContain(
-			'Creating a new one replaces your earlier Shaped Kit passwords'
+			'stays valid until you revoke it, so clients you already set up keep working'
+		);
+		expect( container.textContent ).not.toContain(
+			'replaces your earlier Shaped Kit passwords'
 		);
 	} );
 
@@ -679,5 +772,69 @@ describe( 'password persistence and cleanup', () => {
 		} finally {
 			blocked.mockRestore();
 		}
+	} );
+
+	test( 'renders Environment & Server Diagnostics with local environment and HTTP', async () => {
+		await render(
+			overview( {
+				environment: {
+					type: 'local',
+					is_ssl: false,
+					app_passwords_available: true,
+					authorization_header: true,
+				},
+			} )
+		);
+
+		const envSection = container.querySelector(
+			'.shaped-kit-environment-check'
+		);
+		expect( envSection ).not.toBeNull();
+		expect( envSection.textContent ).toContain(
+			'Environment & Server Diagnostics'
+		);
+		expect( envSection.textContent ).toContain( 'local' );
+		expect( envSection.textContent ).toContain( 'Inactive (HTTP)' );
+		expect( envSection.textContent ).toContain( 'Available' );
+		expect( envSection.textContent ).toContain( 'Passed to PHP' );
+	} );
+
+	test( 'renders Environment & Server Diagnostics with production HTTPS and disabled passwords', async () => {
+		await render(
+			overview( {
+				environment: {
+					type: 'production',
+					is_ssl: false,
+					app_passwords_available: false,
+					authorization_header: false,
+				},
+				app_password: {
+					available: false,
+					reason: 'site_disabled',
+					user_login: 'admin',
+				},
+			} )
+		);
+
+		const envSection = container.querySelector(
+			'.shaped-kit-environment-check'
+		);
+		expect( envSection.textContent ).toContain( 'production' );
+		expect( envSection.textContent ).toContain( 'Disabled' );
+		expect( envSection.textContent ).toContain( 'Probe via Doctor' );
+	} );
+
+	test( 'troubleshooting guide includes Step 4 with Local, Docker & Reverse Proxy Setup', async () => {
+		await render( overview() );
+
+		const guide = container.querySelector(
+			'.shaped-kit-troubleshooting-guide'
+		);
+		expect( guide ).not.toBeNull();
+		expect( guide.textContent ).toContain(
+			'Local, Docker & Reverse Proxy Setup'
+		);
+		expect( guide.textContent ).toContain( 'WP_ENVIRONMENT_TYPE' );
+		expect( guide.textContent ).toContain( 'HTTP_X_FORWARDED_PROTO' );
 	} );
 } );

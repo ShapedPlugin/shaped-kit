@@ -188,4 +188,16 @@ describe( 'StorePanel Component', () => {
 		expect( container.textContent ).toContain( 'Install Beta: 2.2.0-beta.1' );
 		expect( container.textContent ).toContain( 'Beta versions contain early preview features' );
 	} );
+
+	test( 'renders DevOps Release Pipeline in Progress alert banner', async () => {
+		fetchStoreCatalog.mockResolvedValueOnce( mockCatalog );
+		await mount();
+
+		expect( container.textContent ).toContain(
+			'DevOps Release Pipeline in Progress (Developer Preview)'
+		);
+		expect( container.textContent ).toContain(
+			'The Products & Store Hub is currently in developer preview mode'
+		);
+	} );
 } );

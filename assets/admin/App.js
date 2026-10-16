@@ -219,7 +219,7 @@ const App = () => {
 							}` }
 							onClick={ () => setActiveTab( 'products' ) }
 						>
-							{ __( 'AI & MCP Products', 'shaped-kit' ) }
+							{ __( 'AI & MCP', 'shaped-kit' ) }
 						</button>
 						{ storeLive && (
 							<button
