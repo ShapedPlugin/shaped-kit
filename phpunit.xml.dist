@@ -26,6 +26,28 @@
 			<directory>tests/phpunit/integration</directory>
 		</testsuite>
 		<!--
+			integration-ci  the integration suite without the tests that load a sibling product plugin (Real
+			                Testimonials, Location Weather) from next to the Kit. Those repos are private, so CI
+			                cannot have them; the tests run locally with `composer test:integration`.
+			                `composer test:integration:ci` also fails on any skipped test, so a missing
+			                WordPress install or an unexpected skip fails the build instead of passing it.
+			                A new test that needs a sibling goes in this list; one that does not is picked up
+			                by the directory.
+		-->
+		<testsuite name="integration-ci">
+			<directory>tests/phpunit/integration</directory>
+			<exclude>tests/phpunit/integration/LocationWeatherWriteSlashesIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/LocationWeatherWriteToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsBuilderToolsTestCase.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsBulkCreateIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsConnectStateIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsEmptyListsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsFreeBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsProBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsWriteSlashesIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsWriteToolsIntegrationTest.php</exclude>
+		</testsuite>
+		<!--
 			adapter     a product's real MCP server, run through one real adapter copy
 			            (prompts and tools on the wire). Not part of `composer test`: it
 			            needs SHAPED_KIT_PHPUNIT_BOOTSTRAP=adapter, and one process loads

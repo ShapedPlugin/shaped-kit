@@ -23,6 +23,8 @@
         "test:integration": "SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
         "test:multisite": "WP_MULTISITE=1 SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
         "test:adapter": "tests/run-adapter-matrix.sh",
+        "test:integration:ci": "SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration-ci --fail-on-skipped",
+        "test:multisite:ci": "WP_MULTISITE=1 SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration-ci --fail-on-skipped",
         "test:package":"rm -rf \"${TMPDIR:-/tmp}/shaped-kit-package\" && mkdir -p \"${TMPDIR:-/tmp}/shaped-kit-package\" && unzip -q shaped-kit.zip -d \"${TMPDIR:-/tmp}/shaped-kit-package\" && SHAPED_KIT_PLUGIN_DIR=\"${TMPDIR:-/tmp}/shaped-kit-package/shaped-kit\" SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
         "lint": "tools/phpcs/vendor/bin/phpcs",
         "lint:fix": "tools/phpcs/vendor/bin/phpcbf"
@@ -34,6 +36,8 @@
         "test:unit": "Run the PHPUnit unit suite (no WordPress).",
         "test:integration": "Run the WordPress-backed suite; skips cleanly if the WP test library is absent.",
         "test:multisite": "Run the WordPress-backed suite on a real multisite (WP_MULTISITE=1); skips cleanly if the WP test library is absent.",
+        "test:integration:ci": "What CI runs: the integration suite without the tests that need a sibling product plugin, failing on any skip. Needs tools/install-wp-tests.sh first.",
+        "test:multisite:ci": "The same CI suite on a real multisite (WP_MULTISITE=1).",
         "test:adapter": "Run a product's MCP prompts and tools through every real MCP adapter copy found (one process per copy, edition and Builder state). Not part of `composer test`.",
         "lint": "Check WordPress coding standards and PHP 7.4 compatibility.",
         "lint:fix": "Auto-fix what phpcbf can."
