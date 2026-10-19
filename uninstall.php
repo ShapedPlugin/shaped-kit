@@ -40,11 +40,13 @@ if ( is_multisite() ) {
 			delete_option( \ShapedKit\Store\CatalogClient::OPTION_LAST_SERIAL );
 			delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_CATALOG_CACHE );
 			delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_THROTTLE );
+			delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_FETCHED_AT );
 			restore_current_blog();
 		}
 	}
 	delete_site_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_CATALOG_CACHE );
 	delete_site_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_THROTTLE );
+	delete_site_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_FETCHED_AT );
 } else {
 	\ShapedKit\Audit\LogTable::drop();
 	delete_option( 'shaped_kit_mcp_log_db_version' );
@@ -52,4 +54,5 @@ if ( is_multisite() ) {
 	delete_option( \ShapedKit\Store\CatalogClient::OPTION_LAST_SERIAL );
 	delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_CATALOG_CACHE );
 	delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_THROTTLE );
+	delete_transient( \ShapedKit\Store\CatalogClient::TRANSIENT_FETCHED_AT );
 }

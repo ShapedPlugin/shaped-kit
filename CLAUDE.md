@@ -47,6 +47,7 @@ This file is tracked in a public repository. Never put local paths, keys, licens
   - **Off by default (FR-S1):** MCP stays disabled until the site owner enables it. Installing the Kit enables no MCP server or endpoint.
   - When the Kit supplies the adapter, the adapter's shared default server is off (`mcp_adapter_create_default_server` returns false).
 - **The audit log stores argument keys only, never values.**
+- **Hook callbacks take no test-only arguments (E143).** `do_action()` hands every callback an empty string when the hook has no arguments (`wp-includes/plugin.php:513-515`), so an optional parameter such as `$asset_file = null` or `$terminate = true` receives `''`. Register a no-argument wrapper (`DashboardPage::render_page()`, `SelfUpdater::on_admin_init()`) and keep the argument for tests only.
 
 ## 3. Tests and lint
 

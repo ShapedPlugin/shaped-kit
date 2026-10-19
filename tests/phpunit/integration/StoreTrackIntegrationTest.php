@@ -537,6 +537,33 @@ class StoreTrackIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * WordPress fires `admin_init` with no arguments and hands every callback an empty string anyway
+	 * (wp-includes/plugin.php:513-515). A callback with a `$terminate = true` parameter would read it as false, and the
+	 * request would go on after the redirect. `exit` cannot run inside a test, so this looks at what is registered: the
+	 * callback the Kit puts on `admin_init` takes no argument at all.
+	 */
+	public function test_the_admin_init_callback_takes_no_argument_so_core_cannot_switch_off_the_exit() {
+		set_current_screen( 'dashboard' );
+		try {
+			SelfUpdater::register();
+
+			$found = array();
+			foreach ( $GLOBALS['wp_filter']['admin_init']->callbacks as $callbacks ) {
+				foreach ( $callbacks as $callback ) {
+					$function = $callback['function'];
+					if ( is_array( $function ) && SelfUpdater::class === $function[0] ) {
+						$found[] = ( new \ReflectionMethod( $function[0], $function[1] ) )->getNumberOfParameters();
+					}
+				}
+			}
+		} finally {
+			set_current_screen( 'front' );
+		}
+
+		$this->assertSame( array( 0 ), $found, 'One Kit callback on admin_init, and it takes no argument.' );
+	}
+
+	/**
 	 * Test SelfUpdater::handle_force_check permission checks, nonce, cache flush and redirect.
 	 */
 	public function test_self_updater_handle_force_check() {

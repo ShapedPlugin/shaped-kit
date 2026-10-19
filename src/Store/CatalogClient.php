@@ -66,6 +66,29 @@ class CatalogClient {
 	const TRANSIENT_THROTTLE = 'shaped_kit_catalog_throttle';
 
 	/**
+	 * Transient key holding the time the cached catalog was fetched from the remote (same lifetime as the cache).
+	 *
+	 * @var string
+	 */
+	const TRANSIENT_FETCHED_AT = 'shaped_kit_catalog_fetched_at';
+
+	/**
+	 * Where the catalog returned by the last `get_catalog()` call came from: `remote` (a verified remote catalog,
+	 * fresh or cached) or `builtin` (the list bundled in the Kit). Set once per call, so it describes the data the
+	 * caller actually received.
+	 *
+	 * @var string
+	 */
+	private static $last_source = 'builtin';
+
+	/**
+	 * When that remote catalog was fetched (Unix time), or null when unknown or built in.
+	 *
+	 * @var int|null
+	 */
+	private static $last_fetched_at = null;
+
+	/**
 	 * Cache TTL in seconds (12 hours).
 	 *
 	 * @var int
@@ -89,25 +112,67 @@ class CatalogClient {
 		if ( ! $force_refresh ) {
 			$cached = get_transient( self::TRANSIENT_CATALOG_CACHE );
 			if ( is_array( $cached ) && ! empty( $cached['products'] ) ) {
+				$at                    = get_transient( self::TRANSIENT_FETCHED_AT );
+				self::$last_source     = 'remote';
+				self::$last_fetched_at = is_numeric( $at ) ? (int) $at : null;
 				return $cached;
 			}
 		}
 
 		// Check if remote request is throttled due to recent failure.
 		if ( ! $force_refresh && false !== get_transient( self::TRANSIENT_THROTTLE ) ) {
-			return self::get_fallback_catalog();
+			return self::use_fallback();
 		}
 
 		$remote = self::fetch_remote_catalog();
 		if ( is_array( $remote ) && ! empty( $remote['products'] ) ) {
-			set_transient( self::TRANSIENT_CATALOG_CACHE, $remote, self::CACHE_TTL );
+			self::remember_remote( $remote );
 			return $remote;
 		}
 
 		// Set throttle on failed remote attempt.
 		set_transient( self::TRANSIENT_THROTTLE, time(), self::THROTTLE_TTL );
 
+		return self::use_fallback();
+	}
+
+	/**
+	 * Keeps a verified remote catalog and the time it was fetched.
+	 *
+	 * @param array $remote Validated remote catalog.
+	 * @return void
+	 */
+	public static function remember_remote( array $remote ) {
+		$now = time();
+		set_transient( self::TRANSIENT_CATALOG_CACHE, $remote, self::CACHE_TTL );
+		set_transient( self::TRANSIENT_FETCHED_AT, $now, self::CACHE_TTL );
+
+		self::$last_source     = 'remote';
+		self::$last_fetched_at = $now;
+	}
+
+	/**
+	 * The built-in list, and a note that this is what the caller got.
+	 *
+	 * @return array
+	 */
+	private static function use_fallback() {
+		self::$last_source     = 'builtin';
+		self::$last_fetched_at = null;
+
 		return self::get_fallback_catalog();
+	}
+
+	/**
+	 * Where the catalog the last `get_catalog()` call returned came from.
+	 *
+	 * @return array{source: string, fetched_at: int|null} `remote` or `builtin`, and when a remote one was fetched.
+	 */
+	public static function sync_state() {
+		return array(
+			'source'     => self::$last_source,
+			'fetched_at' => self::$last_fetched_at,
+		);
 	}
 
 	/**

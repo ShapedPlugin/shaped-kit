@@ -119,6 +119,7 @@ class MultisiteBehaviorIntegrationTest extends WP_UnitTestCase {
 			array( 'option', \ShapedKit\Store\CatalogClient::OPTION_LAST_SERIAL ),
 			array( 'transient', \ShapedKit\Store\CatalogClient::TRANSIENT_CATALOG_CACHE ),
 			array( 'transient', \ShapedKit\Store\CatalogClient::TRANSIENT_THROTTLE ),
+			array( 'transient', \ShapedKit\Store\CatalogClient::TRANSIENT_FETCHED_AT ),
 		);
 	}
 

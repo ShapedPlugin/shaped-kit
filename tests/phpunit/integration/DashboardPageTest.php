@@ -200,6 +200,58 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$this->assertSame( '<div class="wrap"><div id="shaped-kit-dashboard"><h1>AI &amp; MCP</h1></div></div>', $html );
 	}
 
+	/**
+	 * What WordPress prints for the page: it fires the page's hook with no arguments, the plugin's own asset file is checked,
+	 * and no test path is passed. A checkout with no build (CI) gets a stand-in asset file for the length of the call; a file
+	 * this test did not make is never touched or removed, so a developer's real build stays as it is.
+	 *
+	 * @param string $hook The page's hook name.
+	 * @return string
+	 */
+	private function page_as_wordpress_runs_it( string $hook ): string {
+		$asset      = SHAPED_KIT_DIR . DashboardPage::BUILD_ASSET;
+		$made_file  = ! file_exists( $asset );
+		$made_admin = ! is_dir( dirname( $asset ) );
+		$made_build = ! is_dir( dirname( $asset, 2 ) );
+
+		if ( $made_file ) {
+			wp_mkdir_p( dirname( $asset ) );
+			file_put_contents( $asset, '<?php return array();' );
+		}
+
+		try {
+			ob_start();
+			do_action( $hook );
+			$html = (string) ob_get_clean();
+		} finally {
+			if ( $made_file ) {
+				unlink( $asset );
+				if ( $made_admin ) {
+					rmdir( dirname( $asset ) );
+				}
+				if ( $made_build ) {
+					rmdir( dirname( $asset, 2 ) );
+				}
+			}
+		}
+
+		return $html;
+	}
+
+	public function test_the_page_wordpress_runs_prints_no_notice_when_the_build_is_there(): void {
+		// WordPress hands every callback an empty string when a hook has no arguments. It must not be taken for a path.
+		$hooks = array(
+			$this->page_hook(),
+			get_plugin_page_hookname( DashboardPage::SLUG, DashboardPage::SLUG ),
+		);
+
+		foreach ( $hooks as $hook ) {
+			$html = $this->page_as_wordpress_runs_it( $hook );
+
+			$this->assertSame( '<div class="wrap"><div id="shaped-kit-dashboard"><h1>AI &amp; MCP</h1></div></div>', $html, $hook );
+		}
+	}
+
 	public function test_the_page_prints_nothing_to_someone_who_may_not_open_it(): void {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
 
