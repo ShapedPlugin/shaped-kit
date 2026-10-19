@@ -51,7 +51,7 @@ class SelfUpdater {
 		add_filter( 'upgrader_pre_download', array( __CLASS__, 'filter_upgrader_pre_download' ), 10, 4 );
 
 		if ( is_admin() ) {
-			add_action( 'admin_init', array( __CLASS__, 'handle_force_check' ) );
+			add_action( 'admin_init', array( __CLASS__, 'on_admin_init' ) );
 			add_filter( 'plugin_row_meta', array( __CLASS__, 'filter_row_meta' ), 10, 2 );
 			add_action( 'admin_notices', array( __CLASS__, 'checked_notice' ) );
 			add_action( 'network_admin_notices', array( __CLASS__, 'checked_notice' ) );
@@ -232,6 +232,19 @@ class SelfUpdater {
 
 		// Return path to verified local file so upgrader unpacks this verified file directly.
 		return $temp_file;
+	}
+
+	/**
+	 * What WordPress runs on `admin_init`. It takes no argument on purpose.
+	 *
+	 * `do_action( 'admin_init' )` carries none, and core then hands every callback an empty string as its first argument
+	 * (wp-includes/plugin.php:513-515). Registered directly, `handle_force_check( $terminate = true )` would read that
+	 * as `$terminate = ''`, and the request would carry on after the redirect instead of ending.
+	 *
+	 * @return void
+	 */
+	public static function on_admin_init() {
+		self::handle_force_check();
 	}
 
 	/**

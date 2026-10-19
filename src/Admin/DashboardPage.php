@@ -125,7 +125,7 @@ final class DashboardPage {
 			__( 'ShapedPlugin', 'shaped-kit' ),
 			self::CAPABILITY,
 			self::SLUG,
-			array( __CLASS__, 'render' ),
+			array( __CLASS__, 'render_page' ),
 			'dashicons-rest-api',
 			81
 		);
@@ -136,8 +136,22 @@ final class DashboardPage {
 			__( 'AI & MCP', 'shaped-kit' ),
 			self::CAPABILITY,
 			self::SLUG,
-			array( __CLASS__, 'render' )
+			array( __CLASS__, 'render_page' )
 		);
+	}
+
+	/**
+	 * What WordPress runs for the menu page. It takes no argument on purpose.
+	 *
+	 * WordPress fires a menu page's hook with `do_action( $page_hook )` and no arguments, and `do_action()` then hands
+	 * every callback an empty string as its first argument (wp-includes/plugin.php:513-515). A callback that takes a
+	 * test-only `$asset_file` would read that `''` as a path, find it unreadable, and print the "dashboard files are
+	 * missing" notice on every load, even with the build in place (it flashed until the app replaced it).
+	 *
+	 * @return void
+	 */
+	public static function render_page() {
+		self::render();
 	}
 
 	/**
