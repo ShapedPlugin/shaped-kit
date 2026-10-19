@@ -104,7 +104,9 @@ class EddBridge {
 
 		// Check for licensing rejections (SE12).
 		if ( empty( $body['package'] ) ) {
-			$msg = ! empty( $body['msg'] ) ? $body['msg'] : __( 'The provided license key is invalid or expired for this product.', 'shaped-kit' );
+			$msg = ( ! empty( $body['msg'] ) && is_string( $body['msg'] ) ) ? $body['msg'] : __( 'The provided license key is invalid or expired for this product.', 'shaped-kit' );
+			// The store's reason goes to the owner's browser. It must never carry the key back (E55).
+			$msg = str_replace( $license_key, __( '[license key]', 'shaped-kit' ), $msg );
 			return new \WP_Error(
 				'license_invalid',
 				$msg,

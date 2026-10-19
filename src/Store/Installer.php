@@ -16,6 +16,8 @@
  * - WP_Upgrader::create_lock(): wp-admin/includes/class-wp-upgrader.php:1057
  * - WP_Upgrader::release_lock(): wp-admin/includes/class-wp-upgrader.php:1099
  * - Plugin_Upgrader::install(): wp-admin/includes/class-plugin-upgrader.php:118
+ * - The result checks after install(): wp_ajax_install_plugin(), wp-admin/includes/ajax-actions.php:4549-4574
+ * - WP_Upgrader::install_package() refusing an existing folder (`folder_exists`): wp-admin/includes/class-wp-upgrader.php:668-676
  * - activate_plugin(): wp-admin/includes/plugin.php:647
  * - is_plugin_active(): wp-admin/includes/plugin.php:539
  * - get_plugins(): wp-admin/includes/plugin.php:300
@@ -111,26 +113,8 @@ class Installer {
 
 			$temp_file = $download_result;
 
-			// Initialize WP_Filesystem and upgrader.
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			require_once ABSPATH . 'wp-admin/includes/misc.php';
-			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
-
-			// Shield wire from echoed notices or upgrader output (SE16).
-			ob_start();
-
-			$skin     = new \WP_Ajax_Upgrader_Skin();
-			$upgrader = new \Plugin_Upgrader( $skin );
-
-			// Enforce abort_if_destination_exists = true on fresh installs (SE07).
-			$installed = $upgrader->install(
-				$temp_file,
-				array(
-					'overwrite_package' => false,
-				)
-			);
-
-			ob_end_clean();
+			// A fresh install never replaces a folder that is already there (SE07).
+			$failure = self::install_package_file( $temp_file, false, $slug );
 
 			// Clean up downloaded temp file if still present.
 			if ( file_exists( $temp_file ) ) {
@@ -139,14 +123,8 @@ class Installer {
 
 			\WP_Upgrader::release_lock( self::LOCK_NAME );
 
-			if ( is_wp_error( $installed ) ) {
-				return $installed;
-			}
-
-			if ( false === $installed ) {
-				$errors = $skin->get_errors();
-				$msg    = is_wp_error( $errors ) ? $errors->get_error_message() : __( 'Installation failed.', 'shaped-kit' );
-				return new \WP_Error( 'install_failed', $msg, array( 'status' => 500 ) );
+			if ( $failure ) {
+				return $failure;
 			}
 
 			// Locate installed plugin main file.
@@ -258,24 +236,8 @@ class Installer {
 
 			$temp_file = $download_result;
 
-			// 5. Initialize upgrader and install.
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			require_once ABSPATH . 'wp-admin/includes/misc.php';
-			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
-
-			ob_start();
-
-			$skin     = new \WP_Ajax_Upgrader_Skin();
-			$upgrader = new \Plugin_Upgrader( $skin );
-
-			$installed = $upgrader->install(
-				$temp_file,
-				array(
-					'overwrite_package' => false,
-				)
-			);
-
-			ob_end_clean();
+			// 5. Install. A fresh install never replaces a folder that is already there (SE07).
+			$failure = self::install_package_file( $temp_file, false, $slug );
 
 			if ( file_exists( $temp_file ) ) {
 				wp_delete_file( $temp_file );
@@ -283,14 +245,8 @@ class Installer {
 
 			\WP_Upgrader::release_lock( self::LOCK_NAME );
 
-			if ( is_wp_error( $installed ) ) {
-				return $installed;
-			}
-
-			if ( false === $installed ) {
-				$errors = $skin->get_errors();
-				$msg    = is_wp_error( $errors ) ? $errors->get_error_message() : __( 'Installation failed.', 'shaped-kit' );
-				return new \WP_Error( 'install_failed', $msg, array( 'status' => 500 ) );
+			if ( $failure ) {
+				return $failure;
 			}
 
 			// 6. Find plugin file and activate.
@@ -423,6 +379,97 @@ class Installer {
 		}
 
 		return $temp_file;
+	}
+
+	/**
+	 * Installs a package file that was already downloaded and verified, and says whether it worked.
+	 *
+	 * The upgrader's output is discarded so it cannot reach the REST response (SE16). Core's skin can leave an output
+	 * buffer open when it refuses a package, so the buffer stack is put back as it was found, even if the upgrader throws.
+	 * The upgrader connects to the filesystem itself; a host that wants credentials is reported by `install_error()` (SE09).
+	 *
+	 * @param string $temp_file Local path of the verified zip.
+	 * @param bool   $overwrite Whether the package may replace the folder it unpacks to. Core clears that folder first
+	 *                          (class-wp-upgrader.php:646-650), so pass true only for a product that is installed (SE07).
+	 * @param string $slug      Plugin slug, for the message.
+	 * @return \WP_Error|null The refusal, or null when the plugin was installed.
+	 */
+	public static function install_package_file( $temp_file, $overwrite, $slug ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/misc.php';
+		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+
+		$level = ob_get_level();
+		ob_start();
+
+		try {
+			$skin      = new \WP_Ajax_Upgrader_Skin();
+			$upgrader  = new \Plugin_Upgrader( $skin );
+			$installed = $upgrader->install( $temp_file, array( 'overwrite_package' => (bool) $overwrite ) );
+		} finally {
+			while ( ob_get_level() > $level ) {
+				ob_end_clean();
+			}
+		}
+
+		return self::install_error( $installed, $skin, $slug );
+	}
+
+	/**
+	 * Turns what `Plugin_Upgrader::install()` and its skin report into one verdict (SE07, SE09).
+	 *
+	 * `install()` returns true only when the package was installed. When core refuses it (a folder that is already there,
+	 * a package it cannot unpack) the reason is on the skin and the return value is the upgrader's empty default, so
+	 * checking `is_wp_error()` on the return value alone calls a refusal a success. Core's own AJAX installer checks the
+	 * skin as well (`wp_ajax_install_plugin()`, ajax-actions.php:4549-4574); this follows it.
+	 *
+	 * @param mixed                  $installed Return value of `install()`.
+	 * @param \WP_Ajax_Upgrader_Skin $skin      The skin the upgrader ran with.
+	 * @param string                 $slug      Plugin slug, for the message.
+	 * @return \WP_Error|null The refusal, or null when the plugin was installed.
+	 */
+	private static function install_error( $installed, $skin, $slug ) {
+		global $wp_filesystem;
+
+		$errors = is_wp_error( $installed ) ? $installed : null;
+		if ( ! $errors && is_wp_error( $skin->result ) ) {
+			$errors = $skin->result;
+		}
+		if ( ! $errors && $skin->get_errors()->has_errors() ) {
+			$errors = $skin->get_errors();
+		}
+
+		if ( $errors ) {
+			// Core's `folder_exists` carries the server path as its data; say the same thing without it.
+			if ( in_array( 'folder_exists', $errors->get_error_codes(), true ) ) {
+				return new \WP_Error(
+					'destination_exists',
+					sprintf(
+						/* translators: %s: plugin folder name */
+						__( 'A folder named "%s" already exists in the plugins folder, so it was not replaced. Remove or rename it, then try again.', 'shaped-kit' ),
+						$slug
+					),
+					array( 'status' => 409 )
+				);
+			}
+
+			return new \WP_Error( 'install_failed', $errors->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		if ( true === $installed ) {
+			return null;
+		}
+
+		// Nothing was reported, so the upgrader never started: a filesystem that wants FTP or SSH credentials.
+		if ( ! ( $wp_filesystem instanceof \WP_Filesystem_Base ) ) {
+			return new \WP_Error(
+				'filesystem_unavailable',
+				__( 'WordPress cannot write to the plugins folder from here because the server asks for FTP or SSH credentials. Install the plugin from the Plugins screen, or upload it by hand.', 'shaped-kit' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return new \WP_Error( 'install_failed', __( 'Installation failed.', 'shaped-kit' ), array( 'status' => 500 ) );
 	}
 
 	/**
