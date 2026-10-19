@@ -57,6 +57,65 @@ jobs:
       - name: Run PHPUnit Unit Suite
         run: composer test:unit
 
+  # The integration suite inside real WordPress and MySQL. It leaves out the tests that load a sibling product
+  # plugin (Real Testimonials, Location Weather) from next to the Kit, because those repos are private; they run
+  # locally with `composer test:integration`. `:ci` fails on any skipped test, so a broken install cannot pass.
+  test-integration:
+    name: Integration (PHP ${{ matrix.php }}${{ matrix.multisite == '1' && ', multisite' || '' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '7.4'
+            multisite: '0'
+          - php: '8.3'
+            multisite: '0'
+          - php: '8.3'
+            multisite: '1'
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: shaped_kit_tests
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, zip
+          coverage: none
+
+      - name: Install isolated toolchains
+        run: composer tools:install
+
+      - name: Install WordPress and the test library (pinned)
+        env:
+          DB_NAME: shaped_kit_tests
+          DB_USER: root
+          DB_PASS: root
+          DB_HOST: 127.0.0.1:3306
+        run: tools/install-wp-tests.sh
+
+      - name: Run the integration suite
+        if: matrix.multisite == '0'
+        run: composer test:integration:ci
+
+      - name: Run the integration suite on a multisite
+        if: matrix.multisite == '1'
+        run: composer test:multisite:ci
+
   test-js:
     name: JavaScript Tests (Node 20)
     runs-on: ubuntu-latest

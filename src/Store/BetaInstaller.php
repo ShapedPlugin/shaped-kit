@@ -69,33 +69,11 @@ class BetaInstaller {
 		$beta_version = $matched['beta_version'];
 		$beta_sha256  = $matched['beta_sha256'];
 
-		// Verify No-Downgrade Barrier (SE15).
-		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$installed_plugins = get_plugins();
-		$plugin_file       = Installer::find_plugin_file( $slug );
-
-		if ( $plugin_file && isset( $installed_plugins[ $plugin_file ]['Version'] ) ) {
-			$current_version = $installed_plugins[ $plugin_file ]['Version'];
-
-			// Block if installed version >= target beta version (SE15).
-			if ( version_compare( $current_version, $beta_version, '>=' ) ) {
-				self::log_telemetry( $slug, 'error', $start_time, 'downgrade_not_allowed' );
-				return new \WP_Error(
-					'downgrade_not_allowed',
-					sprintf(
-						/* translators: 1: current version, 2: target beta version */
-						__( 'Downgrades are not permitted. Installed version (%1$s) is greater than or equal to target beta version (%2$s).', 'shaped-kit' ),
-						$current_version,
-						$beta_version
-					),
-					array(
-						'status'    => 400,
-						'current'   => $current_version,
-						'target'    => $beta_version,
-						'next_step' => 'Wait for the next stable release to update.',
-					)
-				);
-			}
+		// Verify No-Downgrade Barrier (SE15). Checked again under the lock (E58b).
+		$downgrade = self::downgrade_error( $slug, $beta_version );
+		if ( $downgrade ) {
+			self::log_telemetry( $slug, 'error', $start_time, 'downgrade_not_allowed' );
+			return $downgrade;
 		}
 
 		// Resolve beta package URL.
@@ -143,6 +121,18 @@ class BetaInstaller {
 		}
 
 		try {
+			/*
+			 * Another admin's install may have finished while this request waited for the lock, so what is installed is
+			 * read again, from disk and not from the plugin cache the first check filled (E58b).
+			 */
+			wp_clean_plugins_cache( false );
+			$downgrade = self::downgrade_error( $slug, $beta_version );
+			if ( $downgrade ) {
+				\WP_Upgrader::release_lock( Installer::LOCK_NAME );
+				self::log_telemetry( $slug, 'error', $start_time, 'downgrade_not_allowed' );
+				return $downgrade;
+			}
+
 			// Download and verify SHA-256 before extraction (SE05).
 			$temp_file = Installer::download_and_verify( $package_url, (string) $beta_sha256 );
 			if ( is_wp_error( $temp_file ) ) {
@@ -151,25 +141,12 @@ class BetaInstaller {
 				return $temp_file;
 			}
 
-			// Initialize upgrader with overwrite_package = true for beta upgrade.
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			require_once ABSPATH . 'wp-admin/includes/misc.php';
-			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
-
-			ob_start();
-
-			$skin     = new \WP_Ajax_Upgrader_Skin();
-			$upgrader = new \Plugin_Upgrader( $skin );
-
-			// Allow overwrite since we are upgrading an existing or fresh plugin to beta.
-			$installed = $upgrader->install(
-				$temp_file,
-				array(
-					'overwrite_package' => true,
-				)
-			);
-
-			ob_end_clean();
+			/*
+			 * Core clears the destination folder when the package may overwrite (class-wp-upgrader.php:646-650). That is
+			 * right for the product being upgraded and wrong for a folder that only has the same name: another vendor's
+			 * plugin, or a half install. So a package overwrites only when this product is installed (E48).
+			 */
+			$failure = Installer::install_package_file( $temp_file, (bool) Installer::find_plugin_file( $slug ), $slug );
 
 			if ( file_exists( $temp_file ) ) {
 				wp_delete_file( $temp_file );
@@ -177,16 +154,9 @@ class BetaInstaller {
 
 			\WP_Upgrader::release_lock( Installer::LOCK_NAME );
 
-			if ( is_wp_error( $installed ) ) {
-				self::log_telemetry( $slug, 'error', $start_time, $installed->get_error_code() );
-				return $installed;
-			}
-
-			if ( false === $installed ) {
-				$errors = $skin->get_errors();
-				$msg    = is_wp_error( $errors ) ? $errors->get_error_message() : __( 'Beta installation failed.', 'shaped-kit' );
-				self::log_telemetry( $slug, 'error', $start_time, 'beta_install_failed' );
-				return new \WP_Error( 'beta_install_failed', $msg, array( 'status' => 500 ) );
+			if ( $failure ) {
+				self::log_telemetry( $slug, 'error', $start_time, $failure->get_error_code() );
+				return $failure;
 			}
 
 			// Activate plugin if requested.
@@ -228,6 +198,45 @@ class BetaInstaller {
 				array( 'status' => 500 )
 			);
 		}
+	}
+
+	/**
+	 * Refuses a beta that is not newer than what is installed (SE15).
+	 *
+	 * @param string $slug         Product slug.
+	 * @param string $beta_version Version the beta would install.
+	 * @return \WP_Error|null `downgrade_not_allowed` when the installed version is the same or newer, otherwise null.
+	 */
+	private static function downgrade_error( $slug, $beta_version ) {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		$installed_plugins = get_plugins();
+		$plugin_file       = Installer::find_plugin_file( $slug );
+
+		if ( ! $plugin_file || ! isset( $installed_plugins[ $plugin_file ]['Version'] ) ) {
+			return null;
+		}
+
+		$current_version = $installed_plugins[ $plugin_file ]['Version'];
+
+		if ( ! version_compare( $current_version, $beta_version, '>=' ) ) {
+			return null;
+		}
+
+		return new \WP_Error(
+			'downgrade_not_allowed',
+			sprintf(
+				/* translators: 1: current version, 2: target beta version */
+				__( 'Downgrades are not permitted. Installed version (%1$s) is greater than or equal to target beta version (%2$s).', 'shaped-kit' ),
+				$current_version,
+				$beta_version
+			),
+			array(
+				'status'    => 400,
+				'current'   => $current_version,
+				'target'    => $beta_version,
+				'next_step' => 'Wait for the next stable release to update.',
+			)
+		);
 	}
 
 	/**
