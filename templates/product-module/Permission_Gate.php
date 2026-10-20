@@ -35,6 +35,11 @@ class Permission_Gate {
 	const KILL_SWITCH_OPTION = 'template_prefix_mcp_enabled';
 
 	/**
+	 * Option holding the enabled toolset IDs.
+	 */
+	const TOOLSETS_OPTION = 'template_prefix_mcp_active_toolsets';
+
+	/**
 	 * Whether the owner has switched MCP on. Anything other than the exact string 'yes' is off.
 	 *
 	 * Performance optimization (E67):
@@ -54,6 +59,38 @@ class Permission_Gate {
 		}
 
 		return 'yes' === $value;
+	}
+
+	/**
+	 * Returns the list of active toolset IDs (FR-K9 §6, D14).
+	 *
+	 * A site that never saved a choice gets `core` and `management`: the opt-in toolsets (`destructive`, `builder`,
+	 * `bulk`) stay off until the owner switches them on, because each one adds tools, and their schemas, to every
+	 * message of every AI client (E126). `core` is always on.
+	 *
+	 * @return string[]
+	 */
+	public static function get_active_toolsets() {
+		$saved = get_option( self::TOOLSETS_OPTION, null );
+		if ( is_array( $saved ) ) {
+			// Ensure 'core' is always included.
+			return array_values( array_unique( array_merge( array( 'core' ), array_map( 'strval', $saved ) ) ) );
+		}
+
+		return array( 'core', 'management' );
+	}
+
+	/**
+	 * Saves the active toolset IDs. `core` is always kept.
+	 *
+	 * @param array $toolsets Array of toolset IDs.
+	 *
+	 * @return bool True if updated.
+	 */
+	public static function set_active_toolsets( array $toolsets ) {
+		$clean = array_values( array_unique( array_merge( array( 'core' ), array_map( 'sanitize_key', $toolsets ) ) ) );
+
+		return update_option( self::TOOLSETS_OPTION, $clean, true );
 	}
 
 	/**

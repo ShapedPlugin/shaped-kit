@@ -48,13 +48,24 @@
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteToolsIntegrationTest.php</exclude>
 		</testsuite>
 		<!--
-			adapter     a product's real MCP server, run through one real adapter copy
+			adapter-*   a product's real MCP server, run through one real adapter copy
 			            (prompts and tools on the wire). Not part of `composer test`: it
 			            needs SHAPED_KIT_PHPUNIT_BOOTSTRAP=adapter, and one process loads
-			            one copy. `composer test:adapter` runs it once per copy found.
+			            one copy. `composer test:adapter` runs every product once per copy
+			            found. One suite per product, because a product's tests must run
+			            only against that product's profile (SHAPED_KIT_PRODUCT).
+			            `adapter` is the default product (Real Testimonials).
+			            `adapter-template` runs the product-module template itself, with
+			            no sibling plugin, so it also runs where the sibling repos are absent.
 		-->
 		<testsuite name="adapter">
-			<directory>tests/phpunit/adapter</directory>
+			<file>tests/phpunit/adapter/RealTestimonialsPromptsAdapterTest.php</file>
+		</testsuite>
+		<testsuite name="adapter-real-testimonials">
+			<file>tests/phpunit/adapter/RealTestimonialsPromptsAdapterTest.php</file>
+		</testsuite>
+		<testsuite name="adapter-template">
+			<file>tests/phpunit/adapter/TemplateAdapterTest.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>

@@ -4,8 +4,9 @@
  *
  * Copy this file into a product's MCP module and update:
  *   1. Namespace: `ShapedPlugin\Template\Mcp` -> `ShapedPlugin\{Product}\Mcp`
- *   2. REST_NAMESPACE: 'template/v1' -> product's settings REST namespace (e.g. 'sp-testimonial/v1')
+ *   2. REST_NAMESPACE: 'template/v1' -> product's settings REST namespace (e.g. 'my-product/v1')
  *   3. Filter names: `template_prefix/...` -> `{prefix}/...` (replace `template_prefix` with the product prefix).
+ *   4. SETTINGS_PATH: the admin address of the product's "MCP for AI Agents" settings tab.
  *
  * @package ShapedPlugin
  */
@@ -53,6 +54,12 @@ class Rest_Controller {
 	 * Menu slug for Shaped Kit in WP Admin.
 	 */
 	const KIT_PAGE = 'shaped-kit';
+
+	/**
+	 * Admin address of the product's "MCP for AI Agents" settings tab, relative to wp-admin. Product data: the editor's
+	 * Build with AI modal links to it when the owner has not switched MCP on yet (see `builder_client()`).
+	 */
+	const SETTINGS_PATH = 'admin.php?page=template-slug-settings#settings=mcp-agents';
 
 	/**
 	 * Attach REST routes. Called from Module::register().
@@ -140,7 +147,39 @@ class Rest_Controller {
 			);
 		}
 
+		// Update toolsets if supplied in the payload (FR-K9 §6, D14). Only `manage_options` reaches this route.
+		$toolsets = $request->get_param( 'toolsets' );
+		if ( is_array( $toolsets ) ) {
+			Permission_Gate::set_active_toolsets( $toolsets );
+		}
+
 		return rest_ensure_response( self::summary() );
+	}
+
+	/**
+	 * What the editor's Build with AI modal needs to hand the job to the owner's own AI client when no AI key is
+	 * connected: whether MCP and the Builder toolset are on, and where to switch them on or connect a client (the
+	 * Kit's connect panel for this product, or where to get the Kit).
+	 *
+	 * @param bool|null $kit_active Optional override for unit testing.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function builder_client( $kit_active = null ) {
+		$kit_active = null === $kit_active ? defined( 'SHAPED_KIT_VERSION' ) : (bool) $kit_active;
+
+		/** This filter is documented in summary(). */
+		$download_url = esc_url_raw( (string) apply_filters( 'template_prefix/mcp_kit_download_url', self::KIT_DOWNLOAD_URL ) );
+
+		return array(
+			'slug'        => Module::SLUG,
+			'enabled'     => Permission_Gate::is_enabled(),
+			'builder'     => in_array( 'builder', Permission_Gate::get_active_toolsets(), true ),
+			'settingsUrl' => admin_url( self::SETTINGS_PATH ),
+			'connectUrl'  => $kit_active ? admin_url( 'admin.php?page=' . self::KIT_PAGE . '&connect=' . Module::SLUG ) : '',
+			'kitUrl'      => $download_url,
+			'siteUrl'     => home_url(),
+		);
 	}
 
 	/**
@@ -199,6 +238,7 @@ class Rest_Controller {
 			'message'      => $entry['message'],
 			'endpoint_url' => $entry['endpoint_url'],
 			'tools_count'  => $entry['tools_count'],
+			'toolsets'     => Abilities_Registrar::toolsets(),
 			'adapter'      => array_merge( $source, array( 'version' => $entry['adapter_version'] ) ),
 			'connect'      => array(
 				'user_login'          => $user->exists() ? (string) $user->user_login : '',

@@ -39,9 +39,9 @@ class Builder_Abilities {
 					'type'                 => 'object',
 					'additionalProperties' => false,
 					'properties'           => array(
-						'block' => array(
-							'type'        => 'string',
-							'description' => __( 'Optional bare block slug (e.g. carousel, grid). When omitted, lists all available blocks.', 'template-domain' ),
+						'block' => array_merge(
+							Builder_Tools::block_schema(),
+							array( 'description' => __( 'Optional block slug. When omitted, lists all available blocks.', 'template-domain' ) )
 						),
 					),
 				),
@@ -61,10 +61,7 @@ class Builder_Abilities {
 					'additionalProperties' => false,
 					'required'             => array( 'block', 'attributes' ),
 					'properties'           => array(
-						'block'      => array(
-							'type'        => 'string',
-							'description' => __( 'Bare block slug.', 'template-domain' ),
-						),
+						'block'      => Builder_Tools::block_schema(),
 						'attributes' => array(
 							'type'                 => 'object',
 							'description'          => __( 'Attributes the model proposes.', 'template-domain' ),
@@ -98,10 +95,7 @@ class Builder_Abilities {
 					'additionalProperties' => false,
 					'required'             => array( 'block', 'target' ),
 					'properties'           => array(
-						'block'              => array(
-							'type'        => 'string',
-							'description' => __( 'Bare block slug.', 'template-domain' ),
-						),
+						'block'              => Builder_Tools::block_schema(),
 						'attributes'         => array(
 							'type'                 => 'object',
 							'description'          => __( 'Block attributes to apply.', 'template-domain' ),
@@ -277,10 +271,12 @@ class Builder_Abilities {
 							'title'       => __( 'Request', 'template-domain' ),
 							'description' => __( 'Natural-language description of the section or block to design.', 'template-domain' ),
 						),
-						'block'      => array(
-							'type'        => 'string',
-							'title'       => __( 'Block Type', 'template-domain' ),
-							'description' => __( 'Optional specific block slug. Omit to let the assistant choose.', 'template-domain' ),
+						'block'      => array_merge(
+							Builder_Tools::block_schema(),
+							array(
+								'title'       => __( 'Block Type', 'template-domain' ),
+								'description' => __( 'Optional specific block slug. Omit to let the assistant choose.', 'template-domain' ),
+							)
 						),
 						'page_title' => array(
 							'type'        => 'string',

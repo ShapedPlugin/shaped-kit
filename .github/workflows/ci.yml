@@ -116,6 +116,12 @@ jobs:
         if: matrix.multisite == '1'
         run: composer test:multisite:ci
 
+      # The product-module template runs as a real product through the Kit's own MCP adapter copy (prompt, tools and
+      # toolsets on the wire). It needs no sibling plugin, so a change that breaks what every next product copies fails here.
+      - name: Run the product-module template on the wire
+        if: matrix.multisite == '0'
+        run: SHAPED_KIT_PRODUCTS=template composer test:adapter
+
   test-js:
     name: JavaScript Tests (Node 20)
     runs-on: ubuntu-latest
