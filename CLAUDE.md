@@ -62,6 +62,7 @@ Always use the Kit's own isolated toolchains (`tools/phpunit`, `tools/phpcs`), n
 | `composer test:unit` | PHPUnit, no WordPress (`tests/phpunit/unit`) |
 | `composer test:integration` | PHPUnit inside real WordPress 7.1.3 (`tests/phpunit/integration`); skips cleanly without the test library |
 | `composer test:multisite` | The same integration suite on a real multisite (`WP_MULTISITE=1`) |
+| `composer test:adapter` | A product's MCP prompt and tools on the wire, through every real adapter copy found, per product, edition and Builder state. `SHAPED_KIT_PRODUCTS=template` runs the product-module template alone, which needs no sibling plugin (CI runs this) |
 | `composer test:integration:ci` / `test:multisite:ci` | What CI runs: the integration suite without the tests that need a sibling product plugin, failing on any skip. Run `tools/install-wp-tests.sh` first on a fresh machine (it installs pinned WordPress and the test library) |
 | `composer test` | All four |
 | `npm run test:js` | Jest unit tests for the React dashboard (`assets/admin/**/*.test.js`) |
@@ -85,7 +86,7 @@ Built and functional:
 - `src/Rest/McpController.php` (`GET /mcp`, `POST /mcp/products/{slug}`, `POST /mcp/app-password`, `GET /mcp/logs`) and `src/Rest/StoreController.php` (`/store/*`), both under `shaped-kit/v1`.
 - `src/Admin/DashboardPage.php`: the admin page under `ShapedPlugin > AI & MCP`.
 - `assets/admin/`: React dashboard with the overview strip, product cards with switches and opt-in toolsets, the sample-prompt drawer (`toolsCatalog.js`), the connect drawer (Application Passwords, client snippets for Claude Code, Claude Desktop, Cursor, Codex, Copilot, Gemini CLI and generic), the connection tester (`connectionTest.js`), Try a Tool (`ToolTester.js`), the Activity Log and the Products & Store tab.
-- `templates/product-module/`: the drop-in MCP module for sibling products (`docs/PRODUCT_MODULE_TEMPLATE.md`).
+- `templates/product-module/`: the drop-in MCP module for sibling products. Its README (`templates/product-module/README.md`) is the adoption guide. It is tested here: `ProductModuleTemplateTest` loads it as a real module, and the `adapter-template` wire suite runs it through every real adapter copy.
 - **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 16, Pro 20 (both editions have bulk `create-testimonials`; Pro adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`; both editions have the opt-in Builder toolset `get-block-catalog`, `validate-block-attributes`, `insert-block`, `list-ready-patterns`, `insert-ready-pattern`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
 
 **Active context:** full state and cross-repo context live in `docs/MEMORY.md`.

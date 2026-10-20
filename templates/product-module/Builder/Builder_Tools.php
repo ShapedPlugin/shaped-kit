@@ -28,6 +28,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Builder_Tools {
 
 	/**
+	 * Input schema of every `block` argument, tools and prompt alike.
+	 *
+	 * The enum is the product's buildable blocks (`Catalog::BLOCKS`, static data), so the adapter refuses a block that
+	 * does not exist before any callback runs. Whether a block is active on this site is checked at call time,
+	 * because block registration happens after the abilities are registered. Keep the description short: the
+	 * enum already lists the values, and this schema travels with every message (E126).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function block_schema() {
+		return array(
+			'type'        => 'string',
+			'enum'        => array_values( Catalog::BLOCKS ),
+			'description' => __( 'Block to build, picked from the user\'s words.', 'template-domain' ),
+		);
+	}
+
+	/**
 	 * Tool `get-block-catalog`.
 	 *
 	 * @param mixed $input Input parameters.

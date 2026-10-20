@@ -5,50 +5,96 @@
  * The adapter is a library that several plugins bundle, in different versions, and a product module
  * has to work on whichever copy happens to load. This file loads one copy, chosen by the
  * `SHAPED_KIT_MCP_ADAPTER_DIR` environment variable (default: the Kit's own bundled copy), attaches
- * the Real Testimonials module's hooks the way the plugin's own boot does, and creates the adapter
- * singleton. It is the Real Testimonials counterpart of Location Weather's `adapter-support.php`.
+ * the chosen product's module hooks the way the plugin's own boot does, and creates the adapter
+ * singleton. It is the counterpart of Location Weather's `adapter-support.php`.
+ *
+ * Which product is a profile (`tests/phpunit/adapter/products/{product}.php`): data only, so a new product
+ * needs a profile and a thin test class, not new plumbing (Phase 8.0). The `template` profile runs the
+ * product-module template itself, with no sibling plugin.
  *
  * One PHP process loads one copy: the copies share class names. `tests/run-adapter-matrix.sh` runs
- * the suite once per copy, edition and Builder-toolset state.
+ * the suite once per copy, product, edition and Builder-toolset state.
  *
  * Environment:
  *
  *   SHAPED_KIT_MCP_ADAPTER_DIR  Folder holding the copy's includes/. Default: libs/mcp-adapter.
  *   SHAPED_KIT_MCP_SCHEMA_DIR   Schema package for a bare checkout of a release tag (see the matrix).
- *   SHAPED_KIT_RT_EDITION       pro (default) or free: which Real Testimonials edition to load.
- *   SHAPED_KIT_RT_BUILDER       on (default) or off: whether the opt-in Builder toolset is switched on.
+ *   SHAPED_KIT_PRODUCT          Which profile: real-testimonials (default) or template.
+ *   SHAPED_KIT_EDITION          The profile's default edition (pro for Real Testimonials), or free: which edition to load.
+ *   SHAPED_KIT_BUILDER          on (default) or off: whether the opt-in toolsets are switched on.
+ *
+ * The earlier names SHAPED_KIT_RT_EDITION and SHAPED_KIT_RT_BUILDER still work.
  *
  * @package ShapedKit
  */
 
 /**
- * The edition under test: its folder next to the Kit, namespace and path constant.
+ * The environment variable's value, or the older name's, or a default.
  *
- * @return array{plugin: string, namespace: string, path_constant: string}
+ * @param string $name     Current variable name.
+ * @param string $old_name Earlier name, still honoured.
+ * @param string $fallback Value when neither is set.
+ *
+ * @return string
  */
-function shaped_kit_adapter_edition() {
-	if ( 'free' === getenv( 'SHAPED_KIT_RT_EDITION' ) ) {
-		return array(
-			'plugin'        => 'testimonial-free',
-			'namespace'     => 'ShapedPlugin\\TestimonialFree',
-			'path_constant' => 'SP_TFREE_PATH',
-		);
+function shaped_kit_adapter_env( $name, $old_name, $fallback = '' ) {
+	foreach ( array( $name, $old_name ) as $candidate ) {
+		$value = getenv( $candidate );
+		if ( false !== $value && '' !== $value ) {
+			return (string) $value;
+		}
 	}
 
-	return array(
-		'plugin'        => 'testimonial-pro',
-		'namespace'     => 'ShapedPlugin\\TestimonialPro',
-		'path_constant' => 'SP_TPRO_PATH',
-	);
+	return $fallback;
 }
 
 /**
- * Whether the opt-in Builder toolset is switched on for this run.
+ * The product under test: its profile, as data.
+ *
+ * @return array The profile (see `tests/phpunit/adapter/products/`).
+ */
+function shaped_kit_adapter_product() {
+	static $profile = null;
+
+	if ( null === $profile ) {
+		$name = shaped_kit_adapter_env( 'SHAPED_KIT_PRODUCT', 'SHAPED_KIT_PRODUCT', 'real-testimonials' );
+		$file = __DIR__ . '/adapter/products/' . preg_replace( '/[^a-z0-9-]/', '', $name ) . '.php';
+
+		if ( ! is_readable( $file ) ) {
+			fwrite( STDERR, "No wire-suite profile for SHAPED_KIT_PRODUCT={$name} (expected {$file}).\n" );
+			exit( 1 );
+		}
+
+		$profile = require $file;
+	}
+
+	return $profile;
+}
+
+/**
+ * The edition under test: its folder next to the Kit (or its source folder), namespace and path constant.
+ *
+ * @return array{namespace: string, plugin?: string, path_constant?: string, source?: string}
+ */
+function shaped_kit_adapter_edition() {
+	$profile = shaped_kit_adapter_product();
+	$wanted  = shaped_kit_adapter_env( 'SHAPED_KIT_EDITION', 'SHAPED_KIT_RT_EDITION', $profile['default_edition'] );
+
+	if ( ! isset( $profile['editions'][ $wanted ] ) ) {
+		fwrite( STDERR, "{$profile['slug']} has no '{$wanted}' edition in its wire-suite profile.\n" );
+		exit( 1 );
+	}
+
+	return $profile['editions'][ $wanted ];
+}
+
+/**
+ * Whether the opt-in toolsets are switched on for this run.
  *
  * @return bool
  */
 function shaped_kit_adapter_builder_on() {
-	return 'off' !== getenv( 'SHAPED_KIT_RT_BUILDER' );
+	return 'off' !== shaped_kit_adapter_env( 'SHAPED_KIT_BUILDER', 'SHAPED_KIT_RT_BUILDER', 'on' );
 }
 
 /**
@@ -107,7 +153,6 @@ function shaped_kit_adapter_autoload( $adapter_dir ) {
  */
 function shaped_kit_adapter_boot( $adapter_dir ) {
 	$edition = shaped_kit_adapter_edition();
-	$plugin  = dirname( __DIR__, 3 ) . '/' . $edition['plugin'];
 
 	shaped_kit_adapter_autoload( $adapter_dir );
 
@@ -115,16 +160,42 @@ function shaped_kit_adapter_boot( $adapter_dir ) {
 	// (FR-S1), so the only server in the suite is the product's.
 	add_filter( 'mcp_adapter_create_default_server', '__return_false' );
 
-	if ( file_exists( $plugin . '/vendor/autoload.php' ) ) {
-		require_once $plugin . '/vendor/autoload.php';
+	$module = $edition['namespace'] . '\\Mcp\\Module';
 
-		if ( ! defined( $edition['path_constant'] ) ) {
-			define( $edition['path_constant'], $plugin . '/src/' );
-		}
+	if ( isset( $edition['source'] ) ) {
+		// The product-module template: no plugin, its classes load from its own folder.
+		$source = dirname( __DIR__, 2 ) . '/' . $edition['source'] . '/';
+		$prefix = $edition['namespace'] . '\\Mcp\\';
 
-		$module = $edition['namespace'] . '\\Mcp\\Module';
+		spl_autoload_register(
+			static function ( $class_name ) use ( $prefix, $source ) {
+				if ( 0 !== strpos( $class_name, $prefix ) ) {
+					return;
+				}
+
+				$file = $source . str_replace( '\\', '/', substr( $class_name, strlen( $prefix ) ) ) . '.php';
+				if ( is_readable( $file ) ) {
+					require_once $file;
+				}
+			}
+		);
+
 		if ( class_exists( $module ) ) {
 			$module::register();
+		}
+	} else {
+		$plugin = dirname( __DIR__, 3 ) . '/' . $edition['plugin'];
+
+		if ( file_exists( $plugin . '/vendor/autoload.php' ) ) {
+			require_once $plugin . '/vendor/autoload.php';
+
+			if ( ! defined( $edition['path_constant'] ) ) {
+				define( $edition['path_constant'], $plugin . '/src/' );
+			}
+
+			if ( class_exists( $module ) ) {
+				$module::register();
+			}
 		}
 	}
 

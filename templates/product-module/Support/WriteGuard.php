@@ -4,7 +4,7 @@
  *
  * Copy this file into a product's MCP module (e.g. `Support/WriteGuard.php`) and update:
  *   1. Namespace: `ShapedPlugin\Template\Mcp\Support` -> `ShapedPlugin\{Product}\Mcp\Support`
- *   2. Text domain: `'shaped-kit'` -> product text domain
+ *   2. Text domain: `template-domain` -> product text domain, and the key prefix `template_prefix` -> product prefix
  *
  * Implements FR-S2 (Level 1 server-side confirmation round-trip):
  * 1. Dry-run preview + cryptographically secure 32-byte confirmation token (300s TTL).
@@ -43,8 +43,8 @@ class WriteGuard {
 	/**
 	 * Build a confirmation preview response with a token bound to entity state and arguments.
 	 *
-	 * @param string $ability     Ability/tool name (e.g. "real-testimonials/delete-testimonial").
-	 * @param string $entity_key  Stable identifier of the target entity (e.g. "testimonial:42").
+	 * @param string $ability     Ability/tool name (e.g. "template-slug/delete-item").
+	 * @param string $entity_key  Stable identifier of the target entity (e.g. "item:42").
 	 * @param string $fingerprint String capturing the entity's current mutable state.
 	 * @param array  $preview     Human and agent-readable preview payload.
 	 * @param array  $arguments   Tool arguments to bind canonically to the token.
@@ -91,7 +91,7 @@ class WriteGuard {
 		if ( empty( $token ) ) {
 			return new \WP_Error(
 				'confirmation_required',
-				__( 'This action makes permanent changes. Call again without confirmation_token to preview, then supply the returned confirmation_token to execute.', 'shaped-kit' ),
+				__( 'This action makes permanent changes. Call again without confirmation_token to preview, then supply the returned confirmation_token to execute.', 'template-domain' ),
 				array(
 					'status'    => 400,
 					'next_step' => 'preview first without confirmation_token',
@@ -106,7 +106,7 @@ class WriteGuard {
 		if ( ! is_array( $stored ) || empty( $stored['token'] ) ) {
 			return new \WP_Error(
 				'confirmation_expired',
-				__( 'Your confirmation token has expired or was already used. Run a fresh call to preview and obtain a new confirmation_token.', 'shaped-kit' ),
+				__( 'Your confirmation token has expired or was already used. Run a fresh call to preview and obtain a new confirmation_token.', 'template-domain' ),
 				array(
 					'status'    => 410,
 					'next_step' => 'preview again',
@@ -117,7 +117,7 @@ class WriteGuard {
 		if ( ! hash_equals( (string) $stored['token'], (string) $token ) ) {
 			return new \WP_Error(
 				'confirmation_invalid',
-				__( 'The confirmation_token does not match. Run a fresh call to preview.', 'shaped-kit' ),
+				__( 'The confirmation_token does not match. Run a fresh call to preview.', 'template-domain' ),
 				array(
 					'status'    => 403,
 					'next_step' => 'preview again',
@@ -130,7 +130,7 @@ class WriteGuard {
 			if ( ! hash_equals( (string) $stored['arg_hash'], (string) $current_arg_hash ) ) {
 				return new \WP_Error(
 					'confirmation_invalid',
-					__( 'The arguments provided do not match the previewed action. Run a fresh call to preview.', 'shaped-kit' ),
+					__( 'The arguments provided do not match the previewed action. Run a fresh call to preview.', 'template-domain' ),
 					array(
 						'status'    => 400,
 						'next_step' => 'preview again',
@@ -143,7 +143,7 @@ class WriteGuard {
 			delete_transient( $trans_key );
 			return new \WP_Error(
 				'state_changed',
-				__( 'The record changed since you previewed it. Run a fresh call to inspect current state before executing.', 'shaped-kit' ),
+				__( 'The record changed since you previewed it. Run a fresh call to inspect current state before executing.', 'template-domain' ),
 				array(
 					'status'    => 409,
 					'next_step' => 'preview again',
@@ -155,7 +155,7 @@ class WriteGuard {
 		if ( ! $consumed ) {
 			return new \WP_Error(
 				'confirmation_already_consumed',
-				__( 'This confirmation token has already been consumed by another concurrent request.', 'shaped-kit' ),
+				__( 'This confirmation token has already been consumed by another concurrent request.', 'template-domain' ),
 				array(
 					'status'    => 409,
 					'next_step' => 'preview again',
@@ -252,7 +252,7 @@ class WriteGuard {
 	 * @return string Transient key.
 	 */
 	public static function confirm_key( $user_id, $ability, $entity_key ) {
-		return 'sk_mcp_cf_' . (int) $user_id . '_' . md5( $ability . '|' . $entity_key );
+		return 'template_prefix_mcp_cf_' . (int) $user_id . '_' . md5( $ability . '|' . $entity_key );
 	}
 
 	/**
@@ -265,7 +265,7 @@ class WriteGuard {
 	 * @return string Transient key.
 	 */
 	public static function idem_key( $user_id, $ability, $entity_key, $idempotency_key ) {
-		return 'sk_mcp_id_' . (int) $user_id . '_' . md5( $ability . '|' . $entity_key . '|' . $idempotency_key );
+		return 'template_prefix_mcp_id_' . (int) $user_id . '_' . md5( $ability . '|' . $entity_key . '|' . $idempotency_key );
 	}
 
 	/**

@@ -20,11 +20,13 @@ use WP_REST_Request;
 trait Mcp_Client {
 
 	/**
-	 * Route of the module's endpoint.
+	 * Route of the module's endpoint: `/{product slug}/mcp`, from the product's wire-suite profile.
 	 *
-	 * @var string
+	 * @return string
 	 */
-	private $endpoint = '/real-testimonials/mcp';
+	protected function endpoint() {
+		return '/' . shaped_kit_adapter_product()['slug'] . '/mcp';
+	}
 
 	/**
 	 * Send one JSON-RPC request.
@@ -35,7 +37,7 @@ trait Mcp_Client {
 	 *
 	 * @return array{status: int, raw: string, body: array, headers: array, output: string} The body is the decoded JSON.
 	 */
-	private function mcp( $method, $params = null, $headers = array() ) {
+	protected function mcp( $method, $params = null, $headers = array() ) {
 		static $id = 0;
 
 		$payload = array(
@@ -47,7 +49,7 @@ trait Mcp_Client {
 			$payload['params'] = $params;
 		}
 
-		$request = new WP_REST_Request( 'POST', $this->endpoint );
+		$request = new WP_REST_Request( 'POST', $this->endpoint() );
 		$request->set_header( 'Content-Type', 'application/json' );
 		foreach ( $headers as $name => $value ) {
 			$request->set_header( $name, $value );
@@ -77,7 +79,7 @@ trait Mcp_Client {
 	 *
 	 * @return array<string, string>
 	 */
-	private function open_session() {
+	protected function open_session() {
 		$init = $this->mcp(
 			'initialize',
 			array(
@@ -110,7 +112,7 @@ trait Mcp_Client {
 	 *
 	 * @return string[]
 	 */
-	private function listed_tools( $headers ) {
+	protected function listed_tools( $headers ) {
 		$list = $this->mcp( 'tools/list', null, $headers );
 
 		return wp_list_pluck( $list['body']['result']['tools'] ?? array(), 'name' );
@@ -123,7 +125,7 @@ trait Mcp_Client {
 	 *
 	 * @return array<string, array> Prompt records. Empty when the copy has no prompts.
 	 */
-	private function listed_prompts( $headers ) {
+	protected function listed_prompts( $headers ) {
 		$list = $this->mcp( 'prompts/list', null, $headers );
 
 		$prompts = array();
@@ -143,7 +145,7 @@ trait Mcp_Client {
 	 *
 	 * @return array The response, as `mcp()` returns it.
 	 */
-	private function get_prompt( $name, $arguments, $headers ) {
+	protected function get_prompt( $name, $arguments, $headers ) {
 		$params = array( 'name' => $name );
 		if ( $arguments ) {
 			$params['arguments'] = $arguments;
@@ -155,13 +157,13 @@ trait Mcp_Client {
 	/**
 	 * Call a tool.
 	 *
-	 * @param string $tool    The tool's name as the client sees it, e.g. "real-testimonials-get-context".
+	 * @param string $tool    The tool's name as the client sees it, e.g. "{slug}-get-context".
 	 * @param array  $args    Tool arguments. Omitted entirely when empty.
 	 * @param array  $headers Session headers from `open_session()`.
 	 *
 	 * @return array The response, as `mcp()` returns it.
 	 */
-	private function call_tool( $tool, $args, $headers ) {
+	protected function call_tool( $tool, $args, $headers ) {
 		$params = array( 'name' => $tool );
 		if ( $args ) {
 			$params['arguments'] = $args;
@@ -177,7 +179,7 @@ trait Mcp_Client {
 	 *
 	 * @return array|null
 	 */
-	private function tool_data( $response ) {
+	protected function tool_data( $response ) {
 		$text = $response['body']['result']['content'][0]['text'] ?? null;
 
 		return is_string( $text ) ? json_decode( $text, true ) : null;
@@ -191,7 +193,7 @@ trait Mcp_Client {
 	 *
 	 * @return bool
 	 */
-	private function failed( $response ) {
+	protected function failed( $response ) {
 		return isset( $response['body']['error'] ) || ! empty( $response['body']['result']['isError'] ) || $response['status'] >= 400 || isset( $response['body']['code'] );
 	}
 }

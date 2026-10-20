@@ -64,27 +64,13 @@ Per PRD §20, **code does not differ across products; only data differs**:
 
 ## 4. Wiring Into `Abilities_Registrar.php`
 
-In your product's `Abilities_Registrar.php`:
+There is nothing to wire. `Abilities_Registrar::definitions()`, `prompt_definitions()` and `ability_toolset_map()` pick up `Builder_Abilities` as soon as this folder is present (`has_builder()`), and leave it out when it is not. Put the product's own tools in `core_definitions()` and `core_toolset_map()`.
 
-```php
-use ShapedPlugin\{Product}\Mcp\Builder\Builder_Abilities;
+All Builder tools and the prompt are in the opt-in `builder` toolset, so a fresh site serves none of them until the owner switches it on (E126). The `block` argument of every tool and of the prompt comes from `Builder_Tools::block_schema()`, an enum of `Catalog::BLOCKS`, so the adapter refuses an unknown block before any callback runs. Change the list in `Catalog::BLOCKS` and every schema follows.
 
-// 1. In definitions():
-public static function definitions() {
-    return array_merge(
-        self::core_definitions(),
-        Builder_Abilities::definitions()
-    );
-}
+The Build with AI modal in the editor needs `Rest_Controller::builder_client()` for its "use your own AI client" hand-off. Set `Rest_Controller::SETTINGS_PATH` to the product's MCP settings tab.
 
-// 2. In ability_toolset_map():
-public static function ability_toolset_map() {
-    return array_merge(
-        self::core_toolset_map(),
-        Builder_Abilities::toolset_map()
-    );
-}
-```
+The template runs on the wire with these placeholder blocks (`composer test:adapter`, product `template`), so the whole Builder path is checked before any product copies it.
 
 ---
 
