@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Shaped Kit
  * Description:       Connects AI agents to ShapedPlugin products through the Model Context Protocol (MCP).
- * Version:           0.2.0-beta.5
+ * Version:           0.2.0-beta.6
  * Requires at least: 6.9
  * Requires PHP:      7.4
  * Author:            ShapedPlugin LLC
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SHAPED_KIT_VERSION', '0.2.0-beta.5' );
+define( 'SHAPED_KIT_VERSION', '0.2.0-beta.6' );
 define( 'SHAPED_KIT_FILE', __FILE__ );
 define( 'SHAPED_KIT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SHAPED_KIT_URL', plugin_dir_url( __FILE__ ) );
