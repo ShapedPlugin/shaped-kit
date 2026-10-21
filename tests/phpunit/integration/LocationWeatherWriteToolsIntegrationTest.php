@@ -72,6 +72,40 @@ class LocationWeatherWriteToolsIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The audit hook any plugin can listen to carries argument keys, never a value (PRD E159).
+	 */
+	public function test_the_audit_hook_carries_argument_keys_never_values() {
+		$heard = array();
+		add_action(
+			'shaped_kit/mcp_tool_called',
+			static function ( $payload ) use ( &$heard ) {
+				$heard[] = $payload;
+			}
+		);
+
+		$wrapped = Abilities_Registrar::wrap(
+			'location-weather/test-tool',
+			static function () {
+				return array( 'ok' => true );
+			}
+		);
+		$wrapped(
+			array(
+				'city_name' => 'Oslo, NO',
+				'api_key'   => 'secret',
+			)
+		);
+
+		$this->assertSame(
+			array(
+				'city_name' => null,
+				'api_key'   => null,
+			),
+			$heard[0]['arguments']
+		);
+	}
+
+	/**
 	 * Test create-view and update-view-settings with audit log telemetry.
 	 */
 	public function test_create_and_update_view_with_telemetry() {
@@ -234,6 +268,45 @@ class LocationWeatherWriteToolsIntegrationTest extends WP_UnitTestCase {
 
 		$this->assertWPError( $replay );
 		$this->assertSame( 'not_found', $replay->get_error_code() );
+
+		// The replay above stops at the missing post, before the token is read. The token's single use is checked on a
+		// post that survives: its deletion is blocked (pre_delete_post, post.php:3871) after the confirm used the token.
+		$survivor = $this->factory->post->create(
+			array(
+				'post_type'   => 'location_weather',
+				'post_status' => 'publish',
+			)
+		);
+		$second   = call_user_func(
+			$delete_cb,
+			array(
+				'id'    => $survivor,
+				'force' => true,
+			)
+		);
+		add_filter( 'pre_delete_post', '__return_false' );
+		$blocked = call_user_func(
+			$delete_cb,
+			array(
+				'id'                 => $survivor,
+				'force'              => true,
+				'confirmation_token' => $second['confirmation_token'],
+			)
+		);
+		remove_filter( 'pre_delete_post', '__return_false' );
+		$this->assertSame( 'delete_failed', $blocked->get_error_code() );
+
+		$reused = call_user_func(
+			$delete_cb,
+			array(
+				'id'                 => $survivor,
+				'force'              => true,
+				'confirmation_token' => $second['confirmation_token'],
+			)
+		);
+		$this->assertWPError( $reused );
+		$this->assertSame( 'confirmation_expired', $reused->get_error_code(), 'A token works once (E40).' );
+		$this->assertNotNull( get_post( $survivor ) );
 	}
 
 	/**

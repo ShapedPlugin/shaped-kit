@@ -30,3 +30,5 @@ Thumbs.db
 .phpunit.result.cache
 /AGENTS.md
 /CLAUDE.md
+/.antigravity
+.antigravity/

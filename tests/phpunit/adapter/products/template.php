@@ -29,5 +29,5 @@ return array(
 		'template-slug-list-ready-patterns',
 		'template-slug-insert-ready-pattern',
 	),
-	'toolsets_on'     => array( 'core', 'management', 'builder' ),
+	'toolsets_on'     => array( 'core', 'management', 'builder', 'media' ),
 );

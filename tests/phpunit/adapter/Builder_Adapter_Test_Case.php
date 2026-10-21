@@ -307,6 +307,20 @@ abstract class Builder_Adapter_Test_Case extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Every tool the module means to serve reaches the wire. An adapter that cannot read a schema drops the tool
+	 * without a word (E124), so a new schema keyword is only safe once every adapter copy lists the tool.
+	 */
+	public function test_every_tool_the_module_serves_is_listed_by_the_adapter() {
+		$registrar = shaped_kit_adapter_edition()['namespace'] . '\\Mcp\\Abilities_Registrar';
+		$tools     = $this->listed_tools( $this->open_session() );
+
+		$this->assertNotEmpty( $registrar::names() );
+		foreach ( $registrar::names() as $name ) {
+			$this->assertContains( str_replace( '/', '-', $name ), $tools, "{$name} is served by the module but missing on the wire." );
+		}
+	}
+
+	/**
 	 * Off is the default of every site: no prompt and no builder tool on the wire.
 	 *
 	 * @group builder-off

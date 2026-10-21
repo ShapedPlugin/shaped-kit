@@ -98,7 +98,7 @@ class BlockInserter {
 		}
 
 		$existing = (array) $found[0]['attrs'];
-		$name     = (string) $found[1];
+		$name     = Catalog::PREFIX . $found[1];
 		$merged   = array_merge( $existing, (array) $patch );
 
 		// Preserve original uniqueId.
@@ -168,29 +168,47 @@ class BlockInserter {
 	}
 
 	/**
-	 * Replace a block at a specific index in a parsed block list.
+	 * Replace a real block at a specific index in a parsed block list.
 	 *
 	 * @param array $blocks  Parsed blocks.
-	 * @param int   $index   0-based index.
+	 * @param int   $index   0-based index among real (non-empty) blocks.
 	 * @param array $new_top Replacement block.
 	 * @return array
 	 */
 	public static function replace_at( $blocks, $index, $new_top ) {
-		$blocks           = array_values( (array) $blocks );
-		$blocks[ $index ] = $new_top;
+		$real = self::real_indexes( $blocks );
+		if ( isset( $real[ $index ] ) ) {
+			$blocks[ $real[ $index ] ] = $new_top;
+		}
 		return $blocks;
 	}
 
 	/**
-	 * Find a non-empty block at a specific index.
+	 * Find a non-empty block at a specific index among real blocks.
 	 *
 	 * @param array $blocks Parsed blocks.
-	 * @param int   $index  Index.
+	 * @param mixed $index  Index among real blocks.
 	 * @return array|null
 	 */
 	public static function real_block( $blocks, $index ) {
-		$blocks = array_values( (array) $blocks );
-		return isset( $blocks[ $index ] ) ? $blocks[ $index ] : null;
+		$real = self::real_indexes( $blocks );
+		return is_int( $index ) && isset( $real[ $index ] ) ? $blocks[ $real[ $index ] ] : null;
+	}
+
+	/**
+	 * Collect indices of real (non-empty) top-level blocks.
+	 *
+	 * @param array $blocks Parsed blocks.
+	 * @return int[]
+	 */
+	private static function real_indexes( $blocks ) {
+		$real = array();
+		foreach ( array_values( (array) $blocks ) as $i => $block ) {
+			if ( ! empty( $block['blockName'] ) || '' !== trim( (string) ( $block['innerHTML'] ?? '' ) ) ) {
+				$real[] = $i;
+			}
+		}
+		return $real;
 	}
 
 	/**

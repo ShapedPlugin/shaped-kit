@@ -30,6 +30,13 @@ templates/product-module/
 │   ├── Builder_Tools.php   # Callbacks for get-block-catalog, validate-block-attributes, insert-block; the shared `block` schema
 │   ├── Pattern_Tools.php   # Callbacks for list-ready-patterns, insert-ready-pattern
 │   └── Builder_Abilities.php # Tool and prompt definitions and the toolset map, picked up by Abilities_Registrar when this folder is present
+├── Media/                  # find-media and import-image (D22): an AI client gets a media library id for an image
+│   ├── README.md           # Adoption guide and the rules every copy must keep
+│   ├── Remote_Guard.php    # Pure checks: address form, public IPv4 only, size cap, cURL options of a pinned hop
+│   ├── Remote_Fetch.php    # The one guarded request, pinned per hop, certificate checks restored, redirects checked
+│   ├── Image_File.php      # The file judged by its bytes: type, pixels, GIF size
+│   ├── Media_Tools.php     # Callbacks for find-media and import-image
+│   └── Media_Abilities.php # Definitions and the toolset map, picked up by Abilities_Registrar when this folder is present
 ├── Support/
 │   ├── Pagination.php      # Clamps tool lists to 15-100 items with envelope metadata
 │   ├── Secret_Mask.php     # Masks secrets: configured / not configured, or the last 4 characters
@@ -70,7 +77,7 @@ const ENTRY_POST_TYPE = 'spt_testimonial';          // Main post type or '' if n
 > [!NOTE]
 > Setting `ENTRY_POST_TYPE` is optional. If your product does not manage a custom post type, leave it as an empty string `''`.
 
-The Builder is optional: if you do not copy `Builder/`, `Abilities_Registrar` serves only your own tools. If you copy it, there is nothing to wire (see `Builder/README.md`).
+The Builder and the media tools are optional: if you do not copy `Builder/` or `Media/`, `Abilities_Registrar` serves only your own tools. If you copy one, there is nothing to wire (see `Builder/README.md` and `Media/README.md`).
 
 ---
 
@@ -124,11 +131,11 @@ Raw `wp_register_ability()` without a `category` returns null, so the tool silen
 
 Every tool a server serves is listed to the AI client with its name, description and input schema, and that list travels with **every message** of every client. A tool added to a default-on set is a standing cost on every site.
 
-- **Toolsets.** `Abilities_Registrar::toolset_catalog()` lists the sets a product can offer: `core` (always on), `management`, `destructive`, `builder`, `bulk`. A tool belongs to one, through `core_toolset_map()` (your own tools) and the toolset map the Builder and Pro filters add to. `names()` and `prompt_names()` serve only the tools whose set is on. A fresh site gets `core` and `management`; the owner opts in to the rest from the dashboard. A set with no tool is not listed, so a product with no deletion tool shows no deletion switch.
+- **Toolsets.** `Abilities_Registrar::toolset_catalog()` lists the sets a product can offer: `core` (always on), `management`, `destructive`, `builder`, `bulk`, `media`. A tool belongs to one, through `core_toolset_map()` (your own tools) and the toolset map the Builder and Pro filters add to. `names()` and `prompt_names()` serve only the tools whose set is on. A fresh site gets `core` and `management`; the owner opts in to the rest from the dashboard. A set with no tool is not listed, so a product with no deletion tool shows no deletion switch.
 - **Every tool needs a map entry.** A tool missing from the map counts as `core`, which is always on. A test in this repo checks that every tool the template defines has one; add the same check for your own tools.
 - **Put anything large in an opt-in set.** Real Testimonials' bulk create was 4,171 characters on top of a default of 2,091; it got its own `bulk` set, and the single create tool was cut to its ten major properties.
 - **Keep schemas small.** No per-value enum where the tool can refuse a bad value and list the valid ones in its answer (the one exception is the Builder's `block` list, so the adapter refuses an unknown block before the callback runs). Descriptions only where the name does not give the format. No default-on tool that carries every property of the record.
-- **Pin the size.** `Support\Token_Budget::total( definitions, map, toolsets )` gives the characters of name + description + input schema (about four per token, a rule of thumb). Add a test in your product that fails when the default-on tools pass a ceiling you chose, so a property added later is a decision and not an accident (Real Testimonials pins core plus management at 5,200 characters). The template's own test pins its default at 600.
+- **Pin the size.** `Support\Token_Budget::total( definitions, map, toolsets )` gives the characters of name + description + input schema (about four per token, a rule of thumb). Add a test in your product that fails when the default-on tools pass a ceiling you chose, so a property added later is a decision and not an accident (Real Testimonials pins core plus management at 5,200 characters). The template's own test pins its default at 700 (`get-context` plus `find-media`) and `import-image` at 800.
 
 ---
 

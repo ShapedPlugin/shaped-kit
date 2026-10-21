@@ -30,6 +30,14 @@ This file is tracked in a public repository. Never put local paths, keys, licens
 6. **Deep console debugging and database verification (C6).**
    - When writing or changing any code, debug it exhaustively from the console or CLI before calling the work done.
    - Where database state is involved (`wp_options`, custom tables, post types, transients), inspect the database before and after execution. Confirm that state transitions, queries, edge cases, corner cases and guardrails hold, with no side effects, data pollution, or hidden SQL or runtime warnings.
+7. **Security, edge & corner case audit protocol (C7).**
+   - During plugin code inspection or review, whenever any major security vulnerability, edge case, or corner case is identified:
+     - Record it in a dedicated section categorized by the exact **Plugin Name** (in `docs/EXISTING_PLUGIN_BUGS.md` or the plugin's dedicated audit).
+     - Must explicitly specify:
+       - **Plugin Name & File:Line** verified from source.
+       - **Classification:** Security Vulnerability, Edge Case, or Corner Case.
+       - **Scenario & "What Will Happen":** Detailed explanation of trigger conditions and exact failure modes (unauthorized access, privilege escalation, data leakage/pollution, broken state, or crash).
+       - **Guardrail & Prevention:** Protective barriers or sanitization checks required on the caller/MCP side to guarantee absolute runtime safety.
 
 ## 2. Technical stack and code rules
 
@@ -86,8 +94,8 @@ Built and functional:
 - `src/Rest/McpController.php` (`GET /mcp`, `POST /mcp/products/{slug}`, `POST /mcp/app-password`, `GET /mcp/logs`) and `src/Rest/StoreController.php` (`/store/*`), both under `shaped-kit/v1`.
 - `src/Admin/DashboardPage.php`: the admin page under `ShapedPlugin > AI & MCP`.
 - `assets/admin/`: React dashboard with the overview strip, product cards with switches and opt-in toolsets, the sample-prompt drawer (`toolsCatalog.js`), the connect drawer (Application Passwords, client snippets for Claude Code, Claude Desktop, Cursor, Codex, Copilot, Gemini CLI and generic), the connection tester (`connectionTest.js`), Try a Tool (`ToolTester.js`), the Activity Log and the Products & Store tab.
-- `templates/product-module/`: the drop-in MCP module for sibling products. Its README (`templates/product-module/README.md`) is the adoption guide. It is tested here: `ProductModuleTemplateTest` loads it as a real module, and the `adapter-template` wire suite runs it through every real adapter copy.
-- **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 16, Pro 20 (both editions have bulk `create-testimonials`; Pro adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`; both editions have the opt-in Builder toolset `get-block-catalog`, `validate-block-attributes`, `insert-block`, `list-ready-patterns`, `insert-ready-pattern`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
+- `templates/product-module/`: the drop-in MCP module for sibling products. Its README (`templates/product-module/README.md`) is the adoption guide. It is tested here: `ProductModuleTemplateTest` and `ProductModuleMediaTest` (the optional `Media/` folder: `find-media`, `import-image`) load it as a real module, and the `adapter-template` wire suite runs it through every real adapter copy.
+- **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, WP Carousel Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 18, Pro 22 (both editions have bulk `create-testimonials`, the media tools `find-media` (always on) and `import-image` (opt-in Media Import toolset, D22); Pro adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`; both editions have the opt-in Builder toolset `get-block-catalog`, `validate-block-attributes`, `insert-block`, `list-ready-patterns`, `insert-ready-pattern`). WP Carousel: Free and Pro 17 tools each plus the `build-carousel` prompt (core 8 including `find-media`; management `duplicate-carousel`, `update-carousel-settings`; destructive `delete-carousel`; opt-in Builder 5 and `import-image`); the editions differ only in data (`Carousel_Tools::CAROUSEL_TYPES`, the licence source in `Module`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
 
 **Active context:** full state and cross-repo context live in `docs/MEMORY.md`.
 

@@ -35,5 +35,5 @@ return array(
 		'real-testimonials-insert-ready-pattern',
 	),
 	// What "Builder on" switches on: the Builder and Bulk Import opt-in toolsets, beside the defaults.
-	'toolsets_on'     => array( 'core', 'management', 'builder', 'bulk' ),
+	'toolsets_on'     => array( 'core', 'management', 'builder', 'bulk', 'media' ),
 );

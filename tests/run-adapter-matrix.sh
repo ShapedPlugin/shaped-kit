@@ -32,7 +32,7 @@ set -u
 PLUGIN_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGINS_DIR="$(dirname "$PLUGIN_DIR")"
 export WP_TESTS_DIR="${WP_TESTS_DIR:-$PLUGIN_DIR/.wordpress-tests-lib}"
-PRODUCTS="${SHAPED_KIT_PRODUCTS:-real-testimonials template}"
+PRODUCTS="${SHAPED_KIT_PRODUCTS:-real-testimonials wp-carousel template}"
 EDITIONS_OVERRIDE="${SHAPED_KIT_EDITIONS:-${SHAPED_KIT_RT_EDITIONS:-}}"
 STATES="${SHAPED_KIT_BUILDER_STATES:-${SHAPED_KIT_RT_BUILDER_STATES:-on off}}"
 FIRST_WITH_PROMPTS="0.5.0"
