@@ -106,10 +106,16 @@ export const productToolsCatalog = {
 				content: 'This product transformed our workflow from day one. Highly recommended!',
 				status: 'publish',
 				rating: 5,
-				reviewer_name: 'Sarah Connor',
-				reviewer_designation: 'Operations Director',
-				reviewer_company: 'Cyberdyne Systems',
-				reviewer_location: 'San Francisco, CA',
+				reviewer: {
+					name: 'Sarah Connor',
+					designation: 'Operations Director',
+					company: 'Cyberdyne Systems',
+					location: 'San Francisco, CA',
+				},
+				reviewer_image_id: 1042,
+				reviewer_image_url: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-connor.jpg',
+				company_logo_id: null,
+				company_logo_url: null,
 				date: '2026-10-14 12:00:00',
 			},
 		},
@@ -307,6 +313,53 @@ export const productToolsCatalog = {
 			},
 		},
 		{
+			name: 'real-testimonials/find-media',
+			label: __( 'Find Media', 'shaped-kit' ),
+			summary: __( 'Finds images (or videos) already in the media library by title, alt text or file name, or checks a list of ids, and returns each id with its size and address. Use the id as a reviewer photo or company logo. Only items you are allowed to see are listed.', 'shaped-kit' ),
+			prompts: [
+				__( 'Find the headshot of Sarah Jenkins in the media library and use it as her testimonial photo.', 'shaped-kit' ),
+				__( 'Which images in the media library could be the Acme Corp logo?', 'shaped-kit' ),
+				__( 'Check that media ids 41, 42 and 57 are images before you attach them to these testimonials.', 'shaped-kit' ),
+				__( 'List the last 10 images uploaded to the media library.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				search: 'headshot',
+				per_page: 5,
+			},
+			samplePresets: [
+				{
+					label: __( 'Search Images', 'shaped-kit' ),
+					args: { search: 'headshot', per_page: 5 },
+				},
+				{
+					label: __( 'Latest Uploads', 'shaped-kit' ),
+					args: { per_page: 10 },
+				},
+				{
+					label: __( 'Check Ids', 'shaped-kit' ),
+					args: { ids: [ 41, 42 ] },
+				},
+			],
+			expectedOutput: {
+				type: 'image',
+				items: [
+					{
+						id: 41,
+						title: 'Sarah Jenkins',
+						alt: 'Sarah Jenkins, smiling',
+						filename: 'sarah-jenkins-headshot.jpg',
+						mime: 'image/jpeg',
+						width: 800,
+						height: 800,
+						url: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-jenkins-headshot.jpg',
+						thumbnail: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-jenkins-headshot-150x150.jpg',
+					},
+				],
+				page: 1,
+				has_more: false,
+			},
+		},
+		{
 			name: 'real-testimonials/create-testimonial',
 			label: __( 'Create Testimonial', 'shaped-kit' ),
 			summary: __( 'Creates one draft testimonial from the properties a card shows first: title, review text, rating, reviewer name, role, company, location, photo, and groups. The answer lists the keys it saved and the ones it dropped. Email, phone, website, video, logo, social links, and custom fields need the Bulk Import toolset.', 'shaped-kit' ),
@@ -337,6 +390,10 @@ export const productToolsCatalog = {
 					company: 'Acme Corp',
 					location: 'Oslo',
 				},
+				reviewer_image_id: null,
+				reviewer_image_url: null,
+				company_logo_id: null,
+				company_logo_url: null,
 				rating: 5,
 				date: '2026-10-15T11:20:00+06:00',
 				modified: '2026-10-15T11:20:00+06:00',
@@ -440,28 +497,101 @@ export const productToolsCatalog = {
 			},
 		},
 		{
+			name: 'real-testimonials/import-image',
+			label: __( 'Import Image', 'shaped-kit' ),
+			summary: __( 'Downloads up to 5 https images (JPEG, PNG, GIF, WebP) into the media library and returns their ids, for reviewer photos and company logos. Private and local addresses are refused, files are checked by their content, and an address imported before is reused. Part of the opt-in Media Import toolset (off by default, because this site then fetches addresses from the internet). Import only images you have the right to use.', 'shaped-kit' ),
+			prompts: [
+				__( 'Import the photo at https://example.com/team/sarah.jpg with the alt text "Sarah Jenkins" and use it on her testimonial.', 'shaped-kit' ),
+				__( 'Add these three customer headshots to the media library, then create a draft testimonial for each person with their photo.', 'shaped-kit' ),
+				__( 'Check whether these image addresses can be imported, without downloading anything yet.', 'shaped-kit' ),
+				__( 'Import the Acme Corp logo from their press kit and set it as the company logo on the Acme testimonial.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				images: [
+					{
+						url: 'https://example.com/team/sarah.jpg',
+						alt: 'Sarah Jenkins',
+						title: 'Sarah Jenkins',
+					},
+				],
+				dry_run: true,
+			},
+			samplePresets: [
+				{
+					label: __( 'Check Only (Dry Run)', 'shaped-kit' ),
+					args: {
+						images: [ { url: 'https://example.com/team/sarah.jpg' } ],
+						dry_run: true,
+					},
+				},
+				{
+					label: __( 'Import One Photo', 'shaped-kit' ),
+					args: {
+						images: [
+							{
+								url: 'https://example.com/team/sarah.jpg',
+								alt: 'Sarah Jenkins',
+							},
+						],
+					},
+				},
+			],
+			expectedOutput: {
+				dry_run: false,
+				counts: { imported: 1 },
+				images: [
+					{
+						index: 0,
+						status: 'imported',
+						id: 58,
+						title: 'Sarah Jenkins',
+						alt: 'Sarah Jenkins',
+						filename: 'sarah-jenkins-3f9a2c1d.jpg',
+						mime: 'image/jpeg',
+						width: 800,
+						height: 800,
+						url: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-jenkins-3f9a2c1d.jpg',
+						thumbnail: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-jenkins-3f9a2c1d-150x150.jpg',
+					},
+				],
+			},
+		},
+		{
 			name: 'real-testimonials/update-testimonial',
 			label: __( 'Update Testimonial', 'shaped-kit' ),
-			summary: __( 'Updates an existing testimonial title, review text, rating, or reviewer profile metadata.', 'shaped-kit' ),
+			summary: __( 'Updates an existing testimonial title, review text, rating, reviewer details or reviewer photo (a media library id; 0 removes it). An id that is not an image is listed under dropped and the photo stays as it was.', 'shaped-kit' ),
 			prompts: [
 				__( 'Update testimonial #42 with reviewer designation "VP of Engineering".', 'shaped-kit' ),
 				__( 'Change the status of testimonial ID 15 to published.', 'shaped-kit' ),
 				__( 'Update the star rating of testimonial #8 to 5.', 'shaped-kit' ),
+				__( 'Testimonial #42 shows the wrong photo. Find the image named "Sarah Jenkins" in the media library and use that one; ask me if there is more than one.', 'shaped-kit' ),
+				__( 'Remove the reviewer photo from testimonial #15.', 'shaped-kit' ),
 			],
 			sampleArgs: {
 				id: 15002,
 				title: 'Updated: Outstanding customer support and design',
 				rating: 5,
 				reviewer_designation: 'VP of Product',
+				reviewer_image_id: 1042,
 				status: 'publish',
 			},
 			expectedOutput: {
-				status: 'updated',
 				id: 15002,
 				title: 'Updated: Outstanding customer support and design',
+				status: 'publish',
+				reviewer: {
+					name: 'Sarah Connor',
+					designation: 'VP of Product',
+					company: 'Cyberdyne Systems',
+					location: 'San Francisco, CA',
+				},
+				reviewer_image_id: 1042,
+				reviewer_image_url: 'http://localhost:10003/wp-content/uploads/2026/10/sarah-connor.jpg',
+				company_logo_id: null,
+				company_logo_url: null,
 				rating: 5,
-				reviewer_designation: 'VP of Product',
-				post_status: 'publish',
+				date: '2026-10-14T12:00:00+00:00',
+				modified: '2026-10-21T09:30:00+00:00',
 			},
 		},
 		{
@@ -614,10 +744,9 @@ export const productToolsCatalog = {
 					args: {
 						block: 'carousel',
 						attributes: {
-							autoPlay: true,
-							speed: 4000,
-							pauseOnHover: true,
-							pagination: true,
+							sliderAutoPlay: true,
+							enablePaginationDots: true,
+							enableNavigationArrow: true,
 						},
 						target: {
 							new_draft: 'Customer Reviews',
@@ -1242,6 +1371,9 @@ export const productToolsCatalog = {
 					{ ability: 'wp-carousel/get-context', tool: 'wp-carousel-get-context', label: 'Get Context', readonly: true },
 					{ ability: 'wp-carousel/list-carousels', tool: 'wp-carousel-list-carousels', label: 'List Carousels', readonly: true },
 					{ ability: 'wp-carousel/get-carousel', tool: 'wp-carousel-get-carousel', label: 'Get Carousel', readonly: true },
+					{ ability: 'wp-carousel/duplicate-carousel', tool: 'wp-carousel-duplicate-carousel', label: 'Duplicate Carousel', readonly: false },
+					{ ability: 'wp-carousel/update-carousel-settings', tool: 'wp-carousel-update-carousel-settings', label: 'Update Carousel Settings', readonly: false },
+					{ ability: 'wp-carousel/delete-carousel', tool: 'wp-carousel-delete-carousel', label: 'Delete Carousel', readonly: false },
 					{ ability: 'wp-carousel/list-templates', tool: 'wp-carousel-list-templates', label: 'List Templates', readonly: true },
 					{ ability: 'wp-carousel/get-template', tool: 'wp-carousel-get-template', label: 'Get Template', readonly: true },
 					{ ability: 'wp-carousel/find-carousel-blocks', tool: 'wp-carousel-find-carousel-blocks', label: 'Find Carousel Blocks', readonly: true },
@@ -1322,13 +1454,250 @@ export const productToolsCatalog = {
 				date: '2026-03-01T10:00:00+00:00',
 				modified: '2026-03-02T14:30:00+00:00',
 				shortcode_options: {
-					wpcp_carousel_type: 'image-carousel',
 					wpcp_layout: 'carousel',
-					wpcp_autoplay: true,
+					wpcp_carousel_auto_play: '1',
 				},
 				upload_options: {
-					wpcp_gallery: [12, 14, 16],
+					wpcp_carousel_type: 'image-carousel',
+					wpcp_gallery: '12,14,16',
 				},
+			},
+		},
+		{
+			name: 'wp-carousel/find-media',
+			label: __( 'Find Media', 'shaped-kit' ),
+			summary: __( 'Finds images (or videos) already in the media library by title, alt text or file name, or checks a list of ids, and returns each id with its size and address. Use the ids as carousel or gallery slides. Only items you are allowed to see are listed.', 'shaped-kit' ),
+			prompts: [
+				__( 'Find our product photos in the media library and list their ids for a new carousel.', 'shaped-kit' ),
+				__( 'Show me the 10 most recently uploaded images; I want some of them in the homepage slider.', 'shaped-kit' ),
+				__( 'Check that ids 120, 121 and 130 are images before you add them to the gallery.', 'shaped-kit' ),
+				__( 'Find every image with "team" in its name for an "Our Team" carousel.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				search: 'product',
+				per_page: 10,
+			},
+			samplePresets: [
+				{
+					label: __( 'Search Images', 'shaped-kit' ),
+					args: { search: 'product', per_page: 10 },
+				},
+				{
+					label: __( 'Latest Uploads', 'shaped-kit' ),
+					args: { per_page: 20 },
+				},
+				{
+					label: __( 'Check Ids', 'shaped-kit' ),
+					args: { ids: [ 120, 121, 130 ] },
+				},
+			],
+			expectedOutput: {
+				type: 'image',
+				items: [
+					{
+						id: 120,
+						title: 'Red Sneaker',
+						alt: 'Red sneaker, side view',
+						filename: 'red-sneaker.jpg',
+						mime: 'image/jpeg',
+						width: 1600,
+						height: 1200,
+						url: 'http://localhost:10003/wp-content/uploads/2026/10/red-sneaker.jpg',
+						thumbnail: 'http://localhost:10003/wp-content/uploads/2026/10/red-sneaker-150x150.jpg',
+					},
+				],
+				page: 1,
+				has_more: true,
+			},
+		},
+		{
+			name: 'wp-carousel/duplicate-carousel',
+			label: __( 'Duplicate Carousel', 'shaped-kit' ),
+			summary: __( 'Duplicates an existing classic carousel and all its layout/shortcode options into a new draft.', 'shaped-kit' ),
+			prompts: [
+				__( 'Duplicate carousel #101 with the title "Summer Campaign Carousel".', 'shaped-kit' ),
+				__( 'Create a draft copy of carousel ID 42 to use as a template.', 'shaped-kit' ),
+				__( 'Duplicate the hero carousel so we can customize it for mobile.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				id: 101,
+				title: 'Summer Campaign Carousel (Draft)',
+			},
+			samplePresets: [
+				{
+					label: __( 'Duplicate #101 as Draft', 'shaped-kit' ),
+					args: { id: 101, title: 'Hero Carousel (Copy)' },
+				},
+			],
+			expectedOutput: {
+				id: 105,
+				title: 'Hero Carousel (Copy)',
+				status: 'draft',
+				type: 'image-carousel',
+				shortcode: '[sp_wpcarousel id="105"]',
+				date: '2026-03-02T15:00:00+00:00',
+				modified: '2026-03-02T15:00:00+00:00',
+				shortcode_options: {
+					wpcp_layout: 'carousel',
+					wpcp_carousel_auto_play: '1',
+				},
+				upload_options: {
+					wpcp_carousel_type: 'image-carousel',
+					wpcp_gallery: '12,14,16',
+				},
+			},
+		},
+		{
+			name: 'wp-carousel/update-carousel-settings',
+			label: __( 'Update Carousel Settings', 'shaped-kit' ),
+			summary: __( 'Updates title, status, source type, or options of an existing classic carousel. Only settings the carousel already has can change, each in its own shape; gallery images are media library ids. Anything refused is listed under dropped.', 'shaped-kit' ),
+			prompts: [
+				__( 'Change the title of carousel 101 to "Homepage Featured Slider".', 'shaped-kit' ),
+				__( 'Enable autoplay and set speed to 3500ms on carousel #101.', 'shaped-kit' ),
+				__( 'Switch carousel 101 status from draft to publish.', 'shaped-kit' ),
+				__( 'Replace the images of carousel 101 with the product photos you found in the media library.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				id: 101,
+				title: 'Homepage Featured Slider',
+				status: 'publish',
+				settings: {
+					wpcp_carousel_auto_play: true,
+					carousel_auto_play_speed: 3500,
+				},
+			},
+			samplePresets: [
+				{
+					label: __( 'Update Autoplay & Speed', 'shaped-kit' ),
+					args: {
+						id: 101,
+						settings: { wpcp_carousel_auto_play: true, carousel_auto_play_speed: 4000 },
+					},
+				},
+				{
+					label: __( 'Publish Carousel', 'shaped-kit' ),
+					args: { id: 101, status: 'publish' },
+				},
+			],
+			expectedOutput: {
+				id: 101,
+				title: 'Homepage Featured Slider',
+				status: 'publish',
+				type: 'image-carousel',
+				shortcode: '[sp_wpcarousel id="101"]',
+				date: '2026-03-01T10:00:00+00:00',
+				modified: '2026-03-02T15:30:00+00:00',
+				shortcode_options: {
+					wpcp_layout: 'carousel',
+					wpcp_carousel_auto_play: '1',
+					carousel_auto_play_speed: 3500,
+				},
+				upload_options: {
+					wpcp_carousel_type: 'image-carousel',
+					wpcp_gallery: '12,14,16',
+				},
+				dropped: [],
+			},
+		},
+		{
+			name: 'wp-carousel/import-image',
+			label: __( 'Import Image', 'shaped-kit' ),
+			summary: __( 'Downloads up to 5 https images (JPEG, PNG, GIF, WebP) into the media library and returns their ids, for carousel and gallery slides. Private and local addresses are refused, files are checked by their content, and an address imported before is reused. Part of the opt-in Media Import toolset (off by default, because this site then fetches addresses from the internet). Import only images you have the right to use.', 'shaped-kit' ),
+			prompts: [
+				__( 'Import these 4 product shots from our CDN and build a carousel with them.', 'shaped-kit' ),
+				__( 'Add the five photos from this press kit to the media library and put them in the gallery carousel.', 'shaped-kit' ),
+				__( 'Check whether these image addresses can be imported, without downloading anything yet.', 'shaped-kit' ),
+				__( 'Import our partner logos from their websites for a logo slider.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				images: [
+					{
+						url: 'https://example.com/products/red-sneaker.jpg',
+						alt: 'Red sneaker, side view',
+						title: 'Red Sneaker',
+					},
+				],
+				dry_run: true,
+			},
+			samplePresets: [
+				{
+					label: __( 'Check Only (Dry Run)', 'shaped-kit' ),
+					args: {
+						images: [ { url: 'https://example.com/products/red-sneaker.jpg' } ],
+						dry_run: true,
+					},
+				},
+				{
+					label: __( 'Import Two Slides', 'shaped-kit' ),
+					args: {
+						images: [
+							{ url: 'https://example.com/products/red-sneaker.jpg' },
+							{ url: 'https://example.com/products/blue-sneaker.jpg' },
+						],
+					},
+				},
+			],
+			expectedOutput: {
+				dry_run: false,
+				counts: { imported: 1, reused: 1 },
+				images: [
+					{
+						index: 0,
+						status: 'imported',
+						id: 131,
+						title: 'Red Sneaker',
+						alt: 'Red sneaker, side view',
+						filename: 'red-sneaker-8c1f02ab.jpg',
+						mime: 'image/jpeg',
+						width: 1600,
+						height: 1200,
+						url: 'http://localhost:10003/wp-content/uploads/2026/10/red-sneaker-8c1f02ab.jpg',
+						thumbnail: 'http://localhost:10003/wp-content/uploads/2026/10/red-sneaker-8c1f02ab-150x150.jpg',
+					},
+					{
+						index: 1,
+						status: 'reused',
+						id: 120,
+						title: 'Blue Sneaker',
+						alt: 'Blue sneaker',
+						filename: 'blue-sneaker.jpg',
+						mime: 'image/jpeg',
+						width: 1600,
+						height: 1200,
+						url: 'http://localhost:10003/wp-content/uploads/2026/10/blue-sneaker.jpg',
+						thumbnail: 'http://localhost:10003/wp-content/uploads/2026/10/blue-sneaker-150x150.jpg',
+					},
+				],
+			},
+		},
+		{
+			name: 'wp-carousel/delete-carousel',
+			label: __( 'Delete Carousel', 'shaped-kit' ),
+			summary: __( 'Moves a classic carousel to trash or permanently deletes it with Level 1 confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Move unused carousel #105 to trash.', 'shaped-kit' ),
+				__( 'Permanently delete carousel #105 using two-step confirmation.', 'shaped-kit' ),
+				__( 'Trash the old draft carousel ID 99.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				id: 105,
+				force: false,
+			},
+			samplePresets: [
+				{
+					label: __( 'Move to Trash', 'shaped-kit' ),
+					args: { id: 105, force: false },
+				},
+				{
+					label: __( 'Permanent Delete Preview', 'shaped-kit' ),
+					args: { id: 105, force: true },
+				},
+			],
+			expectedOutput: {
+				trashed: true,
+				id: 105,
+				title: 'Old Draft Carousel',
+				permanent: false,
 			},
 		},
 		{
@@ -1497,8 +1866,8 @@ export const productToolsCatalog = {
 					args: { block: 'slider' },
 				},
 				{
-					label: __( '3D Carousel', 'shaped-kit' ),
-					args: { block: 'carousel-3d' },
+					label: __( 'Thumbnails Slider', 'shaped-kit' ),
+					args: { block: 'thumbnails-slider' },
 				},
 				{
 					label: __( 'Tiles Grid', 'shaped-kit' ),
@@ -1512,8 +1881,8 @@ export const productToolsCatalog = {
 				accepted_keys: [
 					'sourceType',
 					'layoutOptions',
-					'carouselOptions',
-					'styleOptions',
+					'sliderOptions',
+					'navigationOptions',
 				],
 				layout_defaults: {
 					sourceType: 'image',
@@ -1538,9 +1907,9 @@ export const productToolsCatalog = {
 					layoutOptions: {
 						displayStyle: 'horizontal',
 					},
-					carouselOptions: {
-						autoPlay: true,
-						speed: 4000,
+					sliderOptions: {
+						autoplay: true,
+						autoplayDelay: 4000,
 					},
 				},
 				prompt: 'A responsive 3-column carousel with autoplay',
@@ -1551,8 +1920,8 @@ export const productToolsCatalog = {
 					args: {
 						block: 'carousel',
 						attributes: {
-							carouselOptions: {
-								autoPlay: true,
+							sliderOptions: {
+								autoplay: true,
 							},
 						},
 						prompt: 'Responsive 3 columns carousel with autoplay',
@@ -1563,10 +1932,12 @@ export const productToolsCatalog = {
 					args: {
 						block: 'slider',
 						attributes: {
-							carouselOptions: {
-								autoPlay: false,
+							layoutOptions: {
 								navigation: true,
 								pagination: true,
+							},
+							sliderOptions: {
+								autoplay: false,
 							},
 						},
 						prompt: 'Hero slider with navigation arrows and dots',
@@ -1594,9 +1965,9 @@ export const productToolsCatalog = {
 						displayStyle: 'horizontal',
 						columns: 3,
 					},
-					carouselOptions: {
-						autoPlay: true,
-						speed: 4000,
+					sliderOptions: {
+						autoplay: true,
+						autoplayDelay: 4000,
 					},
 				},
 				patch: {
@@ -1605,9 +1976,9 @@ export const productToolsCatalog = {
 						displayStyle: 'horizontal',
 						columns: 3,
 					},
-					carouselOptions: {
-						autoPlay: true,
-						speed: 4000,
+					sliderOptions: {
+						autoplay: true,
+						autoplayDelay: 4000,
 					},
 				},
 				dropped: [],
@@ -1626,8 +1997,8 @@ export const productToolsCatalog = {
 			sampleArgs: {
 				block: 'carousel',
 				attributes: {
-					carouselOptions: {
-						autoPlay: true,
+					sliderOptions: {
+						autoplay: true,
 					},
 				},
 				target: {
@@ -1640,9 +2011,9 @@ export const productToolsCatalog = {
 					args: {
 						block: 'carousel',
 						attributes: {
-							carouselOptions: {
-								autoPlay: true,
-								speed: 4000,
+							sliderOptions: {
+								autoplay: true,
+								autoplayDelay: 4000,
 							},
 						},
 						target: {

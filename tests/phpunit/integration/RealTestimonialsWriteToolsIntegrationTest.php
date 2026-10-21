@@ -323,4 +323,269 @@ class RealTestimonialsWriteToolsIntegrationTest extends WP_UnitTestCase {
 		$post = get_post( $post_id );
 		$this->assertNotNull( $post );
 	}
+
+	/**
+	 * Test that create_testimonial, get_testimonial, and list_testimonials expose
+	 * the reviewer_image_id and reviewer_image_url when a photo is attached.
+	 */
+	public function test_create_and_get_testimonial_exposes_reviewer_image_id_and_url() {
+		$attachment_id = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/sarah-jenkins.png',
+				'post_mime_type' => 'image/png',
+				'post_title'     => 'Sarah Jenkins',
+			)
+		);
+
+		$result = Testimonial_Tools::create_testimonial(
+			array(
+				'title'             => 'Great Service',
+				'content'           => 'Very satisfied with the platform.',
+				'status'            => 'publish',
+				'reviewer_name'     => 'Sarah Jenkins',
+				'reviewer_image_id' => $attachment_id,
+			)
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertSame( $attachment_id, $result['reviewer_image_id'] );
+		$this->assertNotNull( $result['reviewer_image_url'] );
+		$this->assertArrayNotHasKey( 'image_id', $result['reviewer'], 'One copy of the photo per record (E179).' );
+		$this->assertArrayNotHasKey( 'image_url', $result['reviewer'] );
+		$this->assertStringContainsString( 'sarah-jenkins.png', $result['reviewer_image_url'] );
+
+		// Verify get_testimonial exposes the same reviewer image fields.
+		$read = Testimonial_Tools::get_testimonial( array( 'id' => $result['id'] ) );
+		$this->assertIsArray( $read );
+		$this->assertSame( $attachment_id, $read['reviewer_image_id'] );
+		$this->assertSame( $result['reviewer_image_url'], $read['reviewer_image_url'] );
+
+		// Verify list_testimonials also exposes the reviewer image fields.
+		$list = Testimonial_Tools::list_testimonials( array( 'per_page' => 10 ) );
+		$this->assertIsArray( $list );
+		$found = false;
+		foreach ( $list['items'] as $item ) {
+			if ( $item['id'] === $result['id'] ) {
+				$found = true;
+				$this->assertSame( $attachment_id, $item['reviewer_image_id'] );
+				$this->assertSame( $result['reviewer_image_url'], $item['reviewer_image_url'] );
+			}
+		}
+		$this->assertTrue( $found, 'Created testimonial with image must be found in list_testimonials.' );
+	}
+
+	/**
+	 * Guardrails: Test that reviewer_image fields return null when no image is set,
+	 * or when the thumbnail points to a deleted attachment or a non-image attachment.
+	 */
+	public function test_reviewer_image_returns_null_when_missing_or_invalid() {
+		// 1. Without image:
+		$no_img = Testimonial_Tools::create_testimonial(
+			array(
+				'title'         => 'No Image Testimonial',
+				'content'       => 'Review without photo.',
+				'reviewer_name' => 'John Doe',
+			)
+		);
+		$this->assertNull( $no_img['reviewer_image_id'] );
+		$this->assertNull( $no_img['reviewer_image_url'] );
+
+		// 2. Dangling thumbnail (deleted attachment):
+		$fake_thumb_id = 999999;
+		set_post_thumbnail( $no_img['id'], $fake_thumb_id );
+		clean_post_cache( $no_img['id'] );
+
+		$read_dangling = Testimonial_Tools::get_testimonial( array( 'id' => $no_img['id'] ) );
+		$this->assertNull( $read_dangling['reviewer_image_id'], 'Dangling thumbnail ID must return null.' );
+		$this->assertNull( $read_dangling['reviewer_image_url'] );
+
+		// 3. Non-image attachment (e.g. video):
+		$video_id = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/clip.mp4',
+				'post_mime_type' => 'video/mp4',
+				'post_title'     => 'Video Clip',
+			)
+		);
+		set_post_thumbnail( $no_img['id'], $video_id );
+		clean_post_cache( $no_img['id'] );
+
+		$read_video = Testimonial_Tools::get_testimonial( array( 'id' => $no_img['id'] ) );
+		$this->assertNull( $read_video['reviewer_image_id'], 'Non-image attachment must return null.' );
+		$this->assertNull( $read_video['reviewer_image_url'] );
+
+		// 4. Permission check (E156): Attachment on another user's private draft.
+		$editor_id  = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$draft_id   = self::factory()->post->create(
+			array(
+				'post_status' => 'draft',
+				'post_author' => $editor_id,
+			)
+		);
+		$hidden_img = self::factory()->attachment->create_object(
+			array(
+				'post_parent'    => $draft_id,
+				'post_author'    => $editor_id,
+				'post_status'    => 'inherit',
+				'post_mime_type' => 'image/png',
+				'file'           => '2026/10/hidden.png',
+			)
+		);
+
+		$author_id      = self::factory()->user->create( array( 'role' => 'author' ) );
+		$my_testimonial = $this->factory->post->create(
+			array(
+				'post_type'   => 'spt_testimonial',
+				'post_title'  => 'Author Testimonial',
+				'post_status' => 'publish',
+				'post_author' => $author_id,
+			)
+		);
+		set_post_thumbnail( $my_testimonial, $hidden_img );
+		clean_post_cache( $my_testimonial );
+
+		wp_set_current_user( $author_id );
+		$read_hidden = Testimonial_Tools::get_testimonial( array( 'id' => $my_testimonial ) );
+		$this->assertIsArray( $read_hidden );
+		$this->assertNull( $read_hidden['reviewer_image_id'], 'Unreadable attachment must return null (E156).' );
+		$this->assertNull( $read_hidden['reviewer_image_url'] );
+
+		// Restore admin user.
+		wp_set_current_user( $this->admin_id );
+	}
+
+	/**
+	 * E174, E178: `update-testimonial` takes a photo over MCP (its schema allows the key, so the adapter lets it
+	 * through), 0 removes it, and an id that is not a readable image is reported under `dropped`, photo unchanged.
+	 * The company logo is not an update property (E177: Free locks it), so the schema refuses it.
+	 */
+	public function test_update_testimonial_sets_clears_and_reports_the_reviewer_photo_through_its_schema() {
+		$img1  = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/img1.png',
+				'post_mime_type' => 'image/png',
+				'post_title'     => 'Image 1',
+			)
+		);
+		$img2  = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/img2.png',
+				'post_mime_type' => 'image/png',
+				'post_title'     => 'Image 2',
+			)
+		);
+		$video = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/clip.mp4',
+				'post_mime_type' => 'video/mp4',
+				'post_title'     => 'Clip',
+			)
+		);
+
+		$schema = Abilities_Registrar::definitions()['real-testimonials/update-testimonial']['input_schema'];
+		$update = static function ( array $input ) use ( $schema ) {
+			// What WP_Ability::validate_input() runs before the callback (class-wp-ability.php:536).
+			$valid = rest_validate_value_from_schema( $input, $schema, 'input' );
+			return is_wp_error( $valid ) ? $valid : Testimonial_Tools::update_testimonial( $input );
+		};
+
+		$post = Testimonial_Tools::create_testimonial(
+			array(
+				'title'             => 'Update Image Testimonial',
+				'content'           => 'Initial content',
+				'reviewer_name'     => 'Alice',
+				'reviewer_image_id' => $img1,
+			)
+		);
+		$this->assertSame( $img1, $post['reviewer_image_id'] );
+
+		$updated = $update(
+			array(
+				'id'                => $post['id'],
+				'reviewer_image_id' => $img2,
+			)
+		);
+		$this->assertIsArray( $updated, 'The schema accepts the photo.' );
+		$this->assertSame( $img2, $updated['reviewer_image_id'] );
+		$this->assertArrayNotHasKey( 'dropped', $updated );
+
+		foreach ( array( $video, 999999 ) as $bad ) {
+			$refused = $update(
+				array(
+					'id'                => $post['id'],
+					'reviewer_image_id' => $bad,
+					'reviewer_name'     => 'Alice B',
+				)
+			);
+			$this->assertSame( $img2, $refused['reviewer_image_id'], 'A refused id leaves the photo as it was.' );
+			$this->assertSame( 'Alice B', $refused['reviewer']['name'], 'The rest of the update is still written.' );
+			$this->assertSame( array( 'reviewer_image_id' ), wp_list_pluck( $refused['dropped'], 'key' ) );
+			$this->assertSame( 'not_found', $refused['dropped'][0]['reason'] );
+		}
+
+		$cleared = $update(
+			array(
+				'id'                => $post['id'],
+				'reviewer_image_id' => 0,
+			)
+		);
+		$this->assertNull( $cleared['reviewer_image_id'] );
+		$this->assertNull( $cleared['reviewer_image_url'] );
+		$this->assertSame( 0, (int) get_post_thumbnail_id( $post['id'] ) );
+
+		$this->assertWPError(
+			$update(
+				array(
+					'id'                => $post['id'],
+					'reviewer_image_id' => -1,
+				)
+			)
+		);
+		$meta = get_post_meta( $post['id'], 'sp_tpro_meta_options', true );
+		$this->assertWPError(
+			$update(
+				array(
+					'id'              => $post['id'],
+					'company_logo_id' => $img1,
+				)
+			),
+			'Not an update property.'
+		);
+		$this->assertSame( $meta, get_post_meta( $post['id'], 'sp_tpro_meta_options', true ), 'Nothing written.' );
+	}
+
+	/**
+	 * E179: a list reads every photo with one primed query, not several per testimonial.
+	 */
+	public function test_list_testimonials_reads_photos_without_a_query_per_item() {
+		$ids = array();
+		foreach ( range( 1, 6 ) as $n ) {
+			$img   = self::factory()->attachment->create_object(
+				array(
+					'file'           => "2026/10/p{$n}.png",
+					'post_mime_type' => 'image/png',
+					'post_title'     => "P{$n}",
+				)
+			);
+			$ids[] = Testimonial_Tools::create_testimonial(
+				array(
+					'title'             => "Photo {$n}",
+					'content'           => 'Text',
+					'reviewer_name'     => "R{$n}",
+					'reviewer_image_id' => $img,
+				)
+			)['id'];
+		}
+
+		$count = function ( $per_page ) {
+			global $wpdb;
+			wp_cache_flush();
+			$before = $wpdb->num_queries;
+			$list   = Testimonial_Tools::list_testimonials( array( 'per_page' => $per_page ) );
+			$this->assertCount( $per_page, array_filter( wp_list_pluck( $list['items'], 'reviewer_image_id' ) ) );
+			return $wpdb->num_queries - $before;
+		};
+
+		$this->assertSame( $count( 2 ), $count( 6 ), 'Three times the items, the same number of queries.' );
+	}
 }
