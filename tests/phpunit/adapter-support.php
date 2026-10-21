@@ -193,6 +193,10 @@ function shaped_kit_adapter_boot( $adapter_dir ) {
 				define( $edition['path_constant'], $plugin . '/src/' );
 			}
 
+			if ( isset( $edition['version_constant'] ) && ! defined( $edition['version_constant'] ) ) {
+				define( $edition['version_constant'], $edition['version'] ?? '1.0.0' );
+			}
+
 			if ( class_exists( $module ) ) {
 				$module::register();
 			}
