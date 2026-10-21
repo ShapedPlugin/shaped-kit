@@ -46,6 +46,10 @@
 			<exclude>tests/phpunit/integration/RealTestimonialsProBuilderToolsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteSlashesIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselReadToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselBuilderToolsTestCase.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselFreeBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselProBuilderToolsIntegrationTest.php</exclude>
 		</testsuite>
 		<!--
 			adapter-*   a product's real MCP server, run through one real adapter copy

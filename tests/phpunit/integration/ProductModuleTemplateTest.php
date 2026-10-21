@@ -16,6 +16,7 @@
  */
 
 use ShapedPlugin\Template\Mcp\Abilities_Registrar;
+use ShapedPlugin\Template\Mcp\Builder\BlockInserter;
 use ShapedPlugin\Template\Mcp\Kit_Registration;
 use ShapedPlugin\Template\Mcp\Permission_Gate;
 use ShapedPlugin\Template\Mcp\Rest_Controller;
@@ -422,6 +423,82 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 		// has one tool on by default, and the Builder, the larger part, is opt-in.
 		$this->assertLessThanOrEqual( 600, $default, 'The default-on tools of the template cost a few hundred characters.' );
 		$this->assertGreaterThan( 5 * $default, $builder, 'The Builder is the large part, which is why it is opt-in.' );
+	}
+
+	/**
+	 * Replacing a block keeps its full namespaced name and its uniqueId.
+	 *
+	 * The template once wrote the bare slug (`carousel`) as the block name, so the saved block became
+	 * `<!-- wp:carousel -->`, a block nothing renders, and the saved result lost its uniqueId. WP Carousel
+	 * copied it as is.
+	 */
+	public function test_replacing_a_block_keeps_its_namespaced_name_and_unique_id(): void {
+		$taken = array();
+		$top   = array(
+			'blockName'    => 'template-slug/carousel',
+			'attrs'        => array(
+				'uniqueId' => 'kept-id',
+				'layout'   => 'default',
+			),
+			'innerBlocks'  => array(),
+			'innerHTML'    => '',
+			'innerContent' => array(),
+		);
+
+		$updated = BlockInserter::build_update( $top, array( 'layout' => 'wide' ), $taken );
+
+		$this->assertSame( 'template-slug/carousel', $updated['blockName'] );
+		$this->assertSame( 'kept-id', $updated['attrs']['uniqueId'] );
+		$this->assertSame( 'wide', $updated['attrs']['layout'] );
+		$this->assertSame( array( $updated, 'carousel' ), BlockInserter::main_of( $updated ) );
+	}
+
+	public function test_replacing_a_block_inside_a_wrapper_updates_the_inner_block_in_place(): void {
+		$taken = array();
+		$inner = array(
+			'blockName'    => 'template-slug/grid',
+			'attrs'        => array( 'uniqueId' => 'inner-id' ),
+			'innerBlocks'  => array(),
+			'innerHTML'    => '',
+			'innerContent' => array(),
+		);
+		$top   = array(
+			'blockName'    => 'core/group',
+			'attrs'        => array(),
+			'innerBlocks'  => array( $inner ),
+			'innerHTML'    => '<div></div>',
+			'innerContent' => array( '<div>', null, '</div>' ),
+		);
+
+		$updated = BlockInserter::build_update( $top, array( 'layout' => 'wide' ), $taken );
+
+		$this->assertSame( 'core/group', $updated['blockName'] );
+		$this->assertCount( 1, $updated['innerBlocks'] );
+		$this->assertSame( 'template-slug/grid', $updated['innerBlocks'][0]['blockName'] );
+		$this->assertSame( 'inner-id', $updated['innerBlocks'][0]['attrs']['uniqueId'] );
+		$this->assertSame( 'wide', $updated['innerBlocks'][0]['attrs']['layout'] );
+	}
+
+	public function test_a_block_index_counts_only_real_blocks_not_the_blank_lines_between_them(): void {
+		$blocks = parse_blocks( "<!-- wp:paragraph -->\n<p>A</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:template-slug/carousel {\"uniqueId\":\"x\"} /-->" );
+		$new    = array(
+			'blockName'    => 'template-slug/carousel',
+			'attrs'        => array( 'uniqueId' => 'y' ),
+			'innerBlocks'  => array(),
+			'innerHTML'    => '',
+			'innerContent' => array(),
+		);
+
+		$this->assertSame( 'template-slug/carousel', BlockInserter::real_block( $blocks, 1 )['blockName'] );
+		$this->assertNull( BlockInserter::real_block( $blocks, 2 ) );
+		$this->assertNull( BlockInserter::real_block( $blocks, '1' ) );
+
+		$replaced = BlockInserter::replace_at( $blocks, 1, $new );
+		$this->assertCount( count( $blocks ), $replaced );
+		$this->assertSame( 'y', BlockInserter::real_block( $replaced, 1 )['attrs']['uniqueId'] );
+		$this->assertNull( BlockInserter::real_block( $replaced, 2 ), 'The old block is replaced, not pushed down.' );
+		$this->assertSame( "\n\n", $replaced[1]['innerHTML'], 'The blank line between the blocks stays.' );
+		$this->assertSame( $blocks, BlockInserter::replace_at( $blocks, 5, $new ), 'An index past the last real block changes nothing.' );
 	}
 
 	public function test_the_template_holds_only_placeholders_so_the_adoption_checklist_replaces_everything(): void {

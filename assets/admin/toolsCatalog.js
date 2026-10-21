@@ -1194,6 +1194,604 @@ export const productToolsCatalog = {
 			},
 		},
 	],
+	'wp-carousel': [
+		{
+			name: 'wp-carousel/get-context',
+			label: __( 'Get Context', 'shaped-kit' ),
+			summary: __( 'Inspects user identity, site environment, carousel and template counts, license state, and callable tools.', 'shaped-kit' ),
+			prompts: [
+				__( 'Check our WP Carousel setup and summarize how many carousels and templates we have.', 'shaped-kit' ),
+				__( 'What tools and permissions are available for WP Carousel on this site?', 'shaped-kit' ),
+				__( 'Show our WP Carousel environment details and license status.', 'shaped-kit' ),
+			],
+			sampleArgs: {},
+			samplePresets: [
+				{
+					label: __( 'Full Context Overview', 'shaped-kit' ),
+					args: {},
+				},
+			],
+			expectedOutput: {
+				you: {
+					wp_user_id: 1,
+					name: 'admin',
+					is_admin: true,
+				},
+				site: {
+					site_url: 'https://example.com',
+					wordpress_version: '6.9',
+					timezone: 'UTC',
+					current_time: '2026-10-20T12:00:00+00:00',
+					environment: 'production',
+				},
+				product: {
+					name: 'WP Carousel Pro',
+					edition: 'pro',
+					version: '4.0.0',
+				},
+				overview: {
+					carousels: { publish: 5, draft: 1, pending: 0, private: 0, future: 0, total: 6 },
+					templates: { publish: 2, draft: 0, pending: 0, private: 0, future: 0, total: 2 },
+				},
+				license: {
+					status: 'valid',
+					expires: '2027-01-01',
+					is_output_allowed: true,
+				},
+				tools: [
+					{ ability: 'wp-carousel/get-context', tool: 'wp-carousel-get-context', label: 'Get Context', readonly: true },
+					{ ability: 'wp-carousel/list-carousels', tool: 'wp-carousel-list-carousels', label: 'List Carousels', readonly: true },
+					{ ability: 'wp-carousel/get-carousel', tool: 'wp-carousel-get-carousel', label: 'Get Carousel', readonly: true },
+					{ ability: 'wp-carousel/list-templates', tool: 'wp-carousel-list-templates', label: 'List Templates', readonly: true },
+					{ ability: 'wp-carousel/get-template', tool: 'wp-carousel-get-template', label: 'Get Template', readonly: true },
+					{ ability: 'wp-carousel/find-carousel-blocks', tool: 'wp-carousel-find-carousel-blocks', label: 'Find Carousel Blocks', readonly: true },
+					{ ability: 'wp-carousel/get-settings', tool: 'wp-carousel-get-settings', label: 'Get Settings', readonly: true },
+					{ ability: 'wp-carousel/get-block-catalog', tool: 'wp-carousel-get-block-catalog', label: 'Get Block Catalog', readonly: true },
+					{ ability: 'wp-carousel/validate-block-attributes', tool: 'wp-carousel-validate-block-attributes', label: 'Validate Block Attributes', readonly: true },
+					{ ability: 'wp-carousel/insert-block', tool: 'wp-carousel-insert-block', label: 'Insert Block', readonly: false },
+					{ ability: 'wp-carousel/list-ready-patterns', tool: 'wp-carousel-list-ready-patterns', label: 'List Ready Patterns', readonly: true },
+					{ ability: 'wp-carousel/insert-ready-pattern', tool: 'wp-carousel-insert-ready-pattern', label: 'Insert Ready Pattern', readonly: false },
+				],
+			},
+		},
+		{
+			name: 'wp-carousel/list-carousels',
+			label: __( 'List Carousels', 'shaped-kit' ),
+			summary: __( 'Retrieves paginated classic carousels with title, type, status, shortcode, and timestamps.', 'shaped-kit' ),
+			prompts: [
+				__( 'List all active carousels on the site with their shortcodes.', 'shaped-kit' ),
+				__( 'Show me the 5 most recently created image carousels.', 'shaped-kit' ),
+				__( 'Find carousels matching "Hero Banner" or "Products".', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				per_page: 5,
+				page: 1,
+			},
+			samplePresets: [
+				{
+					label: __( 'First 5 Carousels', 'shaped-kit' ),
+					args: { per_page: 5, page: 1 },
+				},
+				{
+					label: __( 'Published Only', 'shaped-kit' ),
+					args: { status: 'publish', per_page: 10 },
+				},
+			],
+			expectedOutput: {
+				items: [
+					{
+						id: 101,
+						title: 'Hero Banner Carousel',
+						status: 'publish',
+						type: 'image-carousel',
+						shortcode: '[sp_wpcarousel id="101"]',
+						date: '2026-03-01T10:00:00+00:00',
+						modified: '2026-03-02T14:30:00+00:00',
+					},
+				],
+				total: 1,
+				page: 1,
+				per_page: 5,
+				total_pages: 1,
+			},
+		},
+		{
+			name: 'wp-carousel/get-carousel',
+			label: __( 'Get Carousel', 'shaped-kit' ),
+			summary: __( 'Retrieves full configuration, layout options, and responsive settings for a classic carousel.', 'shaped-kit' ),
+			prompts: [
+				__( 'Inspect the settings and image sources of carousel ID 101.', 'shaped-kit' ),
+				__( 'What autoplay and speed settings are configured on carousel 101?', 'shaped-kit' ),
+				__( 'Show full configuration details for carousel #101.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				id: 101,
+			},
+			samplePresets: [
+				{
+					label: __( 'Inspect Carousel #101', 'shaped-kit' ),
+					args: { id: 101 },
+				},
+			],
+			expectedOutput: {
+				id: 101,
+				title: 'Hero Banner Carousel',
+				status: 'publish',
+				type: 'image-carousel',
+				shortcode: '[sp_wpcarousel id="101"]',
+				date: '2026-03-01T10:00:00+00:00',
+				modified: '2026-03-02T14:30:00+00:00',
+				shortcode_options: {
+					wpcp_carousel_type: 'image-carousel',
+					wpcp_layout: 'carousel',
+					wpcp_autoplay: true,
+				},
+				upload_options: {
+					wpcp_gallery: [12, 14, 16],
+				},
+			},
+		},
+		{
+			name: 'wp-carousel/list-templates',
+			label: __( 'List Templates', 'shaped-kit' ),
+			summary: __( 'Retrieves paginated saved block carousel templates with title, status, and shortcodes.', 'shaped-kit' ),
+			prompts: [
+				__( 'List all saved block carousel templates created with the builder.', 'shaped-kit' ),
+				__( 'Find any draft carousel templates that need attention.', 'shaped-kit' ),
+				__( 'Show the latest 10 saved templates.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				per_page: 10,
+				page: 1,
+			},
+			samplePresets: [
+				{
+					label: __( 'First 10 Templates', 'shaped-kit' ),
+					args: { per_page: 10, page: 1 },
+				},
+			],
+			expectedOutput: {
+				items: [
+					{
+						id: 201,
+						title: 'Product Showcase Template',
+						status: 'publish',
+						shortcode: '[sp_wpcp_template id="201"]',
+						date: '2026-03-05T09:00:00+00:00',
+						modified: '2026-03-05T09:15:00+00:00',
+					},
+				],
+				total: 1,
+				page: 1,
+				per_page: 10,
+				total_pages: 1,
+			},
+		},
+		{
+			name: 'wp-carousel/get-template',
+			label: __( 'Get Template', 'shaped-kit' ),
+			summary: __( 'Retrieves the complete block structure, inner blocks, and content of a saved carousel template.', 'shaped-kit' ),
+			prompts: [
+				__( 'Inspect the block tree and attributes inside saved template ID 201.', 'shaped-kit' ),
+				__( 'Show the layout and inner block content of carousel template 201.', 'shaped-kit' ),
+				__( 'Check the content and shortcode of template #201.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				id: 201,
+			},
+			samplePresets: [
+				{
+					label: __( 'Inspect Template #201', 'shaped-kit' ),
+					args: { id: 201 },
+				},
+			],
+			expectedOutput: {
+				id: 201,
+				title: 'Product Showcase Template',
+				status: 'publish',
+				shortcode: '[sp_wpcp_template id="201"]',
+				content: '<!-- wp:wp-carousel-pro/carousel {"columns":3} -->...<!-- /wp:wp-carousel-pro/carousel -->',
+				date: '2026-03-05T09:00:00+00:00',
+				modified: '2026-03-05T09:15:00+00:00',
+			},
+		},
+		{
+			name: 'wp-carousel/find-carousel-blocks',
+			label: __( 'Find Carousel Blocks', 'shaped-kit' ),
+			summary: __( 'Scans published posts and pages to locate embedded carousel blocks and shortcodes.', 'shaped-kit' ),
+			prompts: [
+				__( 'Where is carousel ID 101 embedded across our pages and posts?', 'shaped-kit' ),
+				__( 'Find all pages that include a WP Carousel block.', 'shaped-kit' ),
+				__( 'Search for posts using the [sp_wpcarousel] shortcode.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				per_page: 10,
+			},
+			samplePresets: [
+				{
+					label: __( 'Find All Carousel Embeds', 'shaped-kit' ),
+					args: { per_page: 10 },
+				},
+				{
+					label: __( 'Find Carousel #101 Embeds', 'shaped-kit' ),
+					args: { carousel_id: 101 },
+				},
+			],
+			expectedOutput: {
+				items: [
+					{
+						id: 42,
+						title: 'Home Page',
+						post_type: 'page',
+						status: 'publish',
+						modified: '2026-03-06T11:20:00+00:00',
+						blocks: [
+							{ name: 'wp-carousel-pro/carousel', count: 1 },
+						],
+						carousel_ids: [ 101 ],
+						template_ids: [],
+					},
+				],
+				total: 1,
+				page: 1,
+				per_page: 10,
+				total_pages: 1,
+			},
+		},
+		{
+			name: 'wp-carousel/get-settings',
+			label: __( 'Get Settings', 'shaped-kit' ),
+			summary: __( 'Returns global carousel asset enqueueing rules, active modules, and masked license state.', 'shaped-kit' ),
+			prompts: [
+				__( 'Check whether Swiper CSS/JS and FontAwesome enqueueing are enabled.', 'shaped-kit' ),
+				__( 'What WP Carousel modules (AI Builder, Lightbox) are currently active?', 'shaped-kit' ),
+				__( 'Show the global settings and masked license status for WP Carousel.', 'shaped-kit' ),
+			],
+			sampleArgs: {},
+			samplePresets: [
+				{
+					label: __( 'Global Settings & Modules', 'shaped-kit' ),
+					args: {},
+				},
+			],
+			expectedOutput: {
+				general: {
+					enqueue_swiper_css: true,
+					enqueue_swiper_js: true,
+					enqueue_fa_css: true,
+				},
+				modules: {
+					ai_carousel_builder: true,
+					lightbox: true,
+				},
+				ai: {
+					provider: 'connector',
+					has_own_key: false,
+				},
+				license: {
+					status: 'valid',
+					expires: null,
+					key_masked: '••••-••••-••••',
+				},
+			},
+		},
+		{
+			name: 'wp-carousel/get-block-catalog',
+			label: __( 'Get Block Catalog (Builder)', 'shaped-kit' ),
+			summary: __( 'Returns the settings a carousel block accepts, with design rules and examples, so your AI client can design it.', 'shaped-kit' ),
+			prompts: [
+				__( 'What blocks and layout settings can WP Carousel build with AI?', 'shaped-kit' ),
+				__( 'Show me the allowed options and design rules for building a standard carousel.', 'shaped-kit' ),
+				__( 'Inspect the accepted attributes for the full-width slider block.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				block: 'carousel',
+			},
+			samplePresets: [
+				{
+					label: __( 'Standard Carousel', 'shaped-kit' ),
+					args: { block: 'carousel' },
+				},
+				{
+					label: __( 'Full-Width Slider', 'shaped-kit' ),
+					args: { block: 'slider' },
+				},
+				{
+					label: __( '3D Carousel', 'shaped-kit' ),
+					args: { block: 'carousel-3d' },
+				},
+				{
+					label: __( 'Tiles Grid', 'shaped-kit' ),
+					args: { block: 'tiles' },
+				},
+			],
+			expectedOutput: {
+				instructions: 'You are an expert web designer designing a WP Carousel block...',
+				block: 'carousel',
+				block_name: 'wp-carousel-pro/carousel',
+				accepted_keys: [
+					'sourceType',
+					'layoutOptions',
+					'carouselOptions',
+					'styleOptions',
+				],
+				layout_defaults: {
+					sourceType: 'image',
+					layoutOptions: {
+						displayStyle: 'horizontal',
+					},
+				},
+			},
+		},
+		{
+			name: 'wp-carousel/validate-block-attributes',
+			label: __( 'Validate Block Attributes (Builder)', 'shaped-kit' ),
+			summary: __( 'Checks block settings written by an AI, lists dropped keys with reasons, and returns the final patch.', 'shaped-kit' ),
+			prompts: [
+				__( 'Validate these carousel block attributes and check for any dropped keys.', 'shaped-kit' ),
+				__( 'Check a 4-column responsive slider configuration with dark styling.', 'shaped-kit' ),
+				__( 'Fix any invalid settings in my carousel design and validate again.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				block: 'carousel',
+				attributes: {
+					layoutOptions: {
+						displayStyle: 'horizontal',
+					},
+					carouselOptions: {
+						autoPlay: true,
+						speed: 4000,
+					},
+				},
+				prompt: 'A responsive 3-column carousel with autoplay',
+			},
+			samplePresets: [
+				{
+					label: __( 'Responsive 3-Column Carousel', 'shaped-kit' ),
+					args: {
+						block: 'carousel',
+						attributes: {
+							carouselOptions: {
+								autoPlay: true,
+							},
+						},
+						prompt: 'Responsive 3 columns carousel with autoplay',
+					},
+				},
+				{
+					label: __( 'Full-Width Slider', 'shaped-kit' ),
+					args: {
+						block: 'slider',
+						attributes: {
+							carouselOptions: {
+								autoPlay: false,
+								navigation: true,
+								pagination: true,
+							},
+						},
+						prompt: 'Hero slider with navigation arrows and dots',
+					},
+				},
+				{
+					label: __( 'Tiles Grid', 'shaped-kit' ),
+					args: {
+						block: 'tiles',
+						attributes: {
+							layoutOptions: {
+								carouselStyle: 'grid',
+							},
+						},
+						prompt: '4-column tiles grid',
+					},
+				},
+			],
+			expectedOutput: {
+				valid: true,
+				block: 'carousel',
+				attributes: {
+					sourceType: 'image',
+					layoutOptions: {
+						displayStyle: 'horizontal',
+						columns: 3,
+					},
+					carouselOptions: {
+						autoPlay: true,
+						speed: 4000,
+					},
+				},
+				patch: {
+					sourceType: 'image',
+					layoutOptions: {
+						displayStyle: 'horizontal',
+						columns: 3,
+					},
+					carouselOptions: {
+						autoPlay: true,
+						speed: 4000,
+					},
+				},
+				dropped: [],
+				defaults_applied: true,
+			},
+		},
+		{
+			name: 'wp-carousel/insert-block',
+			label: __( 'Insert Block (Builder, Protected)', 'shaped-kit' ),
+			summary: __( 'Saves a configured block into a new draft page, or into an existing page after WriteGuard confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Build a 3-column hero carousel and save it as a new draft page titled "Product Showcase".', 'shaped-kit' ),
+				__( 'Insert a full-width image slider at the end of my Home page.', 'shaped-kit' ),
+				__( 'Update the existing carousel block on my About page with responsive columns.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				block: 'carousel',
+				attributes: {
+					carouselOptions: {
+						autoPlay: true,
+					},
+				},
+				target: {
+					new_draft: 'Product Showcase Carousel',
+				},
+			},
+			samplePresets: [
+				{
+					label: __( 'New Draft Page (Hero Carousel)', 'shaped-kit' ),
+					args: {
+						block: 'carousel',
+						attributes: {
+							carouselOptions: {
+								autoPlay: true,
+								speed: 4000,
+							},
+						},
+						target: {
+							new_draft: 'Hero Carousel Showcase',
+						},
+					},
+				},
+				{
+					label: __( 'Full-Width Slider (Draft)', 'shaped-kit' ),
+					args: {
+						block: 'slider',
+						attributes: {},
+						target: {
+							new_draft: 'Full Width Slider Draft',
+						},
+					},
+				},
+				{
+					label: __( 'Append to Existing Page (Preview)', 'shaped-kit' ),
+					args: {
+						block: 'carousel',
+						attributes: {},
+						target: {
+							post_id: 42,
+							position: 'end',
+						},
+					},
+				},
+			],
+			expectedOutput: {
+				status: 'saved',
+				action: 'new_draft',
+				post_id: 16001,
+				post_status: 'draft',
+				title: 'Product Showcase Carousel',
+				unique_id: 'wpcp-carousel-a1b2c3d4e5f6',
+				edit_url: 'http://localhost:10003/wp-admin/post.php?post=16001&action=edit',
+				preview_url: 'http://localhost:10003/?page_id=16001&preview=true',
+				block: 'carousel',
+				block_name: 'wp-carousel-pro/carousel',
+			},
+		},
+		{
+			name: 'wp-carousel/list-ready-patterns',
+			label: __( 'List Ready Patterns (Builder)', 'shaped-kit' ),
+			summary: __( 'Lists ready-made carousel designs from the pattern library. On Free, Pro designs are marked as requiring Pro.', 'shaped-kit' ),
+			prompts: [
+				__( 'Show me ready-made carousel patterns for an eCommerce store.', 'shaped-kit' ),
+				__( 'Which carousel and slider patterns are available in the Free edition?', 'shaped-kit' ),
+				__( 'Find modern 3D carousel and thumbnail slider pattern designs.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				block: 'carousel',
+				pro: 'include',
+				per_page: 5,
+			},
+			expectedOutput: {
+				items: [
+					{
+						id: 101,
+						name: 'Carousel – Modern Hero 01',
+						block: 'carousel',
+						category: 'Hero',
+						pro: false,
+						insertable: true,
+					},
+				],
+				total: 8,
+				page: 1,
+				per_page: 5,
+			},
+		},
+		{
+			name: 'wp-carousel/insert-ready-pattern',
+			label: __( 'Insert Ready Pattern (Builder, Protected)', 'shaped-kit' ),
+			summary: __( 'Inserts a ready-made pattern into a new draft page, or into an existing page after confirmation.', 'shaped-kit' ),
+			prompts: [
+				__( 'Insert pattern #101 into a new draft page called "Client Showcase".', 'shaped-kit' ),
+				__( 'Add a ready-made hero carousel pattern to the top of my Landing page.', 'shaped-kit' ),
+				__( 'Pick a clean modern carousel pattern and create a draft page for it.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				pattern_id: 101,
+				target: {
+					new_draft: 'Client Showcase Carousel',
+				},
+			},
+			expectedOutput: {
+				status: 'saved',
+				action: 'new_draft',
+				post_id: 16002,
+				title: 'Client Showcase Carousel',
+				pattern_id: 101,
+				edit_url: 'http://localhost:10003/wp-admin/post.php?post=16002&action=edit',
+				preview_url: 'http://localhost:10003/?page_id=16002&preview=true',
+			},
+		},
+		{
+			name: 'wp-carousel/build-carousel',
+			label: __( 'Build Carousel (Prompt)', 'shaped-kit' ),
+			summary: __( 'Guided prompt template directing an AI assistant to construct and insert a carousel block.', 'shaped-kit' ),
+			prompts: [
+				__( 'Build a 3-column responsive carousel with autoplay and light cards.', 'shaped-kit' ),
+				__( 'Create a full-width hero slider with smooth navigation dots.', 'shaped-kit' ),
+				__( 'Design a masonry image gallery and insert it into a new draft page.', 'shaped-kit' ),
+			],
+			sampleArgs: {
+				request: 'Build a 3-column responsive carousel with autoplay and light cards.',
+			},
+			samplePresets: [
+				{
+					label: __( 'Autoplay Carousel', 'shaped-kit' ),
+					args: {
+						request: 'Create a responsive 3-column image carousel that autoplays every 4 seconds with pause on hover.',
+						block: 'carousel',
+						page_title: 'Featured Products Carousel',
+					},
+				},
+				{
+					label: __( 'Full-Width Hero Slider', 'shaped-kit' ),
+					args: {
+						request: 'Design a full-width hero slider with navigation arrows and pagination dots.',
+						block: 'slider',
+						page_title: 'Hero Banner Slider',
+					},
+				},
+				{
+					label: __( 'Tiles Grid Showcase', 'shaped-kit' ),
+					args: {
+						request: 'Build a 4-column tiles grid showcasing portfolio projects.',
+						block: 'tiles',
+						page_title: 'Portfolio Grid',
+					},
+				},
+			],
+			expectedOutput: {
+				description: 'Guided prompt for building WP Carousel Pro blocks with AI.',
+				messages: [
+					{
+						role: 'user',
+						content: {
+							type: 'text',
+							text: 'Use the wp-carousel MCP tools on http://localhost:10003.\n\nBuild a WP Carousel Pro block for this request: "Build a 3-column responsive carousel with autoplay and light cards."\n\n1. Pick the best block type for the request or inspect options with `wp-carousel-get-block-catalog`.\n\n2. Write the attribute JSON and check it with `wp-carousel-validate-block-attributes`, passing my request as prompt. Fix anything listed under dropped.\n\n3. Save it with `wp-carousel-insert-block` into a new draft page titled "WP Carousel Preview" using target.new_draft.\n\nIf a ready-made design from `wp-carousel-list-ready-patterns` fits better, insert that with `wp-carousel-insert-ready-pattern` instead.\n\nReply with the preview link.',
+						},
+					},
+				],
+			},
+		},
+	],
 };
 
 /**

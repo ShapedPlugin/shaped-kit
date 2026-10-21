@@ -30,6 +30,14 @@ This file is tracked in a public repository. Never put local paths, keys, licens
 6. **Deep console debugging and database verification (C6).**
    - When writing or changing any code, debug it exhaustively from the console or CLI before calling the work done.
    - Where database state is involved (`wp_options`, custom tables, post types, transients), inspect the database before and after execution. Confirm that state transitions, queries, edge cases, corner cases and guardrails hold, with no side effects, data pollution, or hidden SQL or runtime warnings.
+7. **Security, edge & corner case audit protocol (C7).**
+   - During plugin code inspection or review, whenever any major security vulnerability, edge case, or corner case is identified:
+     - Record it in a dedicated section categorized by the exact **Plugin Name** (in `docs/EXISTING_PLUGIN_BUGS.md` or the plugin's dedicated audit).
+     - Must explicitly specify:
+       - **Plugin Name & File:Line** verified from source.
+       - **Classification:** Security Vulnerability, Edge Case, or Corner Case.
+       - **Scenario & "What Will Happen":** Detailed explanation of trigger conditions and exact failure modes (unauthorized access, privilege escalation, data leakage/pollution, broken state, or crash).
+       - **Guardrail & Prevention:** Protective barriers or sanitization checks required on the caller/MCP side to guarantee absolute runtime safety.
 
 ## 2. Technical stack and code rules
 
