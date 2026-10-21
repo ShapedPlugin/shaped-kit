@@ -107,7 +107,7 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_fresh_site_serves_the_core_tools_and_none_of_the_opt_in_ones(): void {
-		$this->assertSame( array( 'template-slug/get-context' ), Abilities_Registrar::names() );
+		$this->assertSame( array( 'template-slug/get-context', 'template-slug/find-media' ), Abilities_Registrar::names(), 'find-media is read-only, so it is core; import-image is opt-in.' );
 		$this->assertSame( array(), Abilities_Registrar::prompt_names(), 'The Builder prompt follows the Builder toolset.' );
 		$this->assertSame( array( 'core', 'management' ), Permission_Gate::get_active_toolsets() );
 	}
@@ -181,14 +181,15 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 	public function test_the_dashboard_lists_only_toolsets_that_have_tools_and_counts_them(): void {
 		$default = Abilities_Registrar::toolsets();
 
-		$this->assertSame( array( 'core', 'builder' ), wp_list_pluck( $default, 'id' ), 'No deletion or bulk tool, so no switch for one.' );
-		$this->assertSame( array( 1, 5 ), wp_list_pluck( $default, 'tools_count' ) );
-		$this->assertSame( array( true, false ), wp_list_pluck( $default, 'enabled' ), 'Core is on, the Builder is off.' );
+		$this->assertSame( array( 'core', 'builder', 'media' ), wp_list_pluck( $default, 'id' ), 'No deletion or bulk tool, so no switch for one.' );
+		$this->assertSame( array( 2, 5, 1 ), wp_list_pluck( $default, 'tools_count' ) );
+		$this->assertSame( array( true, false, false ), wp_list_pluck( $default, 'enabled' ), 'Core is on, the Builder and Media Import are off.' );
 		$this->assertTrue( $default[0]['locked'] );
 		$this->assertFalse( $default[1]['locked'] );
+		$this->assertFalse( $default[2]['locked'] );
 
 		Permission_Gate::set_active_toolsets( array( 'builder' ) );
-		$this->assertSame( array( true, true ), wp_list_pluck( Abilities_Registrar::toolsets(), 'enabled' ) );
+		$this->assertSame( array( true, true, false ), wp_list_pluck( Abilities_Registrar::toolsets(), 'enabled' ) );
 	}
 
 	public function test_the_kit_card_counts_the_tools_that_are_served(): void {
@@ -196,10 +197,13 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 			return Kit_Registration::add_product( array() )[0]['tools_count'];
 		};
 
-		$this->assertSame( 1, $count() );
+		$this->assertSame( 2, $count() );
 
 		Permission_Gate::set_active_toolsets( array( 'builder' ) );
-		$this->assertSame( 6, $count() );
+		$this->assertSame( 7, $count() );
+
+		Permission_Gate::set_active_toolsets( array( 'builder', 'media' ) );
+		$this->assertSame( 8, $count() );
 	}
 
 	/**
@@ -231,7 +235,10 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 			static function () {
 				return array( 'ok' => true );
 			},
-			array( 'post_id' => 42 )
+			array(
+				'post_id' => 42,
+				'email'   => 'reviewer@example.com',
+			)
 		);
 
 		$this->assertSame( array( 'ok' => true ), $call['result'] );
@@ -239,7 +246,14 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 		$this->assertSame( 'template-slug', $call['events'][0]['product'] );
 		$this->assertSame( 'template-slug/test-tool', $call['events'][0]['ability'] );
 		$this->assertSame( 'ok', $call['events'][0]['outcome'] );
-		$this->assertSame( array( 'post_id' => 42 ), $call['events'][0]['arguments'], 'The Kit stores the keys of these, never the values.' );
+		$this->assertSame(
+			array(
+				'post_id' => null,
+				'email'   => null,
+			),
+			$call['events'][0]['arguments'],
+			'Any plugin can listen to the audit action, so it carries the argument keys only, never a value.'
+		);
 	}
 
 	/**
@@ -330,8 +344,8 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 		$data     = $response->get_data();
 
 		$this->assertContains( 'builder', Permission_Gate::get_active_toolsets() );
-		$this->assertSame( array( true, true ), wp_list_pluck( $data['toolsets'], 'enabled' ) );
-		$this->assertSame( 6, $data['tools_count'] );
+		$this->assertSame( array( true, true, false ), wp_list_pluck( $data['toolsets'], 'enabled' ) );
+		$this->assertSame( 7, $data['tools_count'] );
 		$this->assertTrue( $data['enabled'] );
 	}
 
@@ -418,10 +432,13 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 
 		$default = Token_Budget::total( $definitions, $map, array( 'core', 'management' ) );
 		$builder = Token_Budget::total( $definitions, $map, array( 'builder' ) );
+		$media   = Token_Budget::total( $definitions, $map, array( 'media' ) );
 
 		// A product pins its own ceiling (Real Testimonials: 5,200 characters for core and management). The template
-		// has one tool on by default, and the Builder, the larger part, is opt-in.
-		$this->assertLessThanOrEqual( 600, $default, 'The default-on tools of the template cost a few hundred characters.' );
+		// has two read tools on by default (get-context 156, find-media 479 characters on 2026-10-21); the Builder,
+		// the larger part, and import-image, which reaches the internet, are opt-in.
+		$this->assertLessThanOrEqual( 700, $default, 'The default-on tools of the template cost a few hundred characters.' );
+		$this->assertLessThanOrEqual( 800, $media, 'import-image stays small even when it is on.' );
 		$this->assertGreaterThan( 5 * $default, $builder, 'The Builder is the large part, which is why it is opt-in.' );
 	}
 

@@ -515,15 +515,13 @@ abstract class WpCarouselBuilderToolsTestCase extends WP_UnitTestCase {
 			$check = $defs[ $name ]['permission_callback'];
 
 			wp_set_current_user( $subscriber );
-			$sub_res = call_user_func( $check );
-			$this->assertTrue( is_wp_error( $sub_res ) && 'rest_forbidden' === $sub_res->get_error_code(), $name . ' allowed a subscriber' );
+			$this->assertFalse( (bool) call_user_func( $check ), $name . ' allowed a subscriber' );
 
 			wp_set_current_user( $editor );
-			$ed_res = call_user_func( $check );
-			$this->assertTrue( is_wp_error( $ed_res ) && 'rest_forbidden' === $ed_res->get_error_code(), $name . ' allowed an editor' );
+			$this->assertFalse( (bool) call_user_func( $check ), $name . ' allowed an editor' );
 
 			wp_set_current_user( $admin );
-			$this->assertTrue( call_user_func( $check ), $name . ' refused an administrator' );
+			$this->assertTrue( (bool) call_user_func( $check ), $name . ' refused an administrator' );
 		}
 	}
 

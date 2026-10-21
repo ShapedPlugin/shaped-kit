@@ -43,6 +43,10 @@
 			<exclude>tests/phpunit/integration/RealTestimonialsConnectStateIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsEmptyListsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsFreeBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsMediaIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/ProductMediaCopyTestCase.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselMediaIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselSafetyIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsProBuilderToolsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteSlashesIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteToolsIntegrationTest.php</exclude>
@@ -50,6 +54,7 @@
 			<exclude>tests/phpunit/integration/WpCarouselBuilderToolsTestCase.php</exclude>
 			<exclude>tests/phpunit/integration/WpCarouselFreeBuilderToolsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/WpCarouselProBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/WpCarouselWriteToolsIntegrationTest.php</exclude>
 		</testsuite>
 		<!--
 			adapter-*   a product's real MCP server, run through one real adapter copy
@@ -70,6 +75,9 @@
 		</testsuite>
 		<testsuite name="adapter-template">
 			<file>tests/phpunit/adapter/TemplateAdapterTest.php</file>
+		</testsuite>
+		<testsuite name="adapter-wp-carousel">
+			<file>tests/phpunit/adapter/WpCarouselAdapterTest.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>
