@@ -11,6 +11,7 @@
 namespace ShapedPlugin\Template\Mcp;
 
 use ShapedPlugin\Template\Mcp\Builder\Builder_Abilities;
+use ShapedPlugin\Template\Mcp\Media\Media_Abilities;
 use ShapedPlugin\Template\Mcp\Tools\Context_Tools;
 use WP_Error;
 
@@ -38,7 +39,7 @@ class Abilities_Registrar {
 
 	/**
 	 * Every tool this module serves, keyed by ability name: the product's own (`core_definitions()`) and, when the
-	 * `Builder/` folder is copied in, the Build with AI tools. Nothing else needs wiring.
+	 * `Builder/` or `Media/` folder is copied in, the Build with AI or media tools. Nothing else needs wiring.
 	 *
 	 * @return array<string, array<string, mixed>>
 	 */
@@ -47,6 +48,10 @@ class Abilities_Registrar {
 
 		if ( self::has_builder() ) {
 			$definitions = array_merge( $definitions, Builder_Abilities::definitions() );
+		}
+
+		if ( self::has_media() ) {
+			$definitions = array_merge( $definitions, Media_Abilities::definitions() );
 		}
 
 		return $definitions;
@@ -132,6 +137,15 @@ class Abilities_Registrar {
 	 */
 	private static function has_builder() {
 		return class_exists( Builder_Abilities::class );
+	}
+
+	/**
+	 * Whether the `Media/` folder has been copied into this module.
+	 *
+	 * @return bool
+	 */
+	private static function has_media() {
+		return class_exists( Media_Abilities::class );
 	}
 
 	/**
@@ -233,6 +247,10 @@ class Abilities_Registrar {
 				'label'       => __( 'Bulk Import', 'template-domain' ),
 				'description' => __( 'Create many items in one call. It adds a large tool to every message, so keep it off until you need it.', 'template-domain' ),
 			),
+			'media'       => array(
+				'label'       => __( 'Media Import', 'template-domain' ),
+				'description' => __( 'Let your AI client download https images into the media library. This site then fetches addresses from the internet, so keep it off until you need it.', 'template-domain' ),
+			),
 		);
 	}
 
@@ -305,6 +323,10 @@ class Abilities_Registrar {
 
 		if ( self::has_builder() ) {
 			$map = array_merge( $map, Builder_Abilities::toolset_map() );
+		}
+
+		if ( self::has_media() ) {
+			$map = array_merge( $map, Media_Abilities::toolset_map() );
 		}
 
 		/**
@@ -459,7 +481,9 @@ class Abilities_Registrar {
 	 * Emits telemetry event for audit logging.
 	 *
 	 * Without this call a product's tools never reach Shaped Kit's audit log, and nothing says so (TESTING.md rule 5).
-	 * The Kit's listener stores the argument keys only, never their values.
+	 * Only the argument keys are sent, each with a null value: any plugin can listen to this action, and values can
+	 * be personal data (an email, a phone) or a credential (a signed image address). The Kit's listener reads the
+	 * keys only.
 	 *
 	 * @param string      $tool_name   Ability name.
 	 * @param mixed       $params      Input parameters.
@@ -503,7 +527,7 @@ class Abilities_Registrar {
 				'outcome'     => $outcome,
 				'error_id'    => $error_id,
 				'duration_ms' => $duration_ms,
-				'arguments'   => is_array( $params ) ? $params : array(),
+				'arguments'   => is_array( $params ) ? array_fill_keys( array_map( 'strval', array_keys( $params ) ), null ) : array(),
 			)
 		);
 	}

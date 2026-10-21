@@ -65,8 +65,9 @@ class Permission_Gate {
 	 * Returns the list of active toolset IDs (FR-K9 §6, D14).
 	 *
 	 * A site that never saved a choice gets `core` and `management`: the opt-in toolsets (`destructive`, `builder`,
-	 * `bulk`) stay off until the owner switches them on, because each one adds tools, and their schemas, to every
-	 * message of every AI client (E126). `core` is always on.
+	 * `bulk`, `media`) stay off until the owner switches them on, because each one adds tools, and their schemas, to
+	 * every message of every AI client (E126), and `media` makes this site fetch addresses from the internet. `core`
+	 * is always on.
 	 *
 	 * @return string[]
 	 */
