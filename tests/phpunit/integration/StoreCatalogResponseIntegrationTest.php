@@ -431,6 +431,102 @@ class StoreCatalogResponseIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Put products in the MCP registry, as their modules would.
+	 *
+	 * @param array<string, array{0: bool, 1: int}> $states Registry slug => [ on, tools count ].
+	 */
+	private function register_mcp( array $states ) {
+		add_filter(
+			'shaped_kit/products',
+			function ( $products ) use ( $states ) {
+				foreach ( $states as $slug => $state ) {
+					$products[] = array(
+						'slug'        => $slug,
+						'name'        => $slug,
+						'edition'     => 'free',
+						'mcp_enabled' => $state[0],
+						'tools_count' => $state[1],
+					);
+				}
+
+				return $products;
+			}
+		);
+	}
+
+	/**
+	 * A family named after the Free folder (`logo-carousel-free`) still finds a module that registers the product's
+	 * own name (`logo-carousel`), for the Free's row and for a detected Pro's. Without it the row says no AI tools while
+	 * the product has them on.
+	 */
+	public function test_ai_tools_are_found_by_the_product_name_without_its_edition_suffix() {
+		$this->register_mcp( array( 'logo-carousel' => array( true, 7 ) ) );
+		$this->install_plugin( 'logo-carousel-pro', 'main.php', '4.1.5' );
+		$this->catalog(
+			array(
+				$this->free_naming_a_pro(
+					array(
+						'slug'           => 'logo-carousel-free',
+						'product_family' => 'logo-carousel-free',
+						'pro_slug'       => 'logo-carousel-pro',
+					)
+				),
+			)
+		);
+
+		$answer = $this->answer();
+
+		foreach ( array( 'logo-carousel-free', 'logo-carousel-pro' ) as $slug ) {
+			$this->assertTrue( $answer[ $slug ]['mcp_active'], $slug );
+			$this->assertTrue( $answer[ $slug ]['mcp_enabled'], $slug );
+			$this->assertSame( 7, $answer[ $slug ]['mcp_tools_count'], $slug );
+		}
+	}
+
+	/**
+	 * A module registered under the catalog row's own slug is found when the family is not registered.
+	 */
+	public function test_ai_tools_are_found_by_the_rows_own_slug() {
+		$this->register_mcp( array( 'team-free' => array( false, 4 ) ) );
+		$this->catalog( array( $this->entry( 'team-free', 'free', array( 'product_family' => 'team' ) ) ) );
+
+		$row = $this->answer()['team-free'];
+
+		$this->assertTrue( $row['mcp_active'] );
+		$this->assertFalse( $row['mcp_enabled'] );
+		$this->assertSame( 4, $row['mcp_tools_count'] );
+	}
+
+	/**
+	 * The family is matched first: when both the family and the slug are registered, the family's state is shown.
+	 * Only a trailing `-free` or `-pro` is dropped, so a product that merely shares a prefix is never matched.
+	 */
+	public function test_ai_tools_match_the_family_first_and_never_a_mere_prefix() {
+		$this->register_mcp(
+			array(
+				'wp-carousel'      => array( true, 17 ),
+				'wp-carousel-free' => array( false, 3 ),
+				'logo-x'           => array( true, 9 ),
+				'logo-carousel'    => array( true, 9 ),
+			)
+		);
+		$this->catalog(
+			array(
+				$this->free_naming_a_pro(),
+				$this->entry( 'logo-carousel-lite', 'free', array( 'product_family' => 'logo-carousel-lite' ) ),
+				$this->entry( 'logo-free-pro-x', 'free', array( 'product_family' => 'logo-free-pro-x' ) ),
+			)
+		);
+
+		$answer = $this->answer();
+
+		$this->assertTrue( $answer['wp-carousel-free']['mcp_enabled'] );
+		$this->assertSame( 17, $answer['wp-carousel-free']['mcp_tools_count'] );
+		$this->assertFalse( $answer['logo-carousel-lite']['mcp_active'], 'A "-lite" suffix is not an edition.' );
+		$this->assertFalse( $answer['logo-free-pro-x']['mcp_active'], 'An edition word inside the name is not a suffix.' );
+	}
+
+	/**
 	 * A beta is offered only when it is newer than what is installed (or nothing is). An equal or older target would be
 	 * refused by the no-downgrade rule, so the screen must not offer it. A stable release is above its own beta.
 	 */

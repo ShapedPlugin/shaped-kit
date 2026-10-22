@@ -155,7 +155,7 @@ class CatalogData {
 					'slug'           => 'wp-carousel-free',
 					'name'           => 'WP Carousel',
 					'edition'        => 'free',
-					'product_family' => 'wp-carousel-free',
+					'product_family' => 'wp-carousel',
 					'item_id'        => null,
 					'description'    => 'Carousel, Slider, and Photo Gallery with Lightbox plugin. Create Image Carousel, Video Slider, Post Carousel, Post Grid, Product Carousel, and more.',
 					'settings_path'  => 'edit.php?post_type=sp_wp_carousel&page=wpcpf_dashboard',
@@ -526,7 +526,7 @@ class CatalogData {
 	}
 
 	/**
-	 * A list of plugin slugs the catalog says a plugin needs, for example `woocommerce`. Anything that is not a
+	 * A list of plugin slugs the catalog says a plugin needs, for example an e-commerce plugin's slug. Anything that is not a
 	 * plain slug is left out, and a value that is not a list is an empty list.
 	 *
 	 * @param mixed $value Candidate list.

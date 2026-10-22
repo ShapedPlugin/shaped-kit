@@ -233,7 +233,7 @@ class StoreController {
 			$product_data['can_install']    = ! is_wp_error( Installer::can_install() );
 
 			// What the site lacks for this plugin: a newer PHP or WordPress, or a plugin it depends on that is not active
-			// (WooCommerce for most of them). Shown as "Needs …" and the action is withheld (HE3, HE4).
+			// (an e-commerce plugin for most of them). Shown as "Needs …" and the action is withheld (HE3, HE4).
 			$product_data['needs_php'] = ! empty( $product['requires_php'] ) && version_compare( PHP_VERSION, $product['requires_php'], '<' )
 				? $product['requires_php']
 				: null;
@@ -280,11 +280,12 @@ class StoreController {
 			$product_data['update_version'] = $pending['update_version'];
 
 			// Live AI tools state from shaped_kit/products registry.
-			$family = ! empty( $product['product_family'] ) ? $product['product_family'] : $slug;
+			$family   = ! empty( $product['product_family'] ) ? $product['product_family'] : $slug;
+			$mcp_item = self::resolve_mcp_entry( $mcp_registry, $family, $slug );
 
-			$product_data['mcp_active']      = isset( $mcp_registry[ $family ] );
-			$product_data['mcp_enabled']     = ! empty( $mcp_registry[ $family ]['enabled'] );
-			$product_data['mcp_tools_count'] = isset( $mcp_registry[ $family ]['tools_count'] ) ? (int) $mcp_registry[ $family ]['tools_count'] : 0;
+			$product_data['mcp_active']      = null !== $mcp_item;
+			$product_data['mcp_enabled']     = ! empty( $mcp_item['enabled'] );
+			$product_data['mcp_tools_count'] = isset( $mcp_item['tools_count'] ) ? (int) $mcp_item['tools_count'] : 0;
 
 			// Read-only license introspection for Pro products. Only whether a license exists and its status
 			// leave the server. The key itself, even masked, is not sent: the screen has no use for it (PRD H1, §4.1).
@@ -358,6 +359,30 @@ class StoreController {
 	}
 
 	/**
+	 * Resolves an MCP registry entry by family, exact slug, or base slug without -free/-pro suffix.
+	 *
+	 * @param array  $mcp_registry Registry items keyed by slug.
+	 * @param string $family       Product family name.
+	 * @param string $slug         Specific edition slug.
+	 * @return array|null The matched registry item or null.
+	 */
+	private static function resolve_mcp_entry( array $mcp_registry, $family, $slug ) {
+		if ( ! empty( $family ) && isset( $mcp_registry[ $family ] ) ) {
+			return $mcp_registry[ $family ];
+		}
+		if ( ! empty( $slug ) && isset( $mcp_registry[ $slug ] ) ) {
+			return $mcp_registry[ $slug ];
+		}
+		if ( ! empty( $slug ) ) {
+			$base_slug = preg_replace( '/-(free|pro)$/', '', $slug );
+			if ( ! empty( $base_slug ) && isset( $mcp_registry[ $base_slug ] ) ) {
+				return $mcp_registry[ $base_slug ];
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * The row for a Pro plugin that is installed here but not in the catalog. Built only from what WordPress knows about
 	 * the installed plugin and from its Free's catalog entry: no license is read, nothing is sent to the store, and the
 	 * row offers no install, activation, beta or settings link (the catalog has no verified data for any of them).
@@ -370,13 +395,15 @@ class StoreController {
 	 * @return array
 	 */
 	private static function detected_pro( array $free, $pro_file, array $installed_plugins, $update_transient, array $mcp_registry ) {
-		$header  = isset( $installed_plugins[ $pro_file ] ) ? $installed_plugins[ $pro_file ] : array();
-		$version = isset( $header['Version'] ) ? sanitize_text_field( (string) $header['Version'] ) : null;
-		$family  = $free['product_family'];
-		$pending = self::pending_update( $update_transient, $pro_file );
+		$header   = isset( $installed_plugins[ $pro_file ] ) ? $installed_plugins[ $pro_file ] : array();
+		$version  = isset( $header['Version'] ) ? sanitize_text_field( (string) $header['Version'] ) : null;
+		$family   = $free['product_family'];
+		$pro_slug = $free['pro_slug'];
+		$pending  = self::pending_update( $update_transient, $pro_file );
+		$mcp_item = self::resolve_mcp_entry( $mcp_registry, $family, $pro_slug );
 
 		return array(
-			'slug'             => $free['pro_slug'],
+			'slug'             => $pro_slug,
 			'name'             => ! empty( $header['Name'] ) ? sanitize_text_field( (string) $header['Name'] ) : $free['name'],
 			'edition'          => 'pro',
 			'product_family'   => $family,
@@ -397,9 +424,9 @@ class StoreController {
 			'unmet_plugins'    => array(),
 			'mcp_available'    => false,
 			'mcp_after_update' => false,
-			'mcp_active'       => isset( $mcp_registry[ $family ] ),
-			'mcp_enabled'      => ! empty( $mcp_registry[ $family ]['enabled'] ),
-			'mcp_tools_count'  => isset( $mcp_registry[ $family ]['tools_count'] ) ? (int) $mcp_registry[ $family ]['tools_count'] : 0,
+			'mcp_active'       => null !== $mcp_item,
+			'mcp_enabled'      => ! empty( $mcp_item['enabled'] ),
+			'mcp_tools_count'  => isset( $mcp_item['tools_count'] ) ? (int) $mcp_item['tools_count'] : 0,
 			'has_update'       => $pending['has_update'],
 			'update_version'   => $pending['update_version'],
 		);
