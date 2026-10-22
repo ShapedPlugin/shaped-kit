@@ -250,7 +250,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 
 		// Empty list check.
 		$empty = $carousel_tools::list_carousels( array( 'per_page' => 10 ) );
-		$this->assertSame( 0, $empty['pagination']['total'] );
+		$this->assertSame( 0, $empty['total'] );
 		$this->assertSame( array(), $empty['items'] );
 
 		// Create a test carousel.
@@ -280,7 +280,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 
 		// List should contain the carousel.
 		$list = $carousel_tools::list_carousels( array( 'per_page' => 10 ) );
-		$this->assertSame( 1, $list['pagination']['total'] );
+		$this->assertSame( 1, $list['total'] );
 		$this->assertCount( 1, $list['items'] );
 		$this->assertSame( $carousel_id, $list['items'][0]['id'] );
 		$this->assertSame( 'Hero Slider', $list['items'][0]['title'] );
@@ -332,7 +332,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 		);
 
 		$list = $carousel_tools::list_templates( array( 'per_page' => 10 ) );
-		$this->assertSame( 1, $list['pagination']['total'] );
+		$this->assertSame( 1, $list['total'] );
 		$this->assertSame( $template_id, $list['items'][0]['id'] );
 		$this->assertSame( sprintf( '[sp_wpcp_template id="%d"]', $template_id ), $list['items'][0]['shortcode'] );
 
@@ -386,7 +386,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 		);
 
 		$found = $block_tools::find_blocks( array( 'carousel_id' => 45 ) );
-		$this->assertGreaterThanOrEqual( 1, $found['pagination']['total'] );
+		$this->assertGreaterThanOrEqual( 1, $found['total'] );
 		$matched = false;
 		foreach ( $found['items'] as $item ) {
 			if ( $item['id'] === $page_id ) {
@@ -450,8 +450,15 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 		$this->assertFalse( $settings['modules']['lightbox'] );
 
 		// Secret masking guardrail.
-		$this->assertStringNotContainsString( 'abcd-1234-efgh-5678', $settings['license']['key_masked'], 'Raw license key must never be exposed.' );
-		$this->assertSame( 'configured', $settings['license']['key_masked'] );
+		$this->assertStringNotContainsString( 'abcd-1234-efgh-5678', (string) wp_json_encode( $settings ), 'Raw license key must never be exposed.' );
+		$this->assertStringNotContainsString( '5678', (string) wp_json_encode( $settings['license'] ), 'Not even its last characters (E170).' );
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => null,
+			),
+			$settings['license']['key_masked']
+		);
 
 		// PII guardrail.
 		$this->assertSame( 'valid', $settings['license']['status'] );
@@ -643,7 +650,13 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 
 		$fetched = $carousel_tools::get_carousel( array( 'id' => $post_id ) );
 		$this->assertIsArray( $fetched );
-		$this->assertSame( 'configured', $fetched['upload_options']['wpcp_youtube_api_key'] );
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => null,
+			),
+			$fetched['upload_options']['wpcp_youtube_api_key']
+		);
 		$this->assertStringNotContainsString( 'AIzaSySecretApiKey12345', (string) wp_json_encode( $fetched ) );
 
 		// 2. Modern per-provider AI keys detection in get_settings.

@@ -399,4 +399,197 @@ class WpCarouselSafetyIntegrationTest extends WP_UnitTestCase {
 		$this->assertSame( 'Renamed', get_the_title( $id ), 'The rest of the update still applies.' );
 		$this->assertSame( array( 'status:forbidden' ), $this->dropped( $result ) );
 	}
+
+	/**
+	 * A masked key the agent echoes back never replaces the stored one (PRD E184, B22, decision S12).
+	 *
+	 * @dataProvider editions
+	 *
+	 * @param string $plugin Plugin folder.
+	 * @param string $ns     Namespace.
+	 */
+	public function test_a_masked_key_echoed_back_never_replaces_the_stored_one( $plugin, $ns ) {
+		$tools = $this->load( $plugin, $ns );
+		$id    = $this->carousel();
+		$real  = 'AIzaProbeRealKey000000000XY12';
+		update_post_meta(
+			$id,
+			'sp_wpcp_upload_options',
+			array(
+				'wpcp_carousel_type'   => 'video-carousel',
+				'wpcp_gallery'         => '',
+				'wpcp_youtube_api_key' => $real,
+			)
+		);
+
+		$shown = $tools::get_carousel( array( 'id' => $id ) );
+		$this->assertStringNotContainsString( 'XY12', (string) wp_json_encode( $shown ), 'The read shows no character of the key.' );
+
+		// The agent changes one setting and sends back the upload options it was shown, unchanged.
+		$echo = $tools::update_carousel_settings(
+			array(
+				'id'             => $id,
+				'upload_options' => $shown['upload_options'],
+			)
+		);
+		$this->assertSame( $real, get_post_meta( $id, 'sp_wpcp_upload_options', true )['wpcp_youtube_api_key'], 'Before the fix the key became the mask.' );
+		$this->assertContains( 'upload_options.wpcp_youtube_api_key:secret_read_only', $this->dropped( $echo ) );
+
+		$plain = $tools::update_carousel_settings(
+			array(
+				'id'             => $id,
+				'upload_options' => array( 'wpcp_youtube_api_key' => 'AIzaAnotherKey0000000000000' ),
+			)
+		);
+		$this->assertSame( $real, get_post_meta( $id, 'sp_wpcp_upload_options', true )['wpcp_youtube_api_key'], 'A new value is refused too: credentials are set on the settings screen.' );
+		$this->assertSame( array( 'upload_options.wpcp_youtube_api_key:secret_read_only' ), $this->dropped( $plain ) );
+	}
+
+	/**
+	 * A setting whose key ends in `_url` takes a full http(s) address or nothing (PRD E197).
+	 *
+	 * @dataProvider editions
+	 *
+	 * @param string $plugin Plugin folder.
+	 * @param string $ns     Namespace.
+	 */
+	public function test_an_address_setting_takes_a_full_address_or_nothing( $plugin, $ns ) {
+		$tools = $this->load( $plugin, $ns );
+		$id    = $this->carousel();
+		update_post_meta(
+			$id,
+			'sp_wpcp_upload_options',
+			array(
+				'wpcp_carousel_type'  => 'video-carousel',
+				'wpcp_gallery'        => '',
+				'carousel_wistia_url' => 'https://fast.wistia.net/embed/old',
+			)
+		);
+
+		$bad = $tools::update_carousel_settings(
+			array(
+				'id'             => $id,
+				'upload_options' => array( 'carousel_wistia_url' => 'not a url' ),
+			)
+		);
+		$this->assertSame( array( 'upload_options.carousel_wistia_url:invalid_url' ), $this->dropped( $bad ) );
+		$this->assertSame( 'https://fast.wistia.net/embed/old', get_post_meta( $id, 'sp_wpcp_upload_options', true )['carousel_wistia_url'] );
+
+		$tools::update_carousel_settings(
+			array(
+				'id'             => $id,
+				'upload_options' => array( 'carousel_wistia_url' => 'https://fast.wistia.net/embed/new' ),
+			)
+		);
+		$this->assertSame( 'https://fast.wistia.net/embed/new', get_post_meta( $id, 'sp_wpcp_upload_options', true )['carousel_wistia_url'] );
+
+		$tools::update_carousel_settings(
+			array(
+				'id'             => $id,
+				'upload_options' => array( 'carousel_wistia_url' => '' ),
+			)
+		);
+		$this->assertSame( '', get_post_meta( $id, 'sp_wpcp_upload_options', true )['carousel_wistia_url'], 'An empty value clears the setting.' );
+	}
+
+	/**
+	 * Lists are flat, bounded, and report the real total past the last page (PRD E181, E182, S10).
+	 *
+	 * @dataProvider editions
+	 *
+	 * @param string $plugin Plugin folder.
+	 * @param string $ns     Namespace.
+	 */
+	public function test_a_list_is_flat_bounded_and_counts_past_the_last_page( $plugin, $ns ) {
+		$tools = $this->load( $plugin, $ns );
+		$this->carousel();
+		$this->carousel();
+		$this->carousel();
+
+		$far = $tools::list_carousels(
+			array(
+				'page'     => PHP_INT_MAX,
+				'per_page' => 2,
+			)
+		);
+		$this->assertSame( array( 'items', 'total', 'page', 'per_page', 'pages' ), array_keys( $far ), 'The same flat shape as every other product (S10).' );
+		$this->assertSame( array(), $far['items'] );
+		$this->assertSame( 10000, $far['page'], 'Clamped, so the offset stays an integer (E181).' );
+		$this->assertSame( 3, $far['total'], 'WordPress counts nothing on an empty page; the tool re-counts (E182).' );
+		$this->assertSame( 2, $far['pages'] );
+
+		$registrar = $ns . '\\Abilities_Registrar';
+		foreach ( array( 'list-carousels', 'list-templates' ) as $tool ) {
+			$schema = $registrar::definitions()[ 'wp-carousel/' . $tool ]['input_schema'];
+			$this->assertWPError( rest_validate_value_from_schema( array( 'page' => 10001 ), $schema, 'input' ), "{$tool} refuses a page above the limit over MCP." );
+		}
+	}
+
+	/**
+	 * No stored secret, nor its last characters, appears in any read answer (PRD E199, E170, E173).
+	 *
+	 * @dataProvider editions
+	 *
+	 * @param string $plugin Plugin folder.
+	 * @param string $ns     Namespace.
+	 */
+	public function test_no_stored_secret_appears_in_a_read_answer( $plugin, $ns ) {
+		$tools = $this->load( $plugin, $ns );
+		$id    = $this->carousel();
+		update_post_meta(
+			$id,
+			'sp_wpcp_upload_options',
+			array(
+				'wpcp_carousel_type'   => 'video-carousel',
+				'wpcp_gallery'         => '',
+				'wpcp_youtube_api_key' => 'YTSecretValue00000000000QW11',
+			)
+		);
+		update_option( 'sp_wpcp_settings', array( 'license_key' => 'LicSecretValue0000000000QW22' ) );
+		update_option(
+			'wpcp_ai_settings',
+			array(
+				'provider' => 'openai',
+				'api_key'  => 'AiLegacySecret0000000000QW33',
+				'api_keys' => array( 'openai' => 'AiMapSecret000000000000QW44' ),
+			)
+		);
+
+		$settings_class = $ns . '\\Tools\\Settings_Tools';
+		$answers        = (string) wp_json_encode(
+			array(
+				$tools::get_carousel( array( 'id' => $id ) ),
+				$tools::list_carousels( array() ),
+				$settings_class::get_settings(),
+			)
+		);
+
+		foreach ( array( 'YTSecretValue', 'QW11', 'LicSecretValue', 'QW22', 'AiLegacySecret', 'QW33', 'AiMapSecret', 'QW44' ) as $part ) {
+			$this->assertStringNotContainsString( $part, $answers, "A secret or its last characters reached an answer: {$part}" );
+		}
+
+		delete_option( 'sp_wpcp_settings' );
+		delete_option( 'wpcp_ai_settings' );
+	}
+
+	/**
+	 * A confirmation preview carries `status` only, like every other product's (decision S2).
+	 *
+	 * @dataProvider editions
+	 *
+	 * @param string $plugin Plugin folder.
+	 * @param string $ns     Namespace.
+	 */
+	public function test_a_confirmation_preview_has_the_shared_shape( $plugin, $ns ) {
+		$tools   = $this->load( $plugin, $ns );
+		$preview = $tools::delete_carousel(
+			array(
+				'id'    => $this->carousel(),
+				'force' => true,
+			)
+		);
+
+		$this->assertSame( array( 'status', 'preview', 'confirmation_token', 'expires_in', 'next_step' ), array_keys( $preview ) );
+		$this->assertSame( 'confirmation_required', $preview['status'] );
+	}
 }

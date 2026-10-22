@@ -585,7 +585,13 @@ class WpCarouselWriteToolsIntegrationTest extends WP_UnitTestCase {
 		$this->assertSame( 'token_xyz', get_post_meta( $new_id, 'custom_design_token', true ), 'Legitimate custom meta must still be cloned.' );
 
 		// Verify YouTube secret is masked in the returned representation.
-		$this->assertSame( 'configured', $result['upload_options']['wpcp_youtube_api_key'] );
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => null,
+			),
+			$result['upload_options']['wpcp_youtube_api_key']
+		);
 		$this->assertStringNotContainsString( 'AIzaSySecretApiKeyInDuplicate', (string) wp_json_encode( $result ) );
 	}
 

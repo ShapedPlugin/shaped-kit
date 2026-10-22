@@ -2,9 +2,9 @@
 /**
  * The media tools as a product serves them (PRD D22, §20 rule 6: every edition, every product).
  *
- * The behaviour itself is tested on the template (`ProductModuleMediaTest`). Here, for each product edition: its copy
- * is the template's, name for name, so a fix made in one place cannot be missing in another; the tools are wired to
- * the product's toolsets; a refusal works through the product's own classes; the audit hook carries keys only.
+ * The behaviour itself is tested on the template (`ProductModuleMediaTest`). Here, for each product edition: the tools
+ * are wired to the product's toolsets; a refusal works through the product's own classes; the audit hook carries keys
+ * only. That each copy is the template's, name for name, is checked for every shared file in `SharedFileCopyTest`.
  *
  * Needs the sibling plugins, so every subclass is excluded from the CI suite.
  *
@@ -60,50 +60,6 @@ abstract class ProductMediaCopyTestCase extends WP_UnitTestCase {
 				return new \WP_Error( 'http_request_failed', 'Blocked in tests.' );
 			}
 		);
-	}
-
-	/**
-	 * Each media file of the edition is the template's, with only the names a product changes.
-	 *
-	 * @dataProvider editions
-	 *
-	 * @param string $plugin  Plugin folder.
-	 * @param string $ns      Namespace part.
-	 * @param string $domain  Text domain.
-	 * @param string $package Package name.
-	 */
-	public function test_the_editions_media_files_are_the_templates_name_for_name( $plugin, $ns, $domain, $package ) {
-		$this->load( $plugin, $ns );
-
-		$template = dirname( __DIR__, 3 ) . '/templates/product-module/Media/';
-		$copy     = dirname( __DIR__, 4 ) . '/' . $plugin . '/src/Mcp/Media/';
-		$files    = glob( $template . '*.php' );
-
-		$this->assertNotEmpty( $files );
-		foreach ( $files as $file ) {
-			$name     = basename( $file );
-			$expected = str_replace(
-				array(
-					'ShapedPlugin\\Template\\Mcp',
-					"'template-domain'",
-					"Copy the whole `Media/` folder into a product's MCP module. See README.md in this folder.",
-					'ability definitions helper template.',
-					'@package ShapedPlugin',
-				),
-				array(
-					'ShapedPlugin\\' . $ns . '\\Mcp',
-					"'" . $domain . "'",
-					'Copied from the Shaped Kit product-module template (`templates/product-module/Media/`): keep the copies in step.',
-					'ability definitions.',
-					'@package ' . $package,
-				),
-				(string) file_get_contents( $file ) // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			);
-			$expected = preg_replace( '/ \* The (\w+) template file: /', ' * $1: ', $expected );
-
-			$this->assertFileExists( $copy . $name );
-			$this->assertSame( $expected, file_get_contents( $copy . $name ), "{$plugin}/src/Mcp/Media/{$name} has drifted from the template." ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		}
 	}
 
 	/**
