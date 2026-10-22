@@ -488,6 +488,18 @@ test( 'with one product there is no product picker, with several there is', asyn
 	).not.toBeNull();
 } );
 
+test( 'the product picker is named by its label, so a screen reader announces it and a click on the label reaches it', async () => {
+	await render();
+	const select = container.querySelector( '.shaped-kit-tester-row select' );
+	const label = container.querySelector(
+		`.shaped-kit-tester-row label[for="${ select.id }"]`
+	);
+
+	expect( select.id ).not.toBe( '' );
+	expect( label.textContent ).toBe( 'Product' );
+	expect( select.labels[ 0 ] ).toBe( label );
+} );
+
 test( 'with no product on, it draws nothing', async () => {
 	await render( { products: [] } );
 
