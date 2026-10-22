@@ -20,6 +20,9 @@ use ShapedPlugin\Template\Mcp\Builder\BlockInserter;
 use ShapedPlugin\Template\Mcp\Kit_Registration;
 use ShapedPlugin\Template\Mcp\Permission_Gate;
 use ShapedPlugin\Template\Mcp\Rest_Controller;
+use ShapedPlugin\Template\Mcp\Builder\Builder_Abilities;
+use ShapedPlugin\Template\Mcp\Support\Pagination;
+use ShapedPlugin\Template\Mcp\Support\Secret_Mask;
 use ShapedPlugin\Template\Mcp\Support\Token_Budget;
 use ShapedPlugin\Template\Mcp\Support\Url;
 use ShapedPlugin\Template\Mcp\Support\WriteGuard;
@@ -516,6 +519,182 @@ final class ProductModuleTemplateTest extends WP_UnitTestCase {
 		$this->assertNull( BlockInserter::real_block( $replaced, 2 ), 'The old block is replaced, not pushed down.' );
 		$this->assertSame( "\n\n", $replaced[1]['innerHTML'], 'The blank line between the blocks stays.' );
 		$this->assertSame( $blocks, BlockInserter::replace_at( $blocks, 5, $new ), 'An index past the last real block changes nothing.' );
+	}
+
+	/**
+	 * Raw page arguments a tool can receive when called from PHP, and the page it must use.
+	 *
+	 * Literal numbers: a data provider runs before the template's autoloader is registered. 10000 is
+	 * `Pagination::MAX_PAGE`, 15 `DEFAULT_PER_PAGE`, 100 `MAX_PER_PAGE` (pinned in the test below).
+	 *
+	 * @return array<string, array{0: mixed, 1: mixed, 2: int, 3: int}>
+	 */
+	public function pages(): array {
+		return array(
+			'a normal page'               => array( 3, 20, 3, 20 ),
+			'the largest integer'         => array( PHP_INT_MAX, 15, 10000, 15 ),
+			'beyond the integer range'    => array( '1e30', 15, 10000, 15 ),
+			'not a finite number'         => array( NAN, INF, 1, 15 ),
+			'text'                        => array( '2abc', 'ten', 1, 15 ),
+			'below one'                   => array( -4, 0, 1, 15 ),
+			'a fraction'                  => array( '2.9', '7.5', 2, 7 ),
+			'a page size above the limit' => array( 1, 500, 1, 100 ),
+		);
+	}
+
+	/**
+	 * A huge or broken page never reaches an offset (E181); a page size below one falls back to the default (E195).
+	 *
+	 * @dataProvider pages
+	 *
+	 * @param mixed $page          Raw page.
+	 * @param mixed $per_page      Raw page size.
+	 * @param int   $want_page     Page used.
+	 * @param int   $want_per_page Page size used.
+	 */
+	public function test_a_page_is_always_a_whole_number_within_its_limits( $page, $per_page, int $want_page, int $want_per_page ): void {
+		$this->assertSame(
+			array(
+				'page'     => $want_page,
+				'per_page' => $want_per_page,
+			),
+			Pagination::from_input(
+				array(
+					'page'     => $page,
+					'per_page' => $per_page,
+				)
+			)
+		);
+	}
+
+	public function test_the_schema_refuses_a_page_beyond_the_limit_and_the_slice_never_throws(): void {
+		$this->assertSame( array( 10000, 15, 100 ), array( Pagination::MAX_PAGE, Pagination::DEFAULT_PER_PAGE, Pagination::MAX_PER_PAGE ), 'The limits the page cases above are written against.' );
+
+		$schema = Builder_Abilities::definitions()['template-slug/list-ready-patterns']['input_schema'];
+
+		$this->assertWPError( rest_validate_value_from_schema( array( 'page' => Pagination::MAX_PAGE + 1 ), $schema, 'input' ), 'Over MCP the schema refuses it before the tool runs.' );
+		$this->assertTrue( rest_validate_value_from_schema( array( 'page' => Pagination::MAX_PAGE ), $schema, 'input' ) );
+
+		// From PHP the clamp keeps the offset an integer: array_slice() threw a TypeError here before (E181).
+		$pagination = Pagination::from_input( array( 'page' => PHP_INT_MAX ) );
+		$this->assertSame( array(), array_slice( array( 1, 2, 3 ), ( $pagination['page'] - 1 ) * $pagination['per_page'], $pagination['per_page'] ) );
+	}
+
+	public function test_past_the_last_page_the_total_is_the_real_count_of_the_same_query(): void {
+		self::factory()->post->create_many( 5, array( 'post_status' => 'publish' ) );
+		self::factory()->post->create_many( 3, array( 'post_status' => 'draft' ) );
+
+		$args  = array(
+			'post_type'        => 'post',
+			'post_status'      => 'draft',
+			'posts_per_page'   => 2,
+			'paged'            => 9,
+			'suppress_filters' => true,
+		);
+		$query = new WP_Query( $args );
+
+		$this->assertSame( array(), $query->posts );
+		$this->assertSame( 0, $query->found_posts, 'WordPress counts nothing on an empty page (E182).' );
+		$this->assertSame( 3, Pagination::found_posts( $query, $args ), 'The re-count keeps the page query\'s filters: the 3 drafts, not the 5 published posts (the default status).' );
+		$this->assertSame( 2, Pagination::result( array(), Pagination::found_posts( $query, $args ), 9, 2 )['pages'] );
+
+		$offset = array( 'offset' => 40 ) + $args;
+		$this->assertSame( 3, Pagination::found_posts( new WP_Query( $offset ), $offset ), 'An offset past the end is dropped for the count, or the count would be empty too.' );
+
+		$offset_only = array(
+			'offset' => 40,
+			'paged'  => 1,
+		) + $args;
+		$this->assertSame( 3, Pagination::found_posts( new WP_Query( $offset_only ), $offset_only ), 'A tool that pages by offset alone is re-counted too.' );
+
+		$first = array( 'paged' => 1 ) + $args;
+		$this->assertSame( 3, Pagination::found_posts( new WP_Query( $first ), $first ), 'A page with items keeps its own count.' );
+
+		$nothing = array( 'post_status' => 'pending' ) + $args;
+		$this->assertSame( 0, Pagination::found_posts( new WP_Query( $nothing ), $nothing ), 'Nothing matching stays 0.' );
+
+		$uncounted = array( 'no_found_rows' => true ) + $args;
+		$this->assertSame( 0, Pagination::found_posts( new WP_Query( $uncounted ), $uncounted ), 'A query that asked for no count gets none.' );
+	}
+
+	public function test_arguments_that_cannot_be_encoded_are_refused_not_hashed_alike(): void {
+		$this->assertSame(
+			hash( 'sha256', '{"a":"x","b":1}' ),
+			WriteGuard::canonical_arg_hash(
+				array(
+					'b' => 1,
+					'a' => 'x',
+				)
+			),
+			'The hash of plain arguments is unchanged, so tokens issued before an update still confirm (E189).'
+		);
+		$this->assertSame( '', WriteGuard::canonical_arg_hash( array( 'ratio' => NAN ) ) );
+
+		$user    = get_current_user_id();
+		$preview = WriteGuard::preview( 'template-slug/delete-item', 'item:1', 'fp', array( 'ok' => true ), array( 'ratio' => NAN ), $user );
+		$this->assertWPError( $preview );
+		$this->assertSame( 'invalid_arguments', $preview->get_error_code() );
+		$this->assertFalse( get_transient( WriteGuard::confirm_key( $user, 'template-slug/delete-item', 'item:1' ) ), 'No token was stored.' );
+
+		// A token from a valid preview cannot be spent on unencodable arguments either (E190).
+		$valid   = WriteGuard::preview( 'template-slug/delete-item', 'item:1', 'fp', array( 'ok' => true ), array( 'ratio' => 1 ), $user );
+		$refused = WriteGuard::confirm( 'template-slug/delete-item', 'item:1', 'fp', $valid['confirmation_token'], array( 'ratio' => INF ), $user );
+		$this->assertWPError( $refused );
+		$this->assertSame( 'invalid_arguments', $refused->get_error_code(), 'The agent is told why, not just that the token does not match.' );
+		$this->assertTrue( WriteGuard::confirm( 'template-slug/delete-item', 'item:1', 'fp', $valid['confirmation_token'], array( 'ratio' => 1 ), $user ), 'The refusal did not spend the token.' );
+
+		$post = self::factory()->post->create();
+		$this->assertNotSame( WriteGuard::fingerprint_post( $post, array( 'n' => NAN ) ), WriteGuard::fingerprint_post( $post, array( 'n' => NAN ) ), 'An unencodable fingerprint never matches, so the confirmation fails closed.' );
+	}
+
+	public function test_a_licence_key_shows_no_characters_and_an_api_key_its_last_four(): void {
+		$key = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123ZQ9X';
+
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => 'ZQ9X',
+			),
+			Secret_Mask::describe( $key )
+		);
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => null,
+			),
+			Secret_Mask::describe( $key, false ),
+			'A licence key passes false (E170, E183).'
+		);
+	}
+
+	/**
+	 * Setting keys and whether they hold a credential, taken from what the products store (E199).
+	 *
+	 * @return array<string, array{0: mixed, 1: bool}>
+	 */
+	public function setting_keys(): array {
+		$keys = array();
+		foreach ( array( 'wpcp_youtube_api_key', 'api_key', 'api_keys', 'apiKey', 'accessToken', 'license_key', 'licence_key', 'captcha_secret_key', 'captcha_secret_key_v3', 'open-api-key', 'weather-api-key', 'lw_ai_assistant_api_key', 'scheduling.password', 'externalFeed.apiKey', 'externalFeed.accessToken', 'client_secret', 'refresh_token' ) as $key ) {
+			$keys[ $key ] = array( $key, true );
+		}
+		foreach ( array( 'passwordFormTitle', 'captcha_site_key', 'captcha_site_key_v3', 'idempotency_key', 'confirmation_token', 'wpcp_password_nonce', 'meta_key', 'api_key_masked', 'title' ) as $key ) {
+			$keys[ $key ] = array( $key, false );
+		}
+		$keys['not a string'] = array( array( 'api_key' ), false );
+
+		return $keys;
+	}
+
+	/**
+	 * Write tools refuse the keys that hold a credential, and only those (E184, E223).
+	 *
+	 * @dataProvider setting_keys
+	 *
+	 * @param mixed $key    Setting key.
+	 * @param bool  $secret Whether it holds a credential.
+	 */
+	public function test_a_key_that_holds_a_credential_is_recognised( $key, bool $secret ): void {
+		$this->assertSame( $secret, Secret_Mask::is_secret_key( $key ) );
 	}
 
 	public function test_the_template_holds_only_placeholders_so_the_adoption_checklist_replaces_everything(): void {

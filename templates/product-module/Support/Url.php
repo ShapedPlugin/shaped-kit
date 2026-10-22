@@ -1,6 +1,8 @@
 <?php
 /**
- * Strict address cleaning for tool arguments.
+ * The Url template file: strict address cleaning for tool arguments.
+ *
+ * Copy this file into a product's MCP module. See README.md.
  *
  * @package ShapedPlugin
  */

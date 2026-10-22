@@ -45,9 +45,11 @@
 			<exclude>tests/phpunit/integration/RealTestimonialsFreeBuilderToolsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsMediaIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/ProductMediaCopyTestCase.php</exclude>
+			<exclude>tests/phpunit/integration/SharedFileCopyTest.php</exclude>
 			<exclude>tests/phpunit/integration/WpCarouselMediaIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/WpCarouselSafetyIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsProBuilderToolsIntegrationTest.php</exclude>
+			<exclude>tests/phpunit/integration/RealTestimonialsSafetyIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteSlashesIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/RealTestimonialsWriteToolsIntegrationTest.php</exclude>
 			<exclude>tests/phpunit/integration/WpCarouselReadToolsIntegrationTest.php</exclude>

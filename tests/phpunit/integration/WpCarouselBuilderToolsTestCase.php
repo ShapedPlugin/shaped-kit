@@ -706,6 +706,123 @@ abstract class WpCarouselBuilderToolsTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A stored credential never changes through insert-block and is never returned (PRD E223, E224, decision S12).
+	 *
+	 * Both editions run the same builder code, so the Pro-only attributes are registered here for Free too.
+	 */
+	public function test_a_stored_credential_never_changes_through_insert_block_and_is_never_returned() {
+		$this->admin();
+		$this->register_carousel(
+			array_merge(
+				self::$attributes[ static::class ],
+				array(
+					'externalFeed' => array(
+						'type'    => 'object',
+						'default' => array(
+							'feedUrl'     => '',
+							'apiKey'      => '',
+							'accessToken' => '',
+						),
+					),
+					'scheduling'   => array(
+						'type'    => 'object',
+						'default' => array(
+							'visibility'        => 'public',
+							'password'          => '',
+							'passwordFormTitle' => '',
+						),
+					),
+				)
+			)
+		);
+
+		$stored  = array(
+			'uniqueId'     => 'wpcp-carousel-aaaaaaaaaaaa',
+			'externalFeed' => array(
+				'feedUrl'     => 'https://a.example/feed',
+				'apiKey'      => 'RealFeedApiKey000000000ZQ9X',
+				'accessToken' => 'RealFeedToken000000000AB7K',
+			),
+			'scheduling'   => array(
+				'visibility' => 'password',
+				'password'   => 'Visitor-Pass-9',
+			),
+		);
+		$post_id = $this->post_with(
+			serialize_block(
+				array(
+					'blockName'    => self::CAROUSEL,
+					'attrs'        => $stored,
+					'innerBlocks'  => array(),
+					'innerHTML'    => '',
+					'innerContent' => array(),
+				)
+			)
+		);
+		$replace = function ( array $attributes ) use ( $post_id ) {
+			$args    = array(
+				'block'         => 'carousel',
+				'attributes'    => $attributes,
+				'target'        => array( 'post_id' => $post_id ),
+				'replace_block' => 0,
+			);
+			$preview = $this->tools()::insert_block( $args );
+			$this->assertIsArray( $preview, is_wp_error( $preview ) ? $preview->get_error_code() . ': ' . $preview->get_error_message() . ' ' . wp_json_encode( $preview->get_error_data() ) : '' );
+
+			return $this->tools()::insert_block( $args + array( 'confirmation_token' => $preview['confirmation_token'] ) );
+		};
+		$saved   = function () use ( $post_id ) {
+			return $this->named_blocks( $post_id )[0]['attrs'];
+		};
+
+		// The agent echoes the masked values back and tries a new password.
+		$echo = $replace(
+			array(
+				'externalFeed' => array(
+					'apiKey'      => '••••••••',
+					'accessToken' => array(
+						'configured' => true,
+						'last4'      => null,
+					),
+				),
+				'scheduling'   => array( 'password' => 'agent-chosen' ),
+				'apiKey'       => 'TopLevelGuess',
+			)
+		);
+		$this->assertSame( 'secret_read_only', $this->reason_for( $echo, 'apiKey' ), 'A top-level credential key is refused as such, not as unknown.' );
+		$this->assertSame( 'secret_read_only', $this->reason_for( $echo, 'externalFeed.apiKey' ) );
+		$this->assertSame( 'secret_read_only', $this->reason_for( $echo, 'externalFeed.accessToken' ) );
+		$this->assertSame( 'secret_read_only', $this->reason_for( $echo, 'scheduling.password' ) );
+		$this->assertSame( 'RealFeedApiKey000000000ZQ9X', $saved()['externalFeed']['apiKey'] );
+		$this->assertSame( 'RealFeedToken000000000AB7K', $saved()['externalFeed']['accessToken'] );
+		$this->assertSame( 'Visitor-Pass-9', $saved()['scheduling']['password'] );
+
+		// The agent changes one other field of each object: the merge is shallow, so the stored secrets must be kept.
+		$one_field = $replace(
+			array(
+				'externalFeed' => array( 'feedUrl' => 'https://b.example/feed' ),
+				'scheduling'   => array( 'passwordFormTitle' => 'Members only' ),
+			)
+		);
+		$this->assertSame( 'RealFeedApiKey000000000ZQ9X', $saved()['externalFeed']['apiKey'], 'A one-field change of the object keeps the stored key.' );
+		$this->assertSame( 'RealFeedToken000000000AB7K', $saved()['externalFeed']['accessToken'] );
+		$this->assertSame( 'Visitor-Pass-9', $saved()['scheduling']['password'] );
+
+		// No answer carries a secret or its last characters; the password is described.
+		$answers = (string) wp_json_encode( array( $echo, $one_field ) );
+		foreach ( array( 'RealFeedApiKey', 'ZQ9X', 'RealFeedToken', 'AB7K', 'Visitor-Pass-9' ) as $part ) {
+			$this->assertStringNotContainsString( $part, $answers, "An insert-block answer carried {$part}." );
+		}
+		$this->assertSame(
+			array(
+				'configured' => true,
+				'last4'      => null,
+			),
+			( (array) $one_field['attributes'] )['scheduling']['password']
+		);
+	}
+
+	/**
 	 * Post locked by another user is refused with post_locked.
 	 */
 	public function test_post_locked_by_another_user_is_refused() {
@@ -777,14 +894,14 @@ abstract class WpCarouselBuilderToolsTestCase extends WP_UnitTestCase {
 		);
 
 		$all = $this->pattern_tools()::list_ready_patterns( array() );
-		$this->assertSame( 2, $all['pagination']['total'] );
+		$this->assertSame( 2, $all['total'] );
 
 		$free_only = $this->pattern_tools()::list_ready_patterns( array( 'pro' => 'exclude' ) );
-		$this->assertSame( 1, $free_only['pagination']['total'] );
+		$this->assertSame( 1, $free_only['total'] );
 		$this->assertSame( 101, $free_only['items'][0]['id'] );
 
 		$search = $this->pattern_tools()::list_ready_patterns( array( 'search' => 'Hero' ) );
-		$this->assertSame( 1, $search['pagination']['total'] );
+		$this->assertSame( 1, $search['total'] );
 		$this->assertSame( 101, $search['items'][0]['id'] );
 	}
 

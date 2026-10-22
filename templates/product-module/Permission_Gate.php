@@ -154,6 +154,9 @@ class Permission_Gate {
 		/**
 		 * Filter the capability required to reach the product MCP server.
 		 *
+		 * Lowering it (for example to `edit_posts`) lets more users in, and list tools then count every matching item
+		 * in `total`, including items such a user cannot open; the items themselves stay hidden (E193).
+		 *
 		 * @param string $capability Default 'manage_options'.
 		 */
 		$capability = apply_filters( 'template_prefix_mcp_access_capability', 'manage_options' );
@@ -180,7 +183,7 @@ class Permission_Gate {
 	 * Returns strictly boolean `true` to allow, or `false` to deny.
 	 * NEVER returns a WP_Error and NEVER throws an exception.
 	 *
-	 * On Adapter 0.4.1 and older (e.g. Rank Math), returning a WP_Error causes HttpTransport
+	 * On Adapter 0.4.1 and older (as bundled by some other plugins), returning a WP_Error causes HttpTransport
 	 * to fall through to the default check ("read" capability), admitting any subscriber!
 	 * Exact boolean false fails closed across all adapter versions (0.1.0 through 0.7.0).
 	 *

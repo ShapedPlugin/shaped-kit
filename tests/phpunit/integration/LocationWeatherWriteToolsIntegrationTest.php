@@ -14,6 +14,7 @@ namespace ShapedKit\Tests\Integration;
 use ShapedKit\Audit\LogListener;
 use ShapedKit\Audit\LogTable;
 use ShapedPlugin\Weather\Mcp\Abilities_Registrar;
+use ShapedPlugin\Weather\Mcp\Tools\Block_Tools;
 use ShapedPlugin\Weather\Mcp\Tools\Entry_Tools;
 use WP_UnitTestCase;
 
@@ -354,5 +355,37 @@ class LocationWeatherWriteToolsIntegrationTest extends WP_UnitTestCase {
 		$this->assertTrue( $global['cleared'] );
 		$this->assertTrue( $global['global'] );
 		$this->assertFalse( get_transient( 'sp_open_weather_forecast_data888' ) );
+	}
+
+	/**
+	 * Past the last page the total is the real count, and a huge page is clamped instead of throwing (PRD E182, E181).
+	 *
+	 * Probed 2026-10-22 before the fix: `find_blocks` with `page` PHP_INT_MAX threw a TypeError in `array_slice()`,
+	 * and a list past its last page reported `total` 0.
+	 */
+	public function test_a_list_counts_past_its_last_page_and_a_huge_page_is_clamped() {
+		self::factory()->post->create_many(
+			3,
+			array(
+				'post_type'   => 'location_weather',
+				'post_status' => 'publish',
+			)
+		);
+
+		$past = Entry_Tools::list_entries(
+			array(
+				'per_page' => 2,
+				'page'     => 9,
+			)
+		);
+		$this->assertSame( array(), $past['items'] );
+		$this->assertSame( 3, $past['total'], 'WordPress counts nothing on an empty page; it said 0.' );
+		$this->assertSame( 2, $past['pages'] );
+
+		$huge = Entry_Tools::list_entries( array( 'page' => PHP_INT_MAX ) );
+		$this->assertSame( 10000, $huge['page'] );
+
+		$blocks = Block_Tools::find_blocks( array( 'page' => PHP_INT_MAX ) );
+		$this->assertIsArray( $blocks, 'A huge page no longer throws a TypeError in array_slice().' );
 	}
 }

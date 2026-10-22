@@ -1,6 +1,8 @@
 <?php
 /**
- * Measures what a set of tools costs an AI client on every message.
+ * The Token_Budget template file: measures what a set of tools costs an AI client on every message.
+ *
+ * Copy this file into a product's MCP module. See README.md.
  *
  * @package ShapedPlugin
  */

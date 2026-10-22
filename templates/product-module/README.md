@@ -38,8 +38,9 @@ templates/product-module/
 │   ├── Media_Tools.php     # Callbacks for find-media and import-image
 │   └── Media_Abilities.php # Definitions and the toolset map, picked up by Abilities_Registrar when this folder is present
 ├── Support/
-│   ├── Pagination.php      # Clamps tool lists to 15-100 items with envelope metadata
-│   ├── Secret_Mask.php     # Masks secrets: configured / not configured, or the last 4 characters
+│   ├── Audit.php           # Reports every tool call to Shaped Kit's audit log, argument keys only (E159)
+│   ├── Pagination.php      # Clamps pages (10,000) and page size (15-100), envelope metadata, real total past the last page
+│   ├── Secret_Mask.php     # Masks secrets (configured / not configured, or the last 4 characters) and names secret keys
 │   ├── Token_Budget.php    # Measures what a set of tools costs an AI client on every message (E126)
 │   ├── Url.php             # Strict http(s) address cleaning for tool arguments (E126)
 │   └── WriteGuard.php      # Level 1 destructive confirmation & token engine
@@ -141,10 +142,13 @@ Every tool a server serves is listed to the AI client with its name, description
 
 ## 5. Write tools: rules every product learned the hard way
 
-- **Audit.** `Abilities_Registrar::wrap()` reports every call to Shaped Kit's audit log through `shaped_kit/mcp_tool_called` (product, ability, outcome, duration, argument names). A tool registered any other way never reaches the log, and nothing says so.
-- **Confirm destructive writes.** Use `Support\WriteGuard` for anything that deletes or overwrites: a preview, a single-use token bound to the user, the arguments and the record's state.
+- **Audit.** `Abilities_Registrar::wrap()` reports every call to Shaped Kit's audit log through `Support\Audit::report()`, which fires `shaped_kit/mcp_tool_called` (product, ability, outcome, duration, argument names, never values). A tool registered any other way never reaches the log, and nothing says so.
+- **Confirm destructive writes.** Use `Support\WriteGuard` for anything that deletes or overwrites: a preview, a single-use token bound to the user, the arguments and the record's state. Return `preview()` as it is: it answers a `WP_Error` when the arguments cannot be encoded (E190).
 - **Match the editor's storage shape (E123).** Before a write tool ships, save the same record in the product's own editor and compare the stored row with what the tool writes: the keys, their order, the nesting. Real Testimonials stored a reviewer location in a flat key that nothing read; it never reached a card, and nothing failed. Pin the comparison in a Kit integration test, and make the read side tolerate rows the older tool wrote.
 - **Clean addresses strictly (E126).** `esc_url_raw()` puts `http://` in front of text that has no scheme, so "not a url" is stored as a link. Pass every website, video, social or image address through `Support\Url::clean()`, which keeps only a full http(s) address.
+- **Secrets are read-only through MCP (E184, E223).** A read tool shows a stored credential only through `Support\Secret_Mask::describe()` (`$allow_hint = false` for a licence key: no characters at all). A write tool refuses every key `Secret_Mask::is_secret_key()` matches, under `dropped` with reason `secret_read_only`, so a masked value the agent echoes back can never replace the real one.
+- **Bound every page (E181, E182).** Read `page` and `per_page` with `Support\Pagination::from_input()` (pages above `Pagination::MAX_PAGE` are clamped) and give every `page` schema `'maximum' => Pagination::MAX_PAGE`. For a WP_Query list, report `Pagination::found_posts( $query, $args )` as `total`: WordPress counts nothing on an empty page, so `found_posts` alone reads 0 past the last page. Filter in the query, not in PHP after it, or `total` and the pages stop agreeing (E192).
+- **Lowering the access capability widens `total`.** With the default `manage_options` every caller can open every item. A site that lowers it through the access-capability filter gets totals that include items the user cannot open; the items stay hidden (E193).
 - **Register through `Abilities_Registrar::register()`**, never raw `wp_register_ability()` (E118).
 - **Answer in one place.** The transport gate returns exactly `true` or `false`, never a `WP_Error` (E87).
 
@@ -186,11 +190,33 @@ The reference tab is the Kit's shared one (`assets/admin/SharedProductSettingsTa
 - **Lint.** A product's `phpcs.xml` may exclude a folder such as `*/app/*`. On a machine whose site lives under a path with an `app` folder (Local by Flywheel does) that pattern matches every file: PHPCS reports "0 files in queue" and looks clean. Lint a copy outside that path (copy `src` and `phpcs.xml` to a temp folder and run the Kit's PHPCS there), compare with `HEAD`, and fix only the lines you wrote; product files carry old warnings.
 - **Build.** Some products' `npm run build` runs the formatter first (`wp-scripts format`), which rewrites unrelated files. Use the product's block or admin build script that does not (for example `build:blocks`, or `build:admin` and its postbuild), rebuild the admin bundle of every repo you changed, and commit the tracked `dist/` output with the source. Check `git diff` for formatting you did not write before committing.
 - **Backups.** To compare before and after, copy the file (`cp`) instead of `git stash` or `git checkout`, which can lose uncommitted work.
-- **Free and Pro in step.** A change to shared code goes into both editions in the same turn, checked by a diff with the namespace, text domain and slug normalised (PRD §20).
+- **Free and Pro in step.** A change to shared code goes into both editions in the same turn, checked by a diff with the namespace, text domain and slug normalised (PRD §20). For the files the sync script manages, that is the script's job (section 9).
 
 ---
 
-## 9. Key Architectural Safeguards Enforced
+## 9. Keeping shared files in step (sync script and drift test)
+
+`Support/` and `Media/` are shared code: every product keeps a copy, and a copy must equal the template once the names are mapped. Hand-copied shared code drifted within a week (PRD E181, `docs/wp-mcp-engine.md` §9.6), so the copies are written by a script and checked by a test.
+
+| | |
+|---|---|
+| **Which files** | Listed per product in `shaped_kit_sync_products()` (`tools/sync-product-module.php`): Real Testimonials and WP Carousel take `Support/` and `Media/`; Location Weather takes `Pagination`, `Secret_Mask` and `WriteGuard` only. `Builder/` and every plumbing file stay product code. |
+| **Change a shared file** | Edit the template, never a product copy. Test it here (`ProductModuleTemplateTest`, `ProductModuleMediaTest`), then sync. |
+| **Sync** | `php tools/sync-product-module.php <real-testimonials\|wp-carousel\|location-weather> --diff` (dry run) then `--write`. Free and Pro are written together or not at all. |
+| **What the script refuses** | A product repo not on `feat/mcp-module`; uncommitted or untracked changes in a target file; a folder that is missing or a symlink; a copy that does not parse, still holds a template name, or names a third-party product in a comment (C8). It never creates a folder and never runs `git checkout` or `git stash`. |
+| **Check** | `SharedFileCopyTest` (in `composer test:integration`, local only because the product repos are private) fails on any drift and names the file and the command that fixes it. Run it on a clean product tree right before a product commit. |
+| **Name mapping** | Namespace, text domain, transient prefix (`template_prefix_mcp_` to `spt_`, `wpcp_`, `splw_`), ability slug, `@package`, and the header lines. A placeholder the map does not know is refused, not shipped. |
+
+Rules learned in the first rollout (Stage 1, 2026-10-22):
+
+- **Change callers in the same commit.** A synced file can change an answer or a signature (`Secret_Mask::describe( $value, $allow_hint )`, `Pagination::found_posts()`, `Support\Audit::report()`). Update every caller in the product, run its suites, and commit both together.
+- **A new shared file may need a class-map update.** A product that commits an optimized class map listing its MCP classes (WP Carousel Free) needs `composer dump-autoload -o`; check the diff adds only the new class.
+- **Location Weather Free and Pro share one namespace**, so whichever edition loads first serves both: its copies must stay byte-identical (E216).
+- **Watch the token budget.** A schema change in a shared helper's caller adds characters to every message; Real Testimonials keeps the page clamp in code only for that reason (E194).
+
+---
+
+## 10. Key Architectural Safeguards Enforced
 
 - **Missing can_access() fix:** Permission checking for default tools uses `Permission_Gate::can_access()`, guaranteeing non-null ability registration even without custom entity tool classes.
 - **Strict Booleans on Transport Gate (B5 / E87):** `Permission_Gate::transport()` returns strictly `true` or `false` (never `WP_Error`), preventing authentication bypasses on older adapters.
