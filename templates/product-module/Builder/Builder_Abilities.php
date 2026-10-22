@@ -12,6 +12,7 @@ namespace ShapedPlugin\Template\Mcp\Builder;
 
 use ShapedPlugin\Template\Mcp\Module;
 use ShapedPlugin\Template\Mcp\Permission_Gate;
+use ShapedPlugin\Template\Mcp\Support\Pagination;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -177,6 +178,7 @@ class Builder_Abilities {
 						'page'     => array(
 							'type'    => 'integer',
 							'minimum' => 1,
+							'maximum' => Pagination::MAX_PAGE,
 							'default' => 1,
 						),
 						'per_page' => array(

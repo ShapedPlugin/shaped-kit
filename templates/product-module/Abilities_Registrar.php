@@ -12,6 +12,7 @@ namespace ShapedPlugin\Template\Mcp;
 
 use ShapedPlugin\Template\Mcp\Builder\Builder_Abilities;
 use ShapedPlugin\Template\Mcp\Media\Media_Abilities;
+use ShapedPlugin\Template\Mcp\Support\Audit;
 use ShapedPlugin\Template\Mcp\Tools\Context_Tools;
 use WP_Error;
 
@@ -413,7 +414,8 @@ class Abilities_Registrar {
 	 *    corrupt JSON-RPC wire responses.
 	 * 2. Error sanitation (E69): Catches all `\Throwable`. Returns a generic error and unique id
 	 *    to the client so database schema or sensitive server paths never cross the wire.
-	 * 3. Audit telemetry (FR-S3): every call, whatever its outcome, is reported to Shaped Kit's audit log.
+	 * 3. Audit telemetry (FR-S3): every call, whatever its outcome, is reported to Shaped Kit's audit log
+	 *    (`Support\Audit`, argument keys only).
 	 *
 	 * @param string   $tool_name Fully qualified ability name.
 	 * @param callable $callback  The tool's execution callback.
@@ -431,7 +433,7 @@ class Abilities_Registrar {
 				self::discard_output( $buffer_level, $tool_name );
 				$duration_ms = (int) round( ( microtime( true ) - $start_time ) * 1000 );
 
-				self::log_telemetry( $tool_name, $params, $result, null, $duration_ms );
+				Audit::report( Module::SLUG, $tool_name, $params, $result, null, $duration_ms );
 
 				return $result;
 			} catch ( \Throwable $e ) {
@@ -439,7 +441,7 @@ class Abilities_Registrar {
 				$duration_ms = (int) round( ( microtime( true ) - $start_time ) * 1000 );
 				$error_id    = substr( md5( uniqid( 'template_prefix_mcp_', true ) ), 0, 12 );
 
-				self::log_telemetry( $tool_name, $params, null, $error_id, $duration_ms );
+				Audit::report( Module::SLUG, $tool_name, $params, null, $error_id, $duration_ms );
 
 				/**
 				 * Fires when a tool throws, before generic failure returns to the client.
@@ -475,61 +477,6 @@ class Abilities_Registrar {
 				);
 			}
 		};
-	}
-
-	/**
-	 * Emits telemetry event for audit logging.
-	 *
-	 * Without this call a product's tools never reach Shaped Kit's audit log, and nothing says so (TESTING.md rule 5).
-	 * Only the argument keys are sent, each with a null value: any plugin can listen to this action, and values can
-	 * be personal data (an email, a phone) or a credential (a signed image address). The Kit's listener reads the
-	 * keys only.
-	 *
-	 * @param string      $tool_name   Ability name.
-	 * @param mixed       $params      Input parameters.
-	 * @param mixed       $result      Tool execution result.
-	 * @param string|null $error_id    Sanitized error tracking id if an exception occurred.
-	 * @param int         $duration_ms Execution time in milliseconds.
-	 *
-	 * @return void
-	 */
-	private static function log_telemetry( $tool_name, $params, $result, $error_id, $duration_ms ) {
-		$outcome = 'ok';
-
-		if ( null !== $error_id ) {
-			$outcome = 'error';
-		} elseif ( is_wp_error( $result ) ) {
-			$code = $result->get_error_code();
-			if ( 'confirmation_required' === $code ) {
-				$outcome = 'confirmation_required';
-			} elseif ( in_array( $code, array( 'forbidden', 'rest_forbidden', 'unauthorized' ), true ) ) {
-				$outcome = 'denied';
-			} else {
-				$outcome = 'error';
-			}
-		} elseif ( is_array( $result ) && isset( $result['status'] ) && 'confirmation_required' === $result['status'] ) {
-			$outcome = 'confirmation_required';
-		} elseif ( is_array( $params ) && ( ! empty( $params['confirmation_token'] ) || ! empty( $params['confirm_token'] ) ) ) {
-			$outcome = 'confirmed';
-		}
-
-		/**
-		 * Emits telemetry event for audit logging.
-		 * Listened to by Shaped Kit if active.
-		 *
-		 * @param array $payload Telemetry metadata.
-		 */
-		do_action(
-			'shaped_kit/mcp_tool_called',
-			array(
-				'product'     => Module::SLUG,
-				'ability'     => $tool_name,
-				'outcome'     => $outcome,
-				'error_id'    => $error_id,
-				'duration_ms' => $duration_ms,
-				'arguments'   => is_array( $params ) ? array_fill_keys( array_map( 'strval', array_keys( $params ) ), null ) : array(),
-			)
-		);
 	}
 
 	/**
