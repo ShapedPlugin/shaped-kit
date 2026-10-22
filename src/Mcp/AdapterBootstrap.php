@@ -31,7 +31,7 @@ final class AdapterBootstrap {
 	 *
 	 * This is measured, and matches `Server::MIN_ADAPTER_VERSION` in Location Weather. Its real-adapter
 	 * suite passes on every adapter release that has a plugin layout and reports a version: 0.3.0
-	 * (whose code still says "0.1.0", and is what WooCommerce bundles), 0.4.0, 0.4.1, 0.5.0, 0.6.0,
+	 * (whose code still says "0.1.0", and is what an e-commerce plugin bundles), 0.4.0, 0.4.1, 0.5.0, 0.6.0,
 	 * 0.6.1 and 0.7.0. A copy that reports no version is never compatible. Keep the two constants equal.
 	 */
 	const MIN_COMPATIBLE_VERSION = '0.1.0';
@@ -49,7 +49,7 @@ final class AdapterBootstrap {
 	 * Load the bundled adapter if WordPress can run it and no other copy is present or coming.
 	 *
 	 * Runs at plugin include time, not plugins_loaded: by plugins_loaded, a plugin that bundles an
-	 * unstarted adapter library (WooCommerce) has registered its autoloader, and the adapter's own
+	 * unstarted adapter library (an e-commerce plugin does) has registered its autoloader, and the adapter's own
 	 * duplicate check would then step aside for that library while nothing runs.
 	 *
 	 * @return bool Whether this call loaded the bundled copy.

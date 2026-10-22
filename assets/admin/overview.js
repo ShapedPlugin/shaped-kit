@@ -55,7 +55,7 @@ export const statusView = ( status ) => {
  * Who supplies the adapter, in a few words for a metric tile.
  *
  * @param {Object} adapter The adapter block of the overview.
- * @return {string} For example "Shaped Kit · 0.7.0", "Rank Math SEO · 0.4.1" or "Not loaded".
+ * @return {string} For example "Shaped Kit · 0.7.0", "<another plugin> · 0.4.1" or "Not loaded".
  */
 export const adapterValue = ( adapter ) => {
 	if ( ! adapter?.loaded ) {

@@ -448,7 +448,7 @@ class CatalogDataTest extends TestCase {
 		$this->assertCount( 19, $free );
 		$this->assertCount( 19, array_unique( array_column( array_intersect_key( $by_slug, array_flip( $free ) ), 'stable_sha256' ) ), 'Every hash is different.' );
 
-		// The eight plugins that declare WooCommerce as a requirement on wordpress.org.
+		// The eight plugins that declare an e-commerce plugin as a requirement on wordpress.org.
 		$woo = array( 'woo-product-slider', 'gallery-slider-for-woocommerce', 'woo-category-slider-grid', 'woo-quickview', 'smart-swatches', 'smart-brands-for-woocommerce', 'reno-cart', 'shaped-recommend' );
 		foreach ( $free as $slug ) {
 			$this->assertSame( in_array( $slug, $woo, true ) ? array( 'woocommerce' ) : array(), $by_slug[ $slug ]['requires_plugins'], $slug );

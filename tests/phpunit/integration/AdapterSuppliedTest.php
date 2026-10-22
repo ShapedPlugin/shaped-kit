@@ -8,7 +8,7 @@
 use ShapedKit\Mcp\AdapterBootstrap;
 
 /**
- * The isolated test install (.wordpress/) has no Rank Math, WooCommerce or standalone adapter, so the
+ * The isolated test install (.wordpress/) has no plugin that bundles an adapter and no standalone adapter, so the
  * Kit's own copy must be the one running (PRD §16.10, "Kit supplies").
  */
 final class AdapterSuppliedTest extends WP_UnitTestCase {

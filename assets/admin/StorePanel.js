@@ -122,7 +122,7 @@ const safeAdminPath = ( path ) =>
  *
  * @param {Object}  rep         The catalog entry the row shows.
  * @param {boolean} isInstalled Whether the plugin is installed.
- * @return {string} For example "Needs PHP 8.1", "Needs WordPress 6.8" or "Needs WooCommerce".
+ * @return {string} For example "Needs PHP 8.1", "Needs WordPress 6.8" or "Needs" and the required plugin's name.
  */
 const blockerLabel = ( rep, isInstalled ) => {
 	if ( ! isInstalled && rep.needs_php ) {
@@ -138,7 +138,7 @@ const blockerLabel = ( rep, isInstalled ) => {
 };
 
 /**
- * The two groups of the list. A plugin is in WooCommerce when the catalog says it needs the WooCommerce plugin.
+ * The two groups of the list. A plugin is in the e-commerce group when the catalog says it needs the e-commerce plugin.
  */
 const GROUPS = [
 	{ key: 'wordpress', title: __( 'WordPress', 'shaped-kit' ), note: '' },
