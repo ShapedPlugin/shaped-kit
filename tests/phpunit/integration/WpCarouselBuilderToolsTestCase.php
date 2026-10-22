@@ -823,6 +823,82 @@ abstract class WpCarouselBuilderToolsTestCase extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A carousel block takes real image ids as its items (WP Carousel 8.4 sign-off, check C).
+	 *
+	 * The front end resolves each item from its attachment id through a read check (Blocks/Sources/ImageSource.php),
+	 * so an item needs only `id`; demo items fill a fresh block only when it has none.
+	 */
+	public function test_a_carousel_block_takes_real_image_ids_as_items() {
+		$this->admin();
+		$first  = self::factory()->attachment->create_object(
+			array(
+				'file'           => 'one.jpg',
+				'post_mime_type' => 'image/jpeg',
+			)
+		);
+		$second = self::factory()->attachment->create_object(
+			array(
+				'file'           => 'two.jpg',
+				'post_mime_type' => 'image/jpeg',
+			)
+		);
+
+		$saved = $this->tools()::insert_block(
+			array(
+				'block'      => 'carousel',
+				'attributes' => array(
+					'sourceType' => 'image',
+					'items'      => array(
+						array( 'id' => $first ),
+						array( 'id' => $second ),
+					),
+				),
+				'target'     => array( 'new_draft' => 'Sign-off check' ),
+			)
+		);
+
+		$this->assertSame( 'saved', $saved['status'] );
+		$stored = $this->named_blocks( $saved['post_id'] )[0]['attrs'];
+		$this->assertSame( array( $first, $second ), array_map( 'intval', array_column( $stored['items'], 'id' ) ), 'The ids the agent chose are stored in order.' );
+		$this->assertArrayNotHasKey( 'patternDemo', $stored, 'Demo items are not added when real items are given.' );
+	}
+
+	/**
+	 * Pro warns that visitors will not see the block without an active licence; Free never does (decision 9).
+	 */
+	public function test_the_licence_warning_follows_the_licence_and_only_in_pro() {
+		$this->admin();
+		$pro  = 'wp-carousel-pro' === static::edition()['plugin'];
+		$gate = static::edition_class( 'Blocks\\LicenseGate' );
+		$args = array(
+			'block'      => 'carousel',
+			'attributes' => array( 'sliderOptions' => array( 'autoplay' => true ) ),
+			'target'     => array( 'new_draft' => 'Sign-off check' ),
+		);
+
+		$set = static function ( $status ) use ( $gate ) {
+			update_option( 'wp_carousel_pro_license_key_status', (object) array( 'license' => $status ) );
+			update_option( 'wp_carousel_pro_first_version', '9.9.9' );
+			if ( class_exists( $gate ) ) {
+				$property = new \ReflectionProperty( $gate, 'output_allowed' );
+				$property->setAccessible( true );
+				$property->setValue( null, null );
+			}
+		};
+
+		$set( 'invalid' );
+		$blocked = $this->tools()::insert_block( $args );
+		$set( 'valid' );
+		$allowed = $this->tools()::insert_block( $args );
+		delete_option( 'wp_carousel_pro_license_key_status' );
+		delete_option( 'wp_carousel_pro_first_version' );
+
+		$this->assertSame( 'saved', $blocked['status'], 'The block is still saved: warn, do not refuse.' );
+		$this->assertSame( $pro, isset( $blocked['warning'] ), $pro ? 'Pro warns while the licence does not allow output.' : 'Free has no licence gate.' );
+		$this->assertArrayNotHasKey( 'warning', $allowed, 'No warning with an active licence.' );
+	}
+
+	/**
 	 * Post locked by another user is refused with post_locked.
 	 */
 	public function test_post_locked_by_another_user_is_refused() {

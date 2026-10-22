@@ -28,7 +28,7 @@ class Server {
 	/**
 	 * Oldest adapter version accepted: 0.1.0 (the floor verified across all released adapters).
 	 *
-	 * Verified across upstream 0.3.0 (WooCommerce copy), 0.4.0, 0.4.1 (Rank Math), 0.5.0 (Zip AI),
+	 * Verified across upstream 0.3.0, 0.4.0, 0.4.1, 0.5.0 (each bundled by another plugin),
 	 * 0.6.0, 0.6.1, and 0.7.0 (Shaped Kit). A copy that reports no version is refused as unknown.
 	 */
 	const MIN_ADAPTER_VERSION = '0.1.0';

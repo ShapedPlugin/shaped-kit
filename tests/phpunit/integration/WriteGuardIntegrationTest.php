@@ -300,4 +300,35 @@ class WriteGuardIntegrationTest extends WP_UnitTestCase {
 
 		$this->assertNotSame( $fp1, $fp2 );
 	}
+
+	/**
+	 * Arguments JSON cannot encode are refused, never hashed alike (PRD E190); plain hashes are unchanged.
+	 */
+	public function test_unencodable_arguments_are_refused_not_hashed_alike() {
+		$this->assertSame(
+			hash( 'sha256', '{"a":"x","b":1}' ),
+			WriteGuard::canonical_arg_hash(
+				array(
+					'b' => 1,
+					'a' => 'x',
+				)
+			),
+			'Tokens issued before the change still confirm.'
+		);
+		$this->assertSame( '', WriteGuard::canonical_arg_hash( array( 'ratio' => NAN ) ) );
+
+		$user    = self::factory()->user->create();
+		$preview = WriteGuard::preview( 'shaped-kit/test', 'item:1', 'fp', array(), array( 'ratio' => NAN ), $user );
+		$this->assertWPError( $preview );
+		$this->assertSame( 'invalid_arguments', $preview->get_error_code() );
+		$this->assertFalse( get_transient( WriteGuard::confirm_key( $user, 'shaped-kit/test', 'item:1' ) ), 'No token was stored.' );
+
+		$valid   = WriteGuard::preview( 'shaped-kit/test', 'item:1', 'fp', array(), array( 'ratio' => 1 ), $user );
+		$refused = WriteGuard::confirm( 'shaped-kit/test', 'item:1', 'fp', $valid['confirmation_token'], array( 'ratio' => INF ), $user );
+		$this->assertSame( 'invalid_arguments', $refused->get_error_code() );
+		$this->assertTrue( WriteGuard::confirm( 'shaped-kit/test', 'item:1', 'fp', $valid['confirmation_token'], array( 'ratio' => 1 ), $user ), 'The refusal did not spend the token.' );
+
+		$post = self::factory()->post->create();
+		$this->assertNotSame( WriteGuard::fingerprint_post( $post, array( 'n' => NAN ) ), WriteGuard::fingerprint_post( $post, array( 'n' => NAN ) ), 'An unencodable fingerprint never matches.' );
+	}
 }

@@ -243,9 +243,12 @@ const ToolTester = ( { products, username, password, selectedProductSlug } ) => 
 
 			<div className="shaped-kit-tester-row">
 				{ products.length > 1 ? (
-					<label>
-						<span>{ __( 'Product', 'shaped-kit' ) }</span>
+					<div className="shaped-kit-tester-field shaped-kit-tester-field-product">
+						<label htmlFor="shaped-kit-tester-product-select">
+							<span>{ __( 'Product', 'shaped-kit' ) }</span>
+						</label>
 						<select
+							id="shaped-kit-tester-product-select"
 							value={ product.slug }
 							onChange={ ( event ) =>
 								setSlug( event.target.value )
@@ -257,21 +260,42 @@ const ToolTester = ( { products, username, password, selectedProductSlug } ) => 
 								</option>
 							) ) }
 						</select>
-					</label>
+					</div>
 				) : (
-					<strong>{ product.name }</strong>
+					<div className="shaped-kit-tester-field shaped-kit-tester-field-product">
+						<span className="shaped-kit-tester-label">
+							{ __( 'Product', 'shaped-kit' ) }
+						</span>
+						<div className="shaped-kit-tester-product-display">
+							<span
+								className="dashicons dashicons-admin-plugins"
+								aria-hidden="true"
+							/>
+							<strong>{ product.name }</strong>
+						</div>
+					</div>
 				) }
 
-				<button
-					type="button"
-					className="button"
-					onClick={ load }
-					disabled={ busy }
-				>
-					{ loaded
-						? __( 'Reload tools', 'shaped-kit' )
-						: __( 'Load tools', 'shaped-kit' ) }
-				</button>
+				<div className="shaped-kit-tester-action">
+					<button
+						type="button"
+						className="button button-secondary shaped-kit-tester-load-btn"
+						onClick={ load }
+						disabled={ busy }
+					>
+						<span
+							className={ `dashicons dashicons-update${
+								busy ? ' is-spinning' : ''
+							}` }
+							aria-hidden="true"
+						/>
+						<span>
+							{ loaded
+								? __( 'Reload tools', 'shaped-kit' )
+								: __( 'Load tools', 'shaped-kit' ) }
+						</span>
+					</button>
+				</div>
 			</div>
  
 			{ ! loaded && ! error && (
