@@ -54,15 +54,18 @@ class WriteGuard {
 	 * @param array  $preview     Human and agent-readable preview payload.
 	 * @param array  $arguments   Tool arguments to bind canonically to the token.
 	 * @param int    $user_id     Optional user ID. Defaults to get_current_user_id().
-	 * @return array Confirmation required response payload.
+	 * @return array|\WP_Error Confirmation required response payload, or an error when the arguments cannot be encoded.
 	 */
 	public static function preview( $ability, $entity_key, $fingerprint, array $preview, array $arguments = array(), $user_id = 0 ) {
 		$uid = $user_id ? (int) $user_id : (int) get_current_user_id();
 
+		$arg_hash = self::canonical_arg_hash( $arguments );
+		if ( '' === $arg_hash ) {
+			return self::unencodable_arguments();
+		}
+
 		// Generate 32-character cryptographically secure token.
 		$token = bin2hex( random_bytes( 16 ) );
-
-		$arg_hash = self::canonical_arg_hash( $arguments );
 
 		$payload = array(
 			'token'       => $token,
@@ -136,6 +139,9 @@ class WriteGuard {
 		// Canonical argument hash check.
 		if ( isset( $stored['arg_hash'] ) ) {
 			$current_arg_hash = self::canonical_arg_hash( $arguments );
+			if ( '' === $current_arg_hash ) {
+				return self::unencodable_arguments();
+			}
 			if ( ! hash_equals( (string) $stored['arg_hash'], (string) $current_arg_hash ) ) {
 				return new \WP_Error(
 					'confirmation_invalid',
@@ -228,7 +234,8 @@ class WriteGuard {
 
 		$json = wp_json_encode( $sorted, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 
-		return hash( 'sha256', (string) $json );
+		// Hashing false would give every unencodable argument set the same hash (PRD E190); '' is refused instead.
+		return false === $json ? '' : hash( 'sha256', $json );
 	}
 
 	/**
@@ -255,7 +262,10 @@ class WriteGuard {
 			$data['extra'] = self::ksort_recursive( $extra_fields );
 		}
 
-		return hash( 'sha256', (string) wp_json_encode( $data ) );
+		$json = wp_json_encode( $data );
+
+		// Unencodable extra fields never match a stored fingerprint, so the confirmation fails closed (E190).
+		return false === $json ? 'unencodable:' . bin2hex( random_bytes( 8 ) ) : hash( 'sha256', $json );
 	}
 
 	/**
@@ -283,6 +293,19 @@ class WriteGuard {
 	 */
 	public static function idem_key( $user_id, $ability, $entity_key, $idempotency_key ) {
 		return 'sk_mcp_id_' . (int) $user_id . '_' . md5( $ability . '|' . $entity_key . '|' . $idempotency_key );
+	}
+
+	/**
+	 * The refusal for arguments that cannot be encoded.
+	 *
+	 * @return \WP_Error
+	 */
+	private static function unencodable_arguments() {
+		return new \WP_Error(
+			'invalid_arguments',
+			__( 'These arguments cannot be confirmed safely (a value is not a finite number, or the data is nested too deeply). Send plain values and try again.', 'shaped-kit' ),
+			array( 'status' => 400 )
+		);
 	}
 
 	/**
