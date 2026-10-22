@@ -139,6 +139,9 @@ abstract class ProductMediaCopyTestCase extends WP_UnitTestCase {
 		$prefix    = $this->load( $plugin, $ns );
 		$registrar = $prefix . '\\Abilities_Registrar';
 		$heard     = array();
+		// Only the product's payload is under test. The Kit's own writer (tested in LogListenerIntegrationTest) is taken
+		// off, because the log tests drop its table, and a write after them fails with a database error.
+		remove_action( 'shaped_kit/mcp_tool_called', array( \ShapedKit\Audit\LogListener::class, 'on_tool_called' ), 10 );
 		add_action(
 			'shaped_kit/mcp_tool_called',
 			static function ( $payload ) use ( &$heard ) {
