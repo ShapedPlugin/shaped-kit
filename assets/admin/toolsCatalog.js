@@ -85,7 +85,7 @@ export const productToolsCatalog = {
 				total: 12,
 				page: 1,
 				per_page: 5,
-				total_pages: 3,
+				pages: 3,
 			},
 		},
 		{
@@ -210,11 +210,19 @@ export const productToolsCatalog = {
 					'grid',
 					'testimonial-submission-form',
 				],
-				integrations: {
+				page_builders: {
 					elementor: true,
-					gutenberg: true,
+					divi: false,
 				},
-				license_status: 'valid',
+				ai_integration: {
+					is_active: true,
+					api_key: { configured: true, last4: 'X9QZ' },
+					model: 'gemini-1.5-flash',
+				},
+				license: {
+					status: 'valid',
+					key_masked: { configured: true, last4: null },
+				},
 			},
 		},
 		{
@@ -271,7 +279,7 @@ export const productToolsCatalog = {
 			name: 'real-testimonials/get-testimonial-form',
 			label: __( 'Get Testimonial Form (Pro)', 'shaped-kit' ),
 			pro: true,
-			summary: __( 'Retrieves form fields, validation rules, and notification settings for a collection form ID.', 'shaped-kit' ),
+			summary: __( 'Retrieves form fields, messages, redirects and notification switches for a collection form ID. Notification addresses and e-mail bodies are withheld and listed by name only.', 'shaped-kit' ),
 			prompts: [
 				__( 'Get full settings and field configurations for testimonial form ID 3.', 'shaped-kit' ),
 				__( 'What fields are required in the testimonial collection form #7?', 'shaped-kit' ),
@@ -283,14 +291,24 @@ export const productToolsCatalog = {
 			expectedOutput: {
 				id: 120,
 				title: 'Client Feedback Submission Form',
-				fields: [
-					'reviewer_name',
-					'reviewer_email',
-					'rating',
-					'review_title',
-					'review_content',
+				post_type: 'spt_testimonial_form',
+				status: 'publish',
+				shortcode: '[spt_testimonial_form id="120"]',
+				settings: {
+					form_fields: {
+						full_name: { label: 'Full Name', required: true },
+						rating: { label: 'Rating', required: true },
+					},
+					successful_message: 'Thank you! Your testimonial is awaiting review.',
+					testimonial_approval_status: 'pending',
+					submission_email_notification: true,
+					submission_email_subject: 'New testimonial submitted',
+				},
+				withheld: [
+					'submission_email_to',
+					'submission_email_from',
+					'submission_email_body',
 				],
-				notifications_enabled: true,
 			},
 		},
 		{
@@ -1424,7 +1442,7 @@ export const productToolsCatalog = {
 				total: 1,
 				page: 1,
 				per_page: 5,
-				total_pages: 1,
+				pages: 1,
 			},
 		},
 		{
@@ -1733,7 +1751,7 @@ export const productToolsCatalog = {
 				total: 1,
 				page: 1,
 				per_page: 10,
-				total_pages: 1,
+				pages: 1,
 			},
 		},
 		{
@@ -1804,7 +1822,7 @@ export const productToolsCatalog = {
 				total: 1,
 				page: 1,
 				per_page: 10,
-				total_pages: 1,
+				pages: 1,
 			},
 		},
 		{
@@ -1840,7 +1858,7 @@ export const productToolsCatalog = {
 				license: {
 					status: 'valid',
 					expires: null,
-					key_masked: '••••-••••-••••',
+					key_masked: { configured: true, last4: null },
 				},
 			},
 		},

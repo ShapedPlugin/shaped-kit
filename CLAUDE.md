@@ -38,6 +38,12 @@ This file is tracked in a public repository. Never put local paths, keys, licens
        - **Classification:** Security Vulnerability, Edge Case, or Corner Case.
        - **Scenario & "What Will Happen":** Detailed explanation of trigger conditions and exact failure modes (unauthorized access, privilege escalation, data leakage/pollution, broken state, or crash).
        - **Guardrail & Prevention:** Protective barriers or sanitization checks required on the caller/MCP side to guarantee absolute runtime safety.
+8. **No third-party vendor or product names in code comments (C8, strict).**
+   - Comments and docblocks in the Kit, the product-module template, every product module and every test never name a third-party vendor or product. That includes the reference products named in PRD §0, other plugins, and the companies behind them.
+   - Use generic words instead: "a reference implementation", "a multilingual plugin", "another plugin's bundled adapter copy", "an e-commerce plugin".
+   - Comparisons with other products and their sources belong in `docs/`, never in code.
+   - **Exempt** (code data that must hold a real name to work): plugin slugs and dependency checks, catalog entries for ShapedPlugin's own products, client names the dashboard shows to users, and upstream code under `libs/` and vendor folders, which is not ours to edit.
+   - Applies to every line written or changed. Existing comments that break it are listed in `docs/MEMORY.md` and fixed in the same turn as any other change to that file.
 
 ## 2. Technical stack and code rules
 
@@ -94,7 +100,7 @@ Built and functional:
 - `src/Rest/McpController.php` (`GET /mcp`, `POST /mcp/products/{slug}`, `POST /mcp/app-password`, `GET /mcp/logs`) and `src/Rest/StoreController.php` (`/store/*`), both under `shaped-kit/v1`.
 - `src/Admin/DashboardPage.php`: the admin page under `ShapedPlugin > AI & MCP`.
 - `assets/admin/`: React dashboard with the overview strip, product cards with switches and opt-in toolsets, the sample-prompt drawer (`toolsCatalog.js`), the connect drawer (Application Passwords, client snippets for Claude Code, Claude Desktop, Cursor, Codex, Copilot, Gemini CLI and generic), the connection tester (`connectionTest.js`), Try a Tool (`ToolTester.js`), the Activity Log and the Products & Store tab.
-- `templates/product-module/`: the drop-in MCP module for sibling products. Its README (`templates/product-module/README.md`) is the adoption guide. It is tested here: `ProductModuleTemplateTest` and `ProductModuleMediaTest` (the optional `Media/` folder: `find-media`, `import-image`) load it as a real module, and the `adapter-template` wire suite runs it through every real adapter copy.
+- `templates/product-module/`: the drop-in MCP module for sibling products. Its README (`templates/product-module/README.md`) is the adoption guide. Its shared files (`Support/`: `Audit`, `Pagination`, `Secret_Mask`, `Token_Budget`, `Url`, `WriteGuard`; `Media/`) are written into each product by `tools/sync-product-module.php` and checked by `SharedFileCopyTest` (template README section 9). It is tested here: `ProductModuleTemplateTest` and `ProductModuleMediaTest` (the optional `Media/` folder: `find-media`, `import-image`) load it as a real module, and the `adapter-template` wire suite runs it through every real adapter copy.
 - **Product modules built** (in the product repos, branch `feat/mcp-module`): Location Weather Free and Pro, Real Testimonials Free and Pro, WP Carousel Free and Pro, each with an "MCP for AI Agents" settings tab. Location Weather: Free 10 abilities, Pro 11 (adds `get-cloud-status`). Real Testimonials: Free 18, Pro 22 (both editions have bulk `create-testimonials`, the media tools `find-media` (always on) and `import-image` (opt-in Media Import toolset, D22); Pro adds `list-testimonial-categories`, `get-review-sources-status`, `list-testimonial-forms`, `get-testimonial-form`; both editions have the opt-in Builder toolset `get-block-catalog`, `validate-block-attributes`, `insert-block`, `list-ready-patterns`, `insert-ready-pattern`). WP Carousel: Free and Pro 17 tools each plus the `build-carousel` prompt (core 8 including `find-media`; management `duplicate-carousel`, `update-carousel-settings`; destructive `delete-carousel`; opt-in Builder 5 and `import-image`); the editions differ only in data (`Carousel_Tools::CAROUSEL_TYPES`, the licence source in `Module`). `assets/admin/toolsCatalog.js` is the source of truth; update these counts when it changes.
 
 **Active context:** full state and cross-repo context live in `docs/MEMORY.md`.
@@ -130,6 +136,7 @@ Still open:
 - **Phase by phase delivery.** One phase and one file at a time, as listed in PRD §13.
 - **Green suite before a coding step is finished.** `composer test`, `npm run test:js` and `composer lint` all pass.
 - **No unapproved commits.** Never run `git commit` unless the owner says so. No AI attribution in commit messages.
+- **Shared files are synced, never hand-edited.** A change to a file the sync script manages (`shaped_kit_sync_products()`) is made in `templates/product-module/`, tested there, then written into the products with `php tools/sync-product-module.php <product> --diff` and `--write` (Free and Pro together). Callers that depend on a changed answer or signature change in the same product commit. `SharedFileCopyTest` must pass on a clean product tree before the commit.
 
 
 ## 7. Code reuse across editions and products
@@ -138,7 +145,7 @@ A product's Free and Pro editions run the same code, and the next products (WP C
 
 - **Data, not code, differs.** Edition and product differences live in constants and config arrays (block lists, enums, design rules, presets, the pattern `pro` flag, `Module::EDITION`). No `if ( 'pro' === … )` in shared logic; the only edition check allowed is the one-owner guard (PRD §9, E119). Pro-only tools join through `{prefix}/mcp_loaded` and `{prefix}/mcp_ability_names`.
 - **Generic engine in the template.** Shared code lives in `templates/product-module/` (the MCP module, and the `Builder/` folder for Build with AI). A product copies it and supplies only its data.
-- **One change, every copy, same turn.** When shared code changes in `testimonial-pro`, make the same change in `testimonial-free` (and the reverse) in the same turn. Check it with a normalised diff (namespace, text domain and slug replaced), so only the expected lines differ, and run both editions' tests. If the fix is generic, put it in the template too, and list the products not yet updated in `docs/MEMORY.md`.
+- **One change, every copy, same turn.** When shared code changes in `testimonial-pro`, make the same change in `testimonial-free` (and the reverse) in the same turn. Check it with a normalised diff (namespace, text domain and slug replaced), so only the expected lines differ, and run both editions' tests. If the fix is generic, put it in the template too, and list the products not yet updated in `docs/MEMORY.md`. For the files the sync script manages, the template is the only place to edit (section 6).
 - **No runtime dependency.** Products never call Kit code, and the Kit never calls product classes (D6). Reuse means copying the template.
-- **Shared package decision at Phase 8.** WP Carousel makes three products, the D3 trigger for a namespace-prefixed shared package. Raise it with the owner then; don't build it earlier.
+- **Shared package (D3), staged.** Stage 1 is done: the template stays the source and a sync script plus drift tests keep every copy equal. Stage 2, a namespace-prefixed package of the shared security code in a private repo, starts with the fourth product; the plan and its open questions are in the docs (`wp-mcp-engine.md` §9).
 - **Parity is tested.** Shared behaviour gets a test that runs in every edition (for example the `BuildPipeline` JS/PHP parity fixtures). Passing in one edition and failing in the other is not done.
