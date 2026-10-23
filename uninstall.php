@@ -9,10 +9,11 @@
  * - NEVER deletes or alters product-owned options or third-party settings (C5, FR-K8).
  *
  * Verified sources:
- * - WP_UNINSTALL_PLUGIN in wp-admin/includes/plugin.php:1274
- * - is_multisite() in wp-includes/load.php:1189
- * - get_sites() in wp-includes/ms-site.php:445
- * - switch_to_blog() / restore_current_blog() in wp-includes/ms-blogs.php:479
+ * - WP_UNINSTALL_PLUGIN in wp-admin/includes/plugin.php:1330
+ * - is_multisite() in wp-includes/load.php:1448
+ * - get_sites() in wp-includes/ms-site.php:445; its `number` defaults to 100 (wp-includes/class-wp-site-query.php:194)
+ *   and 0 builds no LIMIT (:486-494)
+ * - switch_to_blog() / restore_current_blog() in wp-includes/ms-blogs.php:500 and :563
  * - LogTable::drop() in src/Audit/LogTable.php:148
  * - LogPruner::unregister() in src/Audit/LogPruner.php:70
  *
@@ -29,7 +30,13 @@ require_once __DIR__ . '/shaped-kit.php';
 
 // 2. Multisite vs Single-Site clean removal.
 if ( is_multisite() ) {
-	$site_ids = get_sites( array( 'fields' => 'ids' ) );
+	// `number` 0 lifts the default cap of 100 sites, so every site on a large network is cleaned (E232).
+	$site_ids = get_sites(
+		array(
+			'fields' => 'ids',
+			'number' => 0,
+		)
+	);
 
 	if ( is_array( $site_ids ) ) {
 		foreach ( $site_ids as $site_id ) {

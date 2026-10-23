@@ -183,6 +183,49 @@ class MultisiteBehaviorIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * E232: Uninstall reaches every site of a large network, not only the first page get_sites() returns.
+	 *
+	 * The site query stops at 100 sites unless `number` is 0 (wp-includes/class-wp-site-query.php:194, and no LIMIT is
+	 * built for 0 at :486-494). A test cannot afford 101 sites, so a `sites_clauses` filter (:675) puts a one-site cap
+	 * on any query that still has a non-zero `number`: the same failure at a size the suite can build.
+	 */
+	public function test_uninstall_reaches_every_site_past_the_default_page_size() {
+		if ( ! is_multisite() ) {
+			$this->assertFalse( is_multisite(), 'the per-site loop only exists on a network' );
+			return;
+		}
+
+		$sub_ids = array( self::factory()->blog->create(), self::factory()->blog->create() );
+		foreach ( $sub_ids as $sub_id ) {
+			switch_to_blog( $sub_id );
+			$this->store_everything();
+			restore_current_blog();
+		}
+
+		$cap = static function ( $clauses, $query ) {
+			if ( 0 !== absint( $query->query_vars['number'] ) ) {
+				$clauses['limits'] = 'LIMIT 1';
+			}
+			return $clauses;
+		};
+		add_filter( 'sites_clauses', $cap, 10, 2 );
+
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			define( 'WP_UNINSTALL_PLUGIN', true );
+		}
+		require dirname( __DIR__, 3 ) . '/uninstall.php';
+
+		remove_filter( 'sites_clauses', $cap, 10 );
+
+		foreach ( $sub_ids as $sub_id ) {
+			switch_to_blog( $sub_id );
+			$left = $this->left_behind();
+			restore_current_blog();
+			$this->assertSame( array(), $left, "site {$sub_id}: nothing left behind" );
+		}
+	}
+
+	/**
 	 * E21: Audit log table uses current site's table prefix.
 	 */
 	public function test_log_table_prefix_isolation() {
