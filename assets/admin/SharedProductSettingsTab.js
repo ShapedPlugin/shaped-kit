@@ -9,7 +9,7 @@ import { shellQuote } from './snippets';
  * Implements the shared UI pattern:
  * - On/Off toggle.
  * - Endpoint display with 1-click copy.
- * - Quick CLI connect command for instant terminal connection (Claude Code).
+ * - Quick CLI connect command for instant terminal connection (the command-line AI client).
  * - "Open Shaped Kit" button for centralized multi-server management & Application Passwords.
  *
  * @param {Object} props Component props.

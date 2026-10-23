@@ -410,7 +410,7 @@ class StoreInstallEdgeCasesIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * E47: EDD serves a package that is not the one the catalog hashed (a newer build, or a swapped file). It is
+	 * E47: the licensing store serves a package that is not the one the catalog hashed (a newer build, or a swapped file). It is
 	 * refused, deleted and never unpacked.
 	 */
 	public function test_a_pro_install_refuses_a_package_whose_hash_is_not_the_catalogs() {

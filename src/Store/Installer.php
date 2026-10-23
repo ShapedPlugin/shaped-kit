@@ -165,7 +165,7 @@ class Installer {
 	}
 
 	/**
-	 * Installs and activates a Pro plugin using single-use license verification with EDD.
+	 * Installs and activates a Pro plugin using single-use license verification against the licensing store.
 	 *
 	 * Zero license key persistence in database.
 	 *
@@ -199,7 +199,7 @@ class Installer {
 			);
 		}
 
-		// 1. Resolve package URL via EDD POST get_version.
+		// 1. Resolve package URL via the store's POST get_version request.
 		$version_info = EddBridge::get_version( $matched, $license_key );
 		if ( is_wp_error( $version_info ) ) {
 			return $version_info;

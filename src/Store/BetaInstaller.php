@@ -81,7 +81,7 @@ class BetaInstaller {
 		if ( 'free' === $matched['edition'] ) {
 			$package_url = ! empty( $matched['beta_url'] ) ? $matched['beta_url'] : null;
 		} else {
-			// Pro edition: fetch beta package via EDD with beta: 1 (Q15).
+			// Pro edition: fetch beta package via the licensing store with beta: 1 (Q15).
 			$version_info = EddBridge::get_version( $matched, (string) $license_key, true );
 			if ( is_wp_error( $version_info ) ) {
 				self::log_telemetry( $slug, 'error', $start_time, $version_info->get_error_code() );

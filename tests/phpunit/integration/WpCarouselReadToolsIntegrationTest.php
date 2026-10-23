@@ -618,7 +618,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test YouTube API key secret masking and modern AI key detection (Issues 4 & 5).
+	 * Test video API key secret masking and modern AI key detection (Issues 4 & 5).
 	 *
 	 * @dataProvider editions
 	 *
@@ -631,7 +631,7 @@ class WpCarouselReadToolsIntegrationTest extends WP_UnitTestCase {
 		$carousel_tools = $ns . '\\Tools\\Carousel_Tools';
 		$settings_tools = $ns . '\\Tools\\Settings_Tools';
 
-		// 1. YouTube API key masking in get_carousel.
+		// 1. Video API key masking in get_carousel.
 		$post_id = self::factory()->post->create(
 			array(
 				'post_type'   => 'sp_wp_carousel',

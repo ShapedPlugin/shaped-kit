@@ -160,7 +160,7 @@ const json = ( value ) => JSON.stringify( value, null, 2 );
  * @param {Array}   options.products        Products with `slug` and `endpoint_url`. One with no endpoint is left out.
  * @param {string}  options.username        Username.
  * @param {string}  options.password        Application password.
- * @param {boolean} options.localDev        Whether to switch off TLS checks (Claude Desktop only), for a development site with a self-signed certificate.
+ * @param {boolean} options.localDev        Whether to switch off TLS checks (the desktop client only), for a development site with a self-signed certificate.
  * @return {string} The snippet, or an empty string when there is nothing to connect.
  */
 export const buildSnippet = (

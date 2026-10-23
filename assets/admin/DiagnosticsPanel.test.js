@@ -226,7 +226,7 @@ describe( 'DiagnosticsPanel', () => {
 		);
 		expect( snippetCopyBtns.length ).toBeGreaterThanOrEqual( 3 );
 
-		// Click the first snippet copy button (Claude CLI removal)
+		// Click the first snippet copy button (the command-line client's removal command)
 		await act( async () => snippetCopyBtns[ 0 ].click() );
 		expect( writeTextMock ).toHaveBeenCalledWith(
 			'claude mcp remove <slug>'

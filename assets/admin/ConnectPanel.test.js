@@ -524,7 +524,7 @@ describe( 'troubleshooting and proactive client tips', () => {
 		expect( tip ).not.toBeNull();
 		expect( tip.textContent ).toContain( 'claude mcp remove' );
 
-		// Switch to Codex which has no tip
+		// Switch to a client that has no tip
 		const codexTab = [
 			...container.querySelectorAll( '[role="tab"]' ),
 		].find( ( t ) => /Codex/.test( t.textContent ) );
@@ -533,7 +533,7 @@ describe( 'troubleshooting and proactive client tips', () => {
 			container.querySelector( '.shaped-kit-client-tip' )
 		).toBeNull();
 
-		// Switch to Claude Desktop which has restart tip
+		// Switch to the desktop client, which has a restart tip
 		const desktopTab = [
 			...container.querySelectorAll( '[role="tab"]' ),
 		].find( ( t ) => /Claude Desktop/.test( t.textContent ) );
@@ -693,7 +693,7 @@ describe( 'password persistence and cleanup', () => {
 	} );
 
 	// A client that is already set up holds the password it was given. Making another must leave that one
-	// alone (found 2026-10-16: one click revoked the passwords in Claude Code and Claude Desktop, and both
+	// alone (found 2026-10-16: one click revoked the passwords of two set-up clients, and both
 	// answered 401). So the call carries a name and nothing else: a second argument would ask for a revoke.
 	test( 'creating a password saves it and never asks for the earlier ones to be revoked', async () => {
 		createAppPassword.mockResolvedValueOnce( {

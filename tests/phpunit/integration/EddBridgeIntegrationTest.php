@@ -1,10 +1,10 @@
 <?php
 /**
- * Integration tests for the EDD bridge (Store track S2): what it sends to the store and what it lets back out.
+ * Integration tests for the licensing store bridge (Store track S2): what it sends to the store and what it lets back out.
  *
  * Verifies:
  * - E55: the license key travels in the POST body only, and no error message ever carries it.
- * - E54: the `url` sent to EDD follows the product's own activation rule.
+ * - E54: the `url` sent to the store follows the product's own activation rule.
  * - E53: a refused license is a 422 with the store's reason, and a store failure is a 502.
  * - E47: the package comes back as `package_url`; nothing is returned without one.
  *

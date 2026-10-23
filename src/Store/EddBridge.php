@@ -1,9 +1,9 @@
 <?php
 /**
- * EDD Software Licensing Bridge for ShapedPlugin Pro products (Phase S2).
+ * Licensing store bridge for ShapedPlugin Pro products (Phase S2).
  *
  * Implements:
- * - Direct HTTP POST communication with EDD store endpoint (`edd_action=get_version`).
+ * - Direct HTTP POST communication with the store endpoint (its `get_version` action).
  * - Strictly NO query string transmission of license keys.
  * - Host allowlisting on package download URLs (`account.shapedplugin.com`).
  * - Read-only product license introspection from `location_weather_settings` and `sp_testimonial_pro_options`.
@@ -39,7 +39,7 @@ class EddBridge {
 	const DEFAULT_STORE_URL = 'https://shapedplugin.com';
 
 	/**
-	 * Fetches release package metadata and tokenized download URL from EDD store API.
+	 * Fetches release package metadata and tokenized download URL from the licensing store API.
 	 *
 	 * Transmits the license key strictly within the HTTP POST body.
 	 *

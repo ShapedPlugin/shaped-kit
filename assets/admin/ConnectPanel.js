@@ -187,7 +187,7 @@ const ConnectPanel = ( { overview, selectedProductSlug, onNavigateTab } ) => {
 		// is set up keeps working. Revoking is its own button.
 		createAppPassword(
 			sprintf(
-				/* translators: %s: the AI client the password is for, for example Claude Desktop. */
+				/* translators: %s: the name of the AI client the password is for. */
 				__( 'Shaped Kit MCP - %s', 'shaped-kit' ),
 				current?.label || ''
 			)

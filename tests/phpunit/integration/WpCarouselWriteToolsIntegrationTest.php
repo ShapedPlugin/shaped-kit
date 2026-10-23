@@ -584,7 +584,7 @@ class WpCarouselWriteToolsIntegrationTest extends WP_UnitTestCase {
 		$this->assertEmpty( get_post_meta( $new_id, '_edit_last', true ), '_edit_last must be excluded from clone.' );
 		$this->assertSame( 'token_xyz', get_post_meta( $new_id, 'custom_design_token', true ), 'Legitimate custom meta must still be cloned.' );
 
-		// Verify YouTube secret is masked in the returned representation.
+		// Verify the video API key is masked in the returned representation.
 		$this->assertSame(
 			array(
 				'configured' => true,
