@@ -11,7 +11,7 @@ Shaped Kit is the free companion plugin for ShapedPlugin products. It lets AI cl
 
 The Kit bundles the official WordPress MCP Adapter and hosts the **AI & MCP** dashboard in WordPress Admin. From there it switches each product's MCP server on or off, sets up AI clients, and keeps an audit log of every tool call. Each product serves its own tools at its own address. The Kit runs no AI model and has no chat: your AI client does the thinking, and the site answers tool calls.
 
-> **Status:** developer beta. The latest release is [0.2.0-beta.7](https://github.com/ShapedPlugin/shaped-kit/releases). For local testing, not for production sites.
+> **Status:** 1.0.0. The latest release is [1.0.0](https://github.com/ShapedPlugin/shaped-kit/releases/tag/v1.0.0). The Products & Store tab stays off until ShapedPlugin's signed catalog and release pipeline are live.
 
 ---
 
