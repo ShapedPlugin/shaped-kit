@@ -1,0 +1,3145 @@
+# Copyright (C) 2026 ShapedPlugin LLC
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Shaped Kit 0.2.0-beta.7\n"
+"Report-Msgid-Bugs-To: https://github.com/ShapedPlugin/shaped-kit/issues\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-09T04:49:25+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: shaped-kit\n"
+
+#. Plugin Name of the plugin
+#: shaped-kit.php
+#: assets/admin/overview.js:69
+msgid "Shaped Kit"
+msgstr ""
+
+#. Description of the plugin
+#: shaped-kit.php
+msgid "Connects AI agents to ShapedPlugin products through the Model Context Protocol (MCP)."
+msgstr ""
+
+#. Author of the plugin
+#: shaped-kit.php
+msgid "ShapedPlugin LLC"
+msgstr ""
+
+#. Author URI of the plugin
+#: shaped-kit.php
+msgid "https://shapedplugin.com/"
+msgstr ""
+
+#: src/Admin/DashboardPage.php:128
+#: src/Admin/DashboardPage.php:129
+msgid "ShapedPlugin"
+msgstr ""
+
+#: src/Admin/DashboardPage.php:139
+#: src/Admin/DashboardPage.php:140
+#: src/Admin/DashboardPage.php:182
+#: assets/admin/App.js:158
+#: assets/admin/App.js:223
+msgid "AI & MCP"
+msgstr ""
+
+#. translators: 1: link to the Releases page, 2: a shell command.
+#: src/Admin/DashboardPage.php:190
+#, php-format
+msgid "The dashboard files are missing from this copy of Shaped Kit. This usually means it was installed from GitHub's \"Source code\" or \"Download ZIP\" archive, which does not include the built dashboard. Install the zip from the %1$s instead, or run %2$s in the plugin folder."
+msgstr ""
+
+#: src/Admin/DashboardPage.php:191
+msgid "Releases page"
+msgstr ""
+
+#: src/Mcp/AppPasswords.php:133
+msgid "WordPress could not create the application password."
+msgstr ""
+
+#: src/Mcp/AppPasswords.php:276
+#: assets/admin/ConnectPanel.js:48
+msgid "Application passwords are off on this site. WordPress needs HTTPS for them, or on a dev machine set WP_ENVIRONMENT_TYPE=local in wp-config.php or environment variables. If behind a reverse proxy terminating SSL, forward X-Forwarded-Proto and configure wp-config.php."
+msgstr ""
+
+#: src/Mcp/AppPasswords.php:278
+#: assets/admin/ConnectPanel.js:53
+msgid "Application passwords are off for your user account."
+msgstr ""
+
+#: src/Mcp/AppPasswords.php:280
+#: assets/admin/ConnectPanel.js:58
+msgid "This WordPress version does not support application passwords."
+msgstr ""
+
+#: src/Mcp/AppPasswords.php:282
+#: assets/admin/ConnectPanel.js:63
+msgid "Application passwords are not available right now."
+msgstr ""
+
+#: src/Mcp/ProductSwitch.php:46
+msgid "That product is not registered with Shaped Kit."
+msgstr ""
+
+#: src/Mcp/ProductSwitch.php:50
+msgid "This product has to be switched in its own settings."
+msgstr ""
+
+#: src/Mcp/ProductSwitch.php:118
+msgid "The product did not switch. Try again, or use its own settings."
+msgstr ""
+
+#: src/Mcp/TransportGuard.php:236
+msgid "If you sent credentials, your web server may be stripping the Authorization header. In Apache/.htaccess add: \"SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1\" or \"RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\". In Nginx add: \"fastcgi_param HTTP_AUTHORIZATION $http_authorization;\"."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:104
+msgid "This action makes permanent changes. Call again without confirmation_token to preview, then supply the returned confirmation_token to execute."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:119
+msgid "Your confirmation token has expired or was already used. Run a fresh call to preview and obtain a new confirmation_token."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:131
+msgid "The confirmation_token does not match. Run a fresh call to preview."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:148
+msgid "The arguments provided do not match the previewed action. Run a fresh call to preview."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:162
+msgid "The record changed since you previewed it. Run a fresh call to inspect current state before executing."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:175
+msgid "This confirmation token has already been consumed by another concurrent request."
+msgstr ""
+
+#: src/Mcp/WriteGuard.php:306
+msgid "These arguments cannot be confirmed safely (a value is not a finite number, or the data is nested too deeply). Send plain values and try again."
+msgstr ""
+
+#. translators: %d: number of application passwords revoked.
+#: src/Rest/McpController.php:283
+#, php-format
+msgid "%d Shaped Kit application password revoked."
+msgid_plural "%d Shaped Kit application passwords revoked."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Store/BetaInstaller.php:64
+msgid "There is no beta release available for this product in the catalog."
+msgstr ""
+
+#: src/Store/BetaInstaller.php:97
+msgid "Could not resolve beta package download URL."
+msgstr ""
+
+#: src/Store/BetaInstaller.php:107
+msgid "The beta package host is not allowed."
+msgstr ""
+
+#: src/Store/BetaInstaller.php:118
+msgid "Another installation or update is in progress. Please wait and try again."
+msgstr ""
+
+#. translators: %s: activation error message
+#: src/Store/BetaInstaller.php:174
+#, php-format
+msgid "Beta installed successfully, but activation failed: %s"
+msgstr ""
+
+#. translators: 1: current version, 2: target beta version
+#: src/Store/BetaInstaller.php:229
+#, php-format
+msgid "Downgrades are not permitted. Installed version (%1$s) is greater than or equal to target beta version (%2$s)."
+msgstr ""
+
+#: src/Store/EddBridge.php:56
+msgid "A valid license key is required to download and install this Pro product."
+msgstr ""
+
+#: src/Store/EddBridge.php:91
+msgid "The license store endpoint is currently unavailable."
+msgstr ""
+
+#: src/Store/EddBridge.php:100
+msgid "Received an invalid response from the licensing store."
+msgstr ""
+
+#: src/Store/EddBridge.php:107
+msgid "The provided license key is invalid or expired for this product."
+msgstr ""
+
+#: src/Store/EddBridge.php:109
+msgid "[license key]"
+msgstr ""
+
+#: src/Store/Installer.php:78
+msgid "The requested plugin is not available in the ShapedPlugin store catalog."
+msgstr ""
+
+#: src/Store/Installer.php:88
+#: src/Store/Installer.php:224
+msgid "Another installation or update is already running. Please wait and try again."
+msgstr ""
+
+#: src/Store/Installer.php:102
+msgid "The download host is not allowed."
+msgstr ""
+
+#. translators: %s: activation error message
+#: src/Store/Installer.php:141
+#: src/Store/Installer.php:263
+#, php-format
+msgid "Plugin installed successfully, but activation failed: %s"
+msgstr ""
+
+#: src/Store/Installer.php:197
+msgid "The requested Pro plugin is not available in the store catalog."
+msgstr ""
+
+#: src/Store/Installer.php:214
+msgid "The package download host is not allowed."
+msgstr ""
+
+#: src/Store/Installer.php:299
+msgid "You do not have permission to activate plugins."
+msgstr ""
+
+#: src/Store/Installer.php:308
+msgid "The requested plugin is not installed on this site."
+msgstr ""
+
+#: src/Store/Installer.php:335
+msgid "File modifications are disabled on this WordPress installation."
+msgstr ""
+
+#: src/Store/Installer.php:344
+msgid "Plugin installations must be performed by a Network Administrator."
+msgstr ""
+
+#: src/Store/Installer.php:353
+msgid "You do not have permission to install plugins."
+msgstr ""
+
+#. translators: %s: plugin folder name
+#: src/Store/Installer.php:449
+#, php-format
+msgid "A folder named \"%s\" already exists in the plugins folder, so it was not replaced. Remove or rename it, then try again."
+msgstr ""
+
+#: src/Store/Installer.php:467
+msgid "WordPress cannot write to the plugins folder from here because the server asks for FTP or SSH credentials. Install the plugin from the Plugins screen, or upload it by hand."
+msgstr ""
+
+#: src/Store/Installer.php:472
+msgid "Installation failed."
+msgstr ""
+
+#: src/Store/PackageVerifier.php:80
+msgid "Downloaded package file could not be read."
+msgstr ""
+
+#: src/Store/PackageVerifier.php:89
+msgid "Failed to calculate checksum for downloaded package."
+msgstr ""
+
+#: src/Store/PackageVerifier.php:103
+msgid "Package checksum verification failed. The downloaded file may be corrupted or tampered with."
+msgstr ""
+
+#: src/Store/SelfUpdater.php:198
+msgid "Shaped Kit update package cannot be verified: missing catalog checksum."
+msgstr ""
+
+#: src/Store/SelfUpdater.php:216
+msgid "The download host for Shaped Kit update is not allowlisted."
+msgstr ""
+
+#: src/Store/SelfUpdater.php:305
+msgid "Check for update"
+msgstr ""
+
+#: src/Store/SelfUpdater.php:329
+msgid "Checked for a Shaped Kit update. If a newer version is available, it is listed in the Shaped Kit row below."
+msgstr ""
+
+#: src/Store/StoreGate.php:55
+msgid "The Shaped Kit Store is not live yet."
+msgstr ""
+
+#: assets/admin/ActivityLog.js:82
+msgid "Filter by product"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:92
+msgid "All Products"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:103
+msgid "Filter by outcome"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:113
+msgid "All Outcomes"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:114
+msgid "Success (ok)"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:115
+msgid "Error"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:116
+msgid "Denied"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:118
+msgid "Confirmation Required"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:120
+msgid "Confirmed"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:133
+msgid "15 per page"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:134
+msgid "25 per page"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:135
+msgid "50 per page"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:146
+msgid "Clear Filters"
+msgstr ""
+
+#. translators: %d: Total number of logged entries
+#: assets/admin/ActivityLog.js:155
+#, js-format
+msgid "%d events logged"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:166
+#: assets/admin/App.js:196
+msgid "Try again"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:175
+msgid "Timestamp (UTC)"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:176
+msgid "Product & Ability"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:177
+msgid "Client / Key"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:178
+msgid "Parameters"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:179
+msgid "Duration"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:180
+msgid "Outcome"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:187
+msgid "Loading activity logs…"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:195
+msgid "No agent actions recorded yet."
+msgstr ""
+
+#: assets/admin/ActivityLog.js:218
+msgid "Default Auth"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:228
+msgid "none"
+msgstr ""
+
+#. translators: 1: Current page number, 2: Total page count, 3: Total entries
+#: assets/admin/ActivityLog.js:255
+#, js-format
+msgid "Page %1$d of %2$d (%3$d total events)"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:268
+msgid "Previous"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:276
+msgid "Next"
+msgstr ""
+
+#: assets/admin/ActivityLog.js:282
+msgid "Audit records reflect tool actions reported by connected ShapedPlugin products. To ensure privacy, parameter keys are recorded while parameter values and sensitive payloads are never stored. Records are retained for 90 days."
+msgstr ""
+
+#: assets/admin/App.js:166
+msgid "Refreshing…"
+msgstr ""
+
+#: assets/admin/App.js:167
+#: assets/admin/App.js:169
+#: assets/admin/StorePanel.js:568
+msgid "Refresh"
+msgstr ""
+
+#: assets/admin/App.js:203
+msgid "Loading…"
+msgstr ""
+
+#: assets/admin/App.js:211
+msgid "Dashboard navigation"
+msgstr ""
+
+#: assets/admin/App.js:235
+#: assets/admin/StorePanel.js:555
+msgid "Products & Store"
+msgstr ""
+
+#: assets/admin/App.js:247
+msgid "Diagnostics"
+msgstr ""
+
+#: assets/admin/App.js:256
+msgid "Activity Log"
+msgstr ""
+
+#: assets/admin/connectionTest.js:77
+msgid "Connected"
+msgstr ""
+
+#: assets/admin/connectionTest.js:78
+msgid "Connected. This endpoint accepted the username and password."
+msgstr ""
+
+#: assets/admin/connectionTest.js:82
+msgid "Your credentials are valid and ready to use in your AI client."
+msgstr ""
+
+#: assets/admin/connectionTest.js:93
+msgid "Non-MCP Response"
+msgstr ""
+
+#: assets/admin/connectionTest.js:94
+msgid "The address answered, but not as an MCP server. Check that it is the right address."
+msgstr ""
+
+#: assets/admin/connectionTest.js:98
+msgid "Verify the product endpoint URL in Settings."
+msgstr ""
+
+#: assets/admin/connectionTest.js:113
+msgid "Authorization Header Blocked by Host"
+msgstr ""
+
+#: assets/admin/connectionTest.js:115
+msgid "Your server is not passing the Authorization header to WordPress, so the username and password never arrived. This is a server setting, not a wrong password."
+msgstr ""
+
+#: assets/admin/connectionTest.js:120
+msgid "Fix it in the server settings. Apache: save Settings > Permalinks with a pretty structure (WordPress then writes the rule into .htaccess if it can), or add SetEnvIf Authorization \"(.*)\" HTTP_AUTHORIZATION=$1 to .htaccess. Nginx: add fastcgi_param HTTP_AUTHORIZATION $http_authorization; to the PHP location block and reload."
+msgstr ""
+
+#: assets/admin/connectionTest.js:124
+msgid "Configure your web server (Apache or Nginx) to forward the Authorization header."
+msgstr ""
+
+#: assets/admin/connectionTest.js:130
+msgid "Invalid or Revoked Credentials"
+msgstr ""
+
+#: assets/admin/connectionTest.js:131
+msgid "The username or application password was not accepted. Check that the username is the account the password was made for, and that the password was not revoked (the Revoke button here, or deleting it on your profile page, stops it working for good). Spaces in the password are fine."
+msgstr ""
+
+#: assets/admin/connectionTest.js:135
+msgid "Click \"Create application password\" above to get a fresh password, then copy the updated snippet."
+msgstr ""
+
+#: assets/admin/connectionTest.js:141
+msgid "External 401 Interception"
+msgstr ""
+
+#: assets/admin/connectionTest.js:142
+msgid "Something in front of WordPress answered 401 before the request reached this plugin, such as password protection on the whole site (HTTP basic auth on a staging site), a firewall or a security plugin. WordPress never saw the credentials."
+msgstr ""
+
+#: assets/admin/connectionTest.js:146
+msgid "Ensure firewalls or server-level HTTP auth do not block WordPress REST API routes."
+msgstr ""
+
+#: assets/admin/connectionTest.js:165
+msgid "Access Forbidden"
+msgstr ""
+
+#: assets/admin/connectionTest.js:166
+msgid "The password is right, but this account is not allowed to use MCP. Use an administrator account."
+msgstr ""
+
+#: assets/admin/connectionTest.js:170
+msgid "Log in with an administrator account that has manage_options capability."
+msgstr ""
+
+#: assets/admin/connectionTest.js:181
+msgid "Endpoint Not Found / Disabled"
+msgstr ""
+
+#: assets/admin/connectionTest.js:182
+msgid "Nothing answers at this address. Check that the product is switched on and an adapter is loaded."
+msgstr ""
+
+#: assets/admin/connectionTest.js:186
+msgid "Turn ON the toggle switch for this product above."
+msgstr ""
+
+#: assets/admin/connectionTest.js:197
+msgid "Server Error"
+msgstr ""
+
+#: assets/admin/connectionTest.js:198
+msgid "The server failed while answering. Look at its error log."
+msgstr ""
+
+#: assets/admin/connectionTest.js:202
+msgid "Inspect your PHP error log or WordPress debug.log for details."
+msgstr ""
+
+#: assets/admin/connectionTest.js:212
+msgid "Unexpected Response"
+msgstr ""
+
+#: assets/admin/connectionTest.js:213
+msgid "The server gave an unexpected answer."
+msgstr ""
+
+#: assets/admin/connectionTest.js:214
+msgid "Check the endpoint URL and server status."
+msgstr ""
+
+#: assets/admin/connectionTest.js:234
+msgid "No answer within 15 seconds. The server may be slow or the address wrong."
+msgstr ""
+
+#: assets/admin/connectionTest.js:248
+msgid "The browser could not reach this address. It is on a different origin from this page, so cross-origin (CORS) blocking is one possible cause. That happens when your WordPress site address and home address differ, or on www versus non-www. Check that first, then the address, the certificate and your connection."
+msgstr ""
+
+#: assets/admin/connectionTest.js:258
+msgid "The browser could not reach this address. Check the address, the certificate and your connection."
+msgstr ""
+
+#: assets/admin/connectionTest.js:288
+msgid "Credentials Required"
+msgstr ""
+
+#: assets/admin/connectionTest.js:289
+#: assets/admin/mcpClient.js:50
+msgid "Type the username and application password first."
+msgstr ""
+
+#: assets/admin/connectionTest.js:293
+msgid "Click \"Create application password\" above to generate a password."
+msgstr ""
+
+#: assets/admin/connectionTest.js:333
+msgid "Connection Failed / Unreachable"
+msgstr ""
+
+#: assets/admin/connectionTest.js:335
+msgid "Check that your site is running and that the endpoint URL is accessible from your network."
+msgstr ""
+
+#. translators: %s: the name of the AI client the password is for.
+#: assets/admin/ConnectPanel.js:191
+#, js-format
+msgid "Shaped Kit MCP - %s"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:215
+msgid "Shaped Kit application passwords revoked."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:266
+msgid "Connect a client"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:268
+msgid "Each product runs its own MCP server, so an AI client needs one entry per product. One application password works for all of them. Create one here, or paste one you made on your profile page, and the text below fills itself in. Each password you create stays valid until you revoke it, so clients you already set up keep working. Make one per client."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:283
+msgid "Creating…"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:284
+msgid "Create application password"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:294
+msgid "Delete every password Shaped Kit made for your user, including the one saved in this browser. Passwords you made yourself are not touched."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:300
+msgid "Revoking…"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:301
+msgid "Revoke all Shaped Kit passwords"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:313
+msgid "Manage passwords"
+msgstr ""
+
+#. translators: %s: the name the password was given.
+#: assets/admin/ConnectPanel.js:329
+#, js-format
+msgid "Created \"%s\". WordPress shows this password only once, so copy the text below now."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:352
+msgid "Username"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:364
+msgid "Application password"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:387
+msgid "Hide"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:388
+msgid "Show"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:394
+msgid "Remove the password from this page and this browser"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:400
+msgid "Clear"
+msgstr ""
+
+#. translators: %d: hours the password stays in this browser.
+#: assets/admin/ConnectPanel.js:411
+#, js-format
+msgid "Saved in this browser for up to %d hour, so a refresh keeps it. Clear removes it now."
+msgid_plural "Saved in this browser for up to %d hours, so a refresh keeps it. Clear removes it now."
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/admin/ConnectPanel.js:445
+msgid "Snippet configuration scope"
+msgstr ""
+
+#. translators: %s: product name
+#: assets/admin/ConnectPanel.js:459
+#, js-format
+msgid "%s only"
+msgstr ""
+
+#. translators: %d: count of enabled products
+#: assets/admin/ConnectPanel.js:472
+#, js-format
+msgid "All enabled (%d)"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:491
+msgid "Local site with a self-signed certificate (turns off TLS checks for this client)"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:523
+#: assets/admin/ProductCard.js:123
+#: assets/admin/ProductCard.js:205
+#: assets/admin/ProductCard.js:265
+#: assets/admin/SharedProductSettingsTab.js:290
+#: assets/admin/SharedProductSettingsTab.js:467
+msgid "Copied"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:524
+msgid "Copy snippet"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:533
+msgid "Testing…"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:534
+msgid "Test connection"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:561
+#: assets/admin/DiagnosticsPanel.js:525
+msgid "Fix:"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:578
+msgid "Turn on a product above to get something to paste."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:593
+#: assets/admin/DiagnosticsPanel.js:144
+msgid "Environment & Server Diagnostics"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:600
+#: assets/admin/DiagnosticsPanel.js:151
+msgid "Checks whether your host environment meets core MCP requirements"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:610
+#: assets/admin/DiagnosticsPanel.js:177
+msgid "Environment Type"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:623
+#: assets/admin/DiagnosticsPanel.js:190
+msgid "Local environment active (WP_ENVIRONMENT_TYPE=local)."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:627
+#: assets/admin/DiagnosticsPanel.js:199
+msgid "Non-local environment. Plain HTTP disables app passwords."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:636
+#: assets/admin/DiagnosticsPanel.js:208
+msgid "SSL / HTTPS"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:646
+#: assets/admin/DiagnosticsPanel.js:218
+msgid "Active (HTTPS)"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:647
+#: assets/admin/DiagnosticsPanel.js:219
+msgid "Inactive (HTTP)"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:651
+#: assets/admin/DiagnosticsPanel.js:223
+msgid "HTTPS is enabled for secure communication."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:655
+#: assets/admin/DiagnosticsPanel.js:227
+msgid "Plain HTTP. If behind an SSL proxy, forward X-Forwarded-Proto and configure wp-config.php."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:664
+#: assets/admin/DiagnosticsPanel.js:236
+msgid "Application Passwords"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:674
+#: assets/admin/DiagnosticsPanel.js:246
+msgid "Available"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:675
+#: assets/admin/DiagnosticsPanel.js:247
+msgid "Disabled"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:679
+#: assets/admin/DiagnosticsPanel.js:251
+msgid "Core application passwords are ready."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:683
+#: assets/admin/DiagnosticsPanel.js:255
+msgid "Disabled by WordPress. Requires HTTPS or WP_ENVIRONMENT_TYPE=local."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:692
+#: assets/admin/DiagnosticsPanel.js:264
+msgid "Authorization Header"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:706
+#: assets/admin/DiagnosticsPanel.js:278
+msgid "Passed to PHP"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:708
+#: assets/admin/DiagnosticsPanel.js:280
+msgid "Blocked by Host"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:710
+#: assets/admin/DiagnosticsPanel.js:282
+msgid "Blocked Upstream"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:711
+#: assets/admin/DiagnosticsPanel.js:283
+msgid "Probe via Doctor"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:715
+#: assets/admin/DiagnosticsPanel.js:287
+msgid "Web server forwarded credentials to PHP successfully."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:720
+#: assets/admin/DiagnosticsPanel.js:292
+msgid "Host stripped the header. Fix via .htaccess or nginx config."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:725
+#: assets/admin/DiagnosticsPanel.js:297
+msgid "Blocked before reaching WordPress (e.g. firewall or site-wide basic auth)."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:729
+msgid "Click \"Test connection\" to probe live header transmission."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:746
+msgid "Trouble connecting or got a 401 Unauthorized error?"
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:752
+msgid "Review web server configuration recipes, client quirks, and reverse proxy setup in the Diagnostics tab."
+msgstr ""
+
+#: assets/admin/ConnectPanel.js:765
+msgid "View Diagnostics & Troubleshooting"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:41
+msgid "Copy code to clipboard"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:44
+msgid "Copied!"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:45
+#: assets/admin/ProductCard.js:124
+#: assets/admin/ProductCard.js:206
+msgid "Copy"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:122
+msgid "System Diagnostics & Connection Doctor"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:128
+msgid "Checks whether your host environment meets core MCP requirements, tests live HTTP Authorization header transmission, and provides server configuration recipes."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:165
+#: assets/admin/DiagnosticsPanel.js:821
+msgid "Running Doctor…"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:166
+#: assets/admin/DiagnosticsPanel.js:822
+msgid "Run Connection Doctor"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:195
+msgid "Non-local environment, served over HTTPS."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:301
+msgid "Click \"Run Connection Doctor\" to probe live header transmission."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:317
+msgid "Connection Doctor Probe Credentials"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:324
+msgid "Used by the diagnostic runner to test real HTTP Authorization and REST endpoint access."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:334
+msgid "WordPress Username"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:345
+msgid "e.g. admin"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:359
+msgid "Application Password"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:371
+msgid "xxxx xxxx xxxx xxxx"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:390
+#: assets/admin/DiagnosticsPanel.js:401
+msgid "Hide password"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:394
+#: assets/admin/DiagnosticsPanel.js:405
+msgid "Show password"
+msgstr ""
+
+#. translators: %s: username
+#: assets/admin/DiagnosticsPanel.js:434
+#, js-format
+msgid "Active session password detected for user \"%s\"."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:455
+msgid "Reset to session credentials"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:469
+msgid "Enter your credentials above or generate a new application password in the Connect tab."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:489
+msgid "Connection Doctor Probe Results"
+msgstr ""
+
+#. translators: %d: count of tested products
+#: assets/admin/DiagnosticsPanel.js:498
+#, js-format
+msgid "%d endpoints tested"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:545
+msgid "Troubleshooting & Reconnection Guide"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:551
+msgid "Step-by-step resolution for authentication, server configurations, and AI client setups"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:559
+msgid "4 Guided Steps"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:570
+msgid "Check WordPress & Application Passwords"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:576
+msgid "Verify that WordPress core and user account permissions allow authenticated MCP requests:"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:591
+msgid "Product Server Enabled"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:598
+msgid "Ensure the product toggle switch is turned ON in the AI & MCP tab. Inactive products refuse client requests."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:611
+msgid "Administrator Permissions"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:618
+msgid "If you get 401 Unauthorized or 403 Forbidden, verify you are logged in as an Administrator with manage_options permissions."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:631
+msgid "Password Lifecycle"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:638
+msgid "Creating a new password does not revoke existing ones. To revoke, click \"Revoke all Shaped Kit passwords\" or manage them under Users → Profile."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:653
+msgid "Check AI Client Configuration & CLI Quirks"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:659
+msgid "Follow client-specific configuration recipes to prevent connection drops or stale configurations:"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:674
+#: assets/admin/snippets.js:63
+msgid "Claude Desktop"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:681
+msgid "Add the snippet into your claude_desktop_config.json under \"mcpServers\". Ensure no trailing comma on the final entry. If connecting to a local HTTPS dev site with a self-signed certificate, add \"NODE_TLS_REJECT_UNAUTHORIZED\": \"0\" (note: this disables certificate checks). Quit Claude Desktop completely (⌘Q / Alt+F4) and reopen it."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:695
+msgid "Claude Code CLI"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:702
+msgid "If you previously added the server, Claude Code will report that it already exists. Remove the old entry first before adding it again with new credentials:"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:717
+msgid "Cursor & Codex"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:724
+msgid "Cursor: paste the JSON into Settings → MCP, then restart Cursor. Codex: fill in the fields shown for Codex in the Connect tab."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:738
+#: assets/admin/snippets.js:39
+msgid "GitHub Copilot"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:745
+msgid "In VS Code, paste into .vscode/mcp.json or User settings, then reload the window or restart the editor to apply."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:760
+msgid "Run the Connection Doctor"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:766
+msgid "The diagnostic runner verifies whether WordPress accepts your credentials and whether your web server is forwarding the HTTP Authorization header."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:776
+msgid "Click the \"Run Connection Doctor\" button above. The diagnostic runner will verify whether WordPress accepts your credentials and whether your web server is forwarding the HTTP Authorization header."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:787
+msgid "Verifies HTTP Authorization header transmission to PHP"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:797
+msgid "Validates WordPress Core Application Passwords authentication"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:807
+msgid "Checks MCP REST endpoint readiness and JSON-RPC response"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:836
+msgid "Local, Docker & Reverse Proxy Setup"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:842
+msgid "Running on a local dev server (Local, Docker, XAMPP, MAMP) or behind an SSL reverse proxy? Here is how to configure WordPress:"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:859
+msgid "Plain HTTP on Local / Docker"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:866
+msgid "WordPress disables Application Passwords on plain HTTP unless WP_ENVIRONMENT_TYPE is set to \"local\". In wp-config.php add: define( 'WP_ENVIRONMENT_TYPE', 'local' ); or set the environment variable \"WP_ENVIRONMENT_TYPE=local\" in your docker-compose.yml."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:873
+msgid "In wp-config.php (before /* That's all, stop editing! */):"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:890
+msgid "SSL Terminating at a Reverse Proxy"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:897
+msgid "If SSL terminates at a reverse proxy (Nginx, Traefik, or Cloudflare), ensure your proxy forwards X-Forwarded-Proto. Because WordPress does not inspect this header automatically, in wp-config.php before wp-settings.php add: if ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $_SERVER['HTTP_X_FORWARDED_PROTO'] ) { $_SERVER['HTTPS'] = 'on'; } (Security note: only trust this header behind a trusted reverse proxy)."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:904
+msgid "In wp-config.php (before require_once ABSPATH . \"wp-settings.php\"):"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:915
+msgid "Security note: only trust HTTP_X_FORWARDED_PROTO behind a trusted reverse proxy."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:931
+msgid "Server Stripping Authorization Header"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:938
+msgid "Apache: save Settings > Permalinks, or add \"SetEnvIf Authorization (.*) HTTP_AUTHORIZATION=$1\" to .htaccess. Nginx: ensure \"fastcgi_param HTTP_AUTHORIZATION $http_authorization;\" is in your PHP location block."
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:946
+msgid "Apache (.htaccess):"
+msgstr ""
+
+#: assets/admin/DiagnosticsPanel.js:955
+msgid "Nginx (PHP location block):"
+msgstr ""
+
+#: assets/admin/mcpClient.js:345
+msgid "The arguments are not valid JSON."
+msgstr ""
+
+#: assets/admin/mcpClient.js:356
+msgid "The arguments must be a JSON object, such as {\"id\": 1}."
+msgstr ""
+
+#: assets/admin/overview.js:18
+#: assets/admin/SharedProductSettingsTab.js:263
+msgid "Ready"
+msgstr ""
+
+#: assets/admin/overview.js:20
+msgid "Off"
+msgstr ""
+
+#: assets/admin/overview.js:23
+msgid "Adapter required"
+msgstr ""
+
+#: assets/admin/overview.js:28
+msgid "Adapter too old"
+msgstr ""
+
+#: assets/admin/overview.js:33
+msgid "Adapter not recognised"
+msgstr ""
+
+#: assets/admin/overview.js:38
+msgid "Adapter not usable"
+msgstr ""
+
+#: assets/admin/overview.js:43
+msgid "Needs a newer WordPress"
+msgstr ""
+
+#: assets/admin/overview.js:47
+msgid "Server error"
+msgstr ""
+
+#: assets/admin/overview.js:50
+msgid "Unknown"
+msgstr ""
+
+#: assets/admin/overview.js:62
+msgid "Not loaded"
+msgstr ""
+
+#: assets/admin/overview.js:73
+#: assets/admin/overview.js:156
+msgid "Another plugin"
+msgstr ""
+
+#: assets/admin/overview.js:118
+msgid "MCP needs WordPress 6.9 or newer. Update WordPress to use it."
+msgstr ""
+
+#: assets/admin/overview.js:126
+msgid "This WordPress has no Abilities API, which MCP needs."
+msgstr ""
+
+#: assets/admin/overview.js:134
+msgid "No MCP adapter is loaded, so AI clients cannot connect to any product."
+msgstr ""
+
+#. translators: %s: the adapter's version, or "unknown".
+#: assets/admin/overview.js:144
+#, js-format
+msgid "The loaded MCP adapter (version %s) is too old or does not report a version. Update the plugin that supplies it."
+msgstr ""
+
+#: assets/admin/overview.js:148
+msgid "unknown"
+msgstr ""
+
+#. translators: 1: name of the plugin that loads the older MCP adapter, 2: its adapter version, 3: the adapter version Shaped Kit bundles.
+#: assets/admin/overview.js:162
+#, js-format
+msgid "%1$s loads an older copy of the MCP adapter (%2$s). Shaped Kit bundles %3$s, but WordPress can run only one copy, so your products use %2$s. Update %1$s, or ask its developer to update the adapter it bundles."
+msgstr ""
+
+#: assets/admin/overview.js:179
+msgid "No ShapedPlugin product is exposing MCP yet. Install or update a product that supports it, and it will appear here."
+msgstr ""
+
+#: assets/admin/OverviewStrip.js:19
+msgid "MCP adapter"
+msgstr ""
+
+#: assets/admin/OverviewStrip.js:24
+msgid "Products on"
+msgstr ""
+
+#. translators: 1: how many products are switched on, 2: how many there are.
+#: assets/admin/OverviewStrip.js:27
+#, js-format
+msgid "%1$d of %2$d"
+msgstr ""
+
+#: assets/admin/OverviewStrip.js:34
+msgid "Tools available"
+msgstr ""
+
+#: assets/admin/ProductCard.js:52
+#: assets/admin/ProductCard.js:166
+msgid "Pro"
+msgstr ""
+
+#: assets/admin/ProductCard.js:53
+msgid "Free"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/ProductCard.js:67
+#, js-format
+msgid "Let AI agents use %s"
+msgstr ""
+
+#: assets/admin/ProductCard.js:90
+msgid "Turn this on in the product's own settings."
+msgstr ""
+
+#: assets/admin/ProductCard.js:104
+msgid "Endpoint"
+msgstr ""
+
+#: assets/admin/ProductCard.js:111
+msgid "MCP endpoint address"
+msgstr ""
+
+#: assets/admin/ProductCard.js:130
+msgid "Tools"
+msgstr ""
+
+#: assets/admin/ProductCard.js:141
+msgid "Hide tools list"
+msgstr ""
+
+#: assets/admin/ProductCard.js:142
+msgid "View tools & sample prompts"
+msgstr ""
+
+#. translators: %s: product name
+#: assets/admin/ProductCard.js:154
+#, js-format
+msgid "Available tools for %s"
+msgstr ""
+
+#: assets/admin/ProductCard.js:174
+msgid "Open this tool in Try a tool"
+msgstr ""
+
+#: assets/admin/ProductCard.js:186
+msgid "Try in Tester"
+msgstr ""
+
+#: assets/admin/ProductCard.js:192
+msgid "Example prompts for AI:"
+msgstr ""
+
+#: assets/admin/ProductCard.js:201
+msgid "Copy prompt"
+msgstr ""
+
+#: assets/admin/ProductCard.js:215
+msgid "Try a starter:"
+msgstr ""
+
+#: assets/admin/ProductCard.js:223
+msgid "Open this starter in Try a tool"
+msgstr ""
+
+#: assets/admin/ProductCard.js:245
+msgid "Sample JSON input & expected output"
+msgstr ""
+
+#: assets/admin/ProductCard.js:252
+msgid "Sample JSON input (for Try a tool):"
+msgstr ""
+
+#: assets/admin/ProductCard.js:257
+msgid "Copy sample JSON"
+msgstr ""
+
+#: assets/admin/ProductCard.js:266
+msgid "Copy JSON"
+msgstr ""
+
+#: assets/admin/ProductCard.js:277
+#: assets/admin/ToolTester.js:417
+msgid "Expected Success Output (HTTP 200)"
+msgstr ""
+
+#: assets/admin/ProductSelectorBar.js:27
+msgid "Products selector"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:179
+msgid "Loading MCP configuration…"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:184
+msgid "This Product"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/SharedProductSettingsTab.js:190
+#, js-format
+msgid "MCP for AI Agents (%s)"
+msgstr ""
+
+#. translators: %s: product name
+#: assets/admin/SharedProductSettingsTab.js:195
+#, js-format
+msgid "Let AI assistants such as Claude, Cursor, or Copilot read and manage %s through the official WordPress MCP Adapter."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:222
+msgid "Enable MCP for AI Agents"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:225
+msgid "Off by default. When off, the endpoint is completely unreachable to external clients."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:266
+msgid "AI agents can connect to this endpoint."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:272
+msgid "Endpoint URL"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:290
+msgid "Copy Endpoint"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:297
+msgid "Available Tools:"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:298
+msgid "abilities"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:301
+msgid "MCP Adapter:"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:302
+#: assets/admin/StorePanel.js:679
+msgid "Active"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:322
+msgid "Ability Toolsets & Token Economy"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:325
+msgid "Control which tool groups are exposed to AI models. Disabling write or setup operations reduces prompt token consumption and prevents unauthorized modifications."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:370
+msgid "Always On"
+msgstr ""
+
+#. translators: %d: number of tools in this toolset
+#: assets/admin/SharedProductSettingsTab.js:386
+#, js-format
+msgid "%d tools"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:408
+msgid "Saving…"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:408
+msgid "Save Toolsets"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:412
+msgid "Settings saved successfully."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:430
+msgid "Quick Connect (Claude Code CLI)"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:434
+msgid "Application passwords are not available on this site, so an AI client cannot sign in yet. They need HTTPS (or a local site) and must not be switched off by a plugin."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:440
+msgid "Create an application password. Shaped Kit does it in one click and fills in this command for you."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:442
+msgid "Create password in Shaped Kit →"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:447
+msgid "Replace <your-application-password> in the command below with it. Your username is already filled in."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:448
+msgid "Replace <your-username> and <your-application-password> in the command below."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:450
+msgid "Run the command in the terminal where Claude Code is installed."
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:467
+msgid "Copy Command"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:475
+msgid "Need to configure Cursor, Desktop, Copilot, or manage Application Passwords across all products?"
+msgstr ""
+
+#: assets/admin/SharedProductSettingsTab.js:482
+msgid "Open Shaped Kit Hub →"
+msgstr ""
+
+#: assets/admin/snippets.js:19
+msgid "Claude Code"
+msgstr ""
+
+#: assets/admin/snippets.js:20
+msgid "Paste into your terminal, then run `claude` and the tools appear under MCP servers."
+msgstr ""
+
+#: assets/admin/snippets.js:24
+msgid "Updating an existing server? Claude Code ignores `claude mcp add` if the server name already exists. Run `claude mcp remove <slug>` first before adding it with a new password."
+msgstr ""
+
+#: assets/admin/snippets.js:31
+msgid "Codex"
+msgstr ""
+
+#: assets/admin/snippets.js:32
+msgid "Open Settings → Connect to a custom MCP, choose the Streamable HTTP tab, and fill in these fields."
+msgstr ""
+
+#: assets/admin/snippets.js:40
+msgid "Paste this JSON into your VS Code MCP configuration (.vscode/mcp.json or User settings)."
+msgstr ""
+
+#: assets/admin/snippets.js:44
+msgid "Restart required: Reload the VS Code window after saving settings."
+msgstr ""
+
+#: assets/admin/snippets.js:51
+msgid "Cursor"
+msgstr ""
+
+#: assets/admin/snippets.js:52
+msgid "Paste this JSON into Cursor → Settings → MCP, then restart Cursor."
+msgstr ""
+
+#: assets/admin/snippets.js:56
+msgid "Restart required: After pasting into Cursor settings, reload the Cursor window or restart Cursor."
+msgstr ""
+
+#: assets/admin/snippets.js:64
+msgid "Add these entries inside the \"mcpServers\" object of claude_desktop_config.json. If connecting to a local HTTPS dev site with a self-signed certificate, add NODE_TLS_REJECT_UNAUTHORIZED: 0 (note: disables certificate checks). If the file already has one, merge them into it rather than pasting a second object, and check there is no comma after the last entry. Then restart Claude Desktop. If it cannot find npx, replace \"npx\" with its full path (run `which npx`)."
+msgstr ""
+
+#: assets/admin/snippets.js:68
+msgid "Restart required: Claude Desktop reads configuration only on startup. After saving the file, quit Claude Desktop completely (Quit ⌘Q / Alt+F4) and reopen it."
+msgstr ""
+
+#: assets/admin/snippets.js:75
+msgid "Gemini CLI"
+msgstr ""
+
+#: assets/admin/snippets.js:76
+msgid "Paste this JSON into your Gemini CLI settings file (~/.gemini/settings.json)."
+msgstr ""
+
+#: assets/admin/snippets.js:80
+msgid "Restart required: Reload your terminal or restart Gemini CLI after saving settings."
+msgstr ""
+
+#: assets/admin/snippets.js:87
+msgid "Other"
+msgstr ""
+
+#: assets/admin/snippets.js:88
+msgid "Use the address and the Basic header with any HTTP MCP client. The curl line is a quick test."
+msgstr ""
+
+#: assets/admin/StorePanel.js:53
+msgid "License active"
+msgstr ""
+
+#: assets/admin/StorePanel.js:56
+msgid "License expired"
+msgstr ""
+
+#: assets/admin/StorePanel.js:58
+msgid "License not active"
+msgstr ""
+
+#. translators: %s: version number.
+#: assets/admin/StorePanel.js:73
+#: assets/admin/StorePanel.js:82
+#, js-format
+msgid "v%s"
+msgstr ""
+
+#. translators: %s: installed Pro version number.
+#: assets/admin/StorePanel.js:81
+#, js-format
+msgid "Pro v%s"
+msgstr ""
+
+#. translators: 1: installed version label, 2: version number of the available update.
+#: assets/admin/StorePanel.js:85
+#, js-format
+msgid "%1$s → v%2$s"
+msgstr ""
+
+#. translators: %d: number of AI tools the product offers.
+#: assets/admin/StorePanel.js:100
+#, js-format
+msgid "AI tools · %d ›"
+msgstr ""
+
+#: assets/admin/StorePanel.js:101
+msgid "AI tools · off ›"
+msgstr ""
+
+#. translators: %s: required PHP version.
+#: assets/admin/StorePanel.js:129
+#, js-format
+msgid "Needs PHP %s"
+msgstr ""
+
+#. translators: %s: required WordPress version.
+#: assets/admin/StorePanel.js:132
+#, js-format
+msgid "Needs WordPress %s"
+msgstr ""
+
+#. translators: %s: comma-separated names of required plugins that are not active.
+#: assets/admin/StorePanel.js:135
+#, js-format
+msgid "Needs %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:144
+msgid "WordPress"
+msgstr ""
+
+#: assets/admin/StorePanel.js:145
+msgid "WooCommerce"
+msgstr ""
+
+#: assets/admin/StorePanel.js:145
+msgid "needs the WooCommerce plugin"
+msgstr ""
+
+#. translators: %s: product slug
+#: assets/admin/StorePanel.js:312
+#: assets/admin/StorePanel.js:351
+#, js-format
+msgid "Successfully installed and activated %s."
+msgstr ""
+
+#: assets/admin/StorePanel.js:329
+msgid "Product activated successfully."
+msgstr ""
+
+#. translators: %s: beta version
+#: assets/admin/StorePanel.js:378
+#, js-format
+msgid "Successfully installed %s beta build."
+msgstr ""
+
+#: assets/admin/StorePanel.js:394
+msgid "Loading catalog…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:558
+msgid "Manage, install, and update official ShapedPlugin tools with cryptographic verification."
+msgstr ""
+
+#: assets/admin/StorePanel.js:572
+msgid "· built-in list"
+msgstr ""
+
+#. translators: %s: when the product list was last synced, for example "5 minutes ago".
+#: assets/admin/StorePanel.js:577
+#, js-format
+msgid "· synced %s"
+msgstr ""
+
+#. translators: %d: number of products.
+#: assets/admin/StorePanel.js:605
+#, js-format
+msgid "All %d"
+msgstr ""
+
+#. translators: %d: number of installed products.
+#: assets/admin/StorePanel.js:614
+#, js-format
+msgid "Installed %d"
+msgstr ""
+
+#. translators: %d: number of products with an update.
+#: assets/admin/StorePanel.js:623
+#, js-format
+msgid "Updates %d"
+msgstr ""
+
+#. translators: %d: number of products with AI tools.
+#: assets/admin/StorePanel.js:632
+#, js-format
+msgid "AI tools %d"
+msgstr ""
+
+#: assets/admin/StorePanel.js:640
+msgid "Search plugins…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:643
+msgid "Search plugins"
+msgstr ""
+
+#: assets/admin/StorePanel.js:649
+msgid "Products list"
+msgstr ""
+
+#: assets/admin/StorePanel.js:652
+msgid "No products found matching your filter."
+msgstr ""
+
+#: assets/admin/StorePanel.js:672
+msgid "Not installed"
+msgstr ""
+
+#: assets/admin/StorePanel.js:676
+msgid "Update available"
+msgstr ""
+
+#: assets/admin/StorePanel.js:682
+msgid "Inactive"
+msgstr ""
+
+#: assets/admin/StorePanel.js:732
+msgid "Changelog"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:743
+#, js-format
+msgid "Install Pro for %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:746
+msgid "Install Pro"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:757
+#, js-format
+msgid "Try the beta of %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:760
+msgid "Try beta"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:771
+#, js-format
+msgid "Set up AI tools for %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:781
+msgid "AI tools included"
+msgstr ""
+
+#: assets/admin/StorePanel.js:788
+msgid "AI tools after update"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:807
+#, js-format
+msgid "View updates for %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:809
+msgid "View updates"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:817
+#: assets/admin/StorePanel.js:874
+#, js-format
+msgid "Install %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:821
+msgid "Installing…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:821
+msgid "Install"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:829
+#, js-format
+msgid "Activate %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:833
+msgid "Activating…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:833
+msgid "Activate"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:841
+#, js-format
+msgid "Manage %s on the Plugins screen"
+msgstr ""
+
+#: assets/admin/StorePanel.js:843
+msgid "Plugins"
+msgstr ""
+
+#. translators: %s: product name.
+#: assets/admin/StorePanel.js:851
+#, js-format
+msgid "Settings for %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:853
+msgid "Settings"
+msgstr ""
+
+#: assets/admin/StorePanel.js:877
+msgid "Paste your license key to verify and install your Pro plugin over secure HTTPS directly from ShapedPlugin."
+msgstr ""
+
+#: assets/admin/StorePanel.js:882
+msgid "License Key"
+msgstr ""
+
+#: assets/admin/StorePanel.js:901
+#: assets/admin/StorePanel.js:951
+msgid "Cancel"
+msgstr ""
+
+#: assets/admin/StorePanel.js:909
+msgid "Verifying & Installing…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:909
+msgid "Verify & Install"
+msgstr ""
+
+#. translators: %s: beta version number.
+#: assets/admin/StorePanel.js:923
+#, js-format
+msgid "Install Beta: %s"
+msgstr ""
+
+#: assets/admin/StorePanel.js:926
+msgid "Beta versions contain early preview features. They are strictly excluded from automated WordPress background updates. Note: database downgrades to older versions are not supported."
+msgstr ""
+
+#: assets/admin/StorePanel.js:932
+msgid "Pro License Key"
+msgstr ""
+
+#: assets/admin/StorePanel.js:959
+msgid "Installing Beta…"
+msgstr ""
+
+#: assets/admin/StorePanel.js:959
+msgid "I Understand, Install Beta"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:13
+#: assets/admin/toolsCatalog.js:1016
+#: assets/admin/toolsCatalog.js:1347
+msgid "Get Context"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:14
+msgid "Inspects site environment, current user capability, and total testimonial counts."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:16
+msgid "Check our Real Testimonials setup and tell me how many testimonials we have."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:17
+msgid "What abilities and permissions are available for Real Testimonials on this site?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:18
+msgid "Show the overview of published and draft testimonials."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:23
+msgid "System & Capability Check"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:48
+msgid "List Testimonials"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:49
+msgid "Retrieves paginated testimonials with client names, ratings, company, and approval status."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:51
+msgid "List the latest 5-star testimonials submitted by customers."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:52
+msgid "Show all pending or draft testimonials that need review."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:53
+msgid "Find any testimonials mentioning \"support\" or \"fast delivery\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:61
+msgid "Latest Published"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:65
+msgid "5-Star Reviews"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:69
+msgid "Pending / Drafts"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:93
+msgid "Get Testimonial"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:94
+msgid "Fetches full testimonial record including content, reviewer meta, and categories by ID."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:96
+msgid "Retrieve testimonial details for ID 42."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:97
+msgid "Show the full review text and reviewer profile for testimonial #105."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:98
+msgid "Inspect the reviewer company and rating for testimonial ID 12."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:124
+msgid "List Testimonial Views"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:125
+msgid "Lists saved testimonial templates, layouts, and shortcodes (e.g. grid, carousel, slider)."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:127
+msgid "What testimonial views or shortcodes are created on this site?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:128
+msgid "List all carousel and slider views for customer testimonials."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:129
+msgid "Find the shortcode ID for the homepage testimonial grid."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:151
+msgid "Get Testimonial View"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:152
+msgid "Fetches layout configuration, styling options, and shortcode attributes for a specific view ID."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:154
+msgid "Show the layout and configuration settings for testimonial view ID 5."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:155
+msgid "Inspect the layout settings for shortcode [sp_testimonial id=\"12\"]."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:156
+msgid "What theme and columns are set on testimonial view #8?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:173
+msgid "Find Testimonial Blocks"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:174
+msgid "Scans site pages and posts to locate where testimonial blocks and shortcodes are placed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:176
+msgid "Which pages on my site have testimonial blocks or shortcodes embedded?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:177
+msgid "Find where shortcode view [sp_testimonial id=\"5\"] is currently displayed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:178
+msgid "Audit all pages displaying customer reviews or testimonial sliders."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:198
+#: assets/admin/toolsCatalog.js:1144
+#: assets/admin/toolsCatalog.js:1830
+msgid "Get Settings"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:199
+msgid "Reads active testimonial layout blocks, page builder integrations, and license status."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:201
+msgid "Check which page builder integrations are active for Real Testimonials."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:202
+msgid "Is the Gemini AI summary integration configured in Real Testimonials?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:203
+msgid "What block modules are currently enabled in Real Testimonials settings?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:230
+msgid "List Categories (Pro)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:232
+msgid "Lists testimonial groups and categories with hierarchy and item counts."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:234
+msgid "List all testimonial categories and how many reviews each has."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:235
+msgid "Show the category group hierarchy for customer testimonials."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:236
+msgid "Find the testimonial category slug for \"Enterprise Clients\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:255
+msgid "List Testimonial Forms (Pro)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:257
+msgid "Lists frontend testimonial collection forms with shortcode tags and publish status."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:259
+msgid "List all frontend testimonial collection forms created on this site."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:260
+msgid "What shortcode is used to embed the testimonial submission form?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:261
+msgid "Show all published testimonial collection forms."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:280
+msgid "Get Testimonial Form (Pro)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:282
+msgid "Retrieves form fields, messages, redirects and notification switches for a collection form ID. Notification addresses and e-mail bodies are withheld and listed by name only."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:284
+msgid "Get full settings and field configurations for testimonial form ID 3."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:285
+msgid "What fields are required in the testimonial collection form #7?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:286
+msgid "Inspect notification settings for testimonial form ID 2."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:316
+msgid "Review Sources Status (Pro)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:318
+msgid "Reports frontend submission form channels and review collection configuration."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:320
+msgid "Are frontend testimonial submission forms active and accepting video reviews?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:321
+msgid "Check the status of testimonial review collection channels."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:322
+msgid "How many frontend testimonial submission forms are published?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:335
+#: assets/admin/toolsCatalog.js:1486
+msgid "Find Media"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:336
+msgid "Finds images (or videos) already in the media library by title, alt text or file name, or checks a list of ids, and returns each id with its size and address. Use the id as a reviewer photo or company logo. Only items you are allowed to see are listed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:338
+msgid "Find the headshot of Sarah Jenkins in the media library and use it as her testimonial photo."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:339
+msgid "Which images in the media library could be the Acme Corp logo?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:340
+msgid "Check that media ids 41, 42 and 57 are images before you attach them to these testimonials."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:341
+msgid "List the last 10 images uploaded to the media library."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:349
+#: assets/admin/toolsCatalog.js:1500
+msgid "Search Images"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:353
+#: assets/admin/toolsCatalog.js:1504
+msgid "Latest Uploads"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:357
+#: assets/admin/toolsCatalog.js:1508
+msgid "Check Ids"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:382
+msgid "Create Testimonial"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:383
+msgid "Creates one draft testimonial from the properties a card shows first: title, review text, rating, reviewer name, role, company, location, photo, and groups. The answer lists the keys it saved and the ones it dropped. Email, phone, website, video, logo, social links, and custom fields need the Bulk Import toolset."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:385
+msgid "Create a new draft testimonial from \"Jane Doe\" with a 5-star rating."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:386
+msgid "Add a testimonial draft praising our fast onboarding and customer support."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:387
+msgid "Draft a testimonial review for Acme Corp with rating 5."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:388
+msgid "Add a testimonial from Sarah Jenkins, Director at Acme Global in San Francisco, with her photo from the media library and a 4-star rating."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:433
+msgid "Create Testimonials (Bulk)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:434
+msgid "Creates up to 5 testimonials in one call with every reviewer detail: rating, photo, company logo, video, social links, custom fields, and groups. Drafts by default; a bad item is reported and the rest are still created. Part of the opt-in Bulk Import toolset (off by default, because it adds a large tool to every message). Also use it for one testimonial that needs email, phone, website, country, video, logo, social links, or custom fields."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:436
+msgid "Add these 5 customer reviews as draft testimonials, with each reviewer's name, company, location, and star rating."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:437
+msgid "Import the first 5 testimonials from this spreadsheet and put each one in the Customers group, with their LinkedIn links."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:438
+msgid "Do a dry run first: tell me which of these 5 testimonials would be created and which fields would be dropped."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:439
+msgid "Create these testimonials, set the reviewer photos and company logos from our media library, and keep them as drafts for review."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:465
+msgid "Dry run (writes nothing)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:475
+msgid "Create two drafts"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:519
+#: assets/admin/toolsCatalog.js:1622
+msgid "Import Image"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:520
+msgid "Downloads up to 5 https images (JPEG, PNG, GIF, WebP) into the media library and returns their ids, for reviewer photos and company logos. Private and local addresses are refused, files are checked by their content, and an address imported before is reused. Part of the opt-in Media Import toolset (off by default, because this site then fetches addresses from the internet). Import only images you have the right to use."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:522
+msgid "Import the photo at https://example.com/team/sarah.jpg with the alt text \"Sarah Jenkins\" and use it on her testimonial."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:523
+msgid "Add these three customer headshots to the media library, then create a draft testimonial for each person with their photo."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:524
+#: assets/admin/toolsCatalog.js:1627
+msgid "Check whether these image addresses can be imported, without downloading anything yet."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:525
+msgid "Import the Acme Corp logo from their press kit and set it as the company logo on the Acme testimonial."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:539
+#: assets/admin/toolsCatalog.js:1642
+msgid "Check Only (Dry Run)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:546
+msgid "Import One Photo"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:579
+msgid "Update Testimonial"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:580
+msgid "Updates an existing testimonial title, review text, rating, reviewer details or reviewer photo (a media library id; 0 removes it). An id that is not an image is listed under dropped and the photo stays as it was."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:582
+msgid "Update testimonial #42 with reviewer designation \"VP of Engineering\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:583
+msgid "Change the status of testimonial ID 15 to published."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:584
+msgid "Update the star rating of testimonial #8 to 5."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:585
+msgid "Testimonial #42 shows the wrong photo. Find the image named \"Sarah Jenkins\" in the media library and use that one; ask me if there is more than one."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:586
+msgid "Remove the reviewer photo from testimonial #15."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:617
+msgid "Delete Testimonial (Protected)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:618
+msgid "Moves testimonial to trash or permanently deletes it. Permanent deletion requires two-step WriteGuard confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:620
+msgid "Permanently delete testimonial #42 with two-step confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:621
+msgid "Move testimonial ID 99 to trash."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:622
+msgid "Preview permanent deletion of testimonial #14."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:630
+#: assets/admin/toolsCatalog.js:1300
+msgid "Move to Trash (Safe)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:634
+#: assets/admin/toolsCatalog.js:1304
+msgid "Permanent Delete (Preview Step)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:646
+#: assets/admin/toolsCatalog.js:1867
+msgid "Get Block Catalog (Builder)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:647
+msgid "Returns the settings a testimonial block accepts, with design rules and examples, so your AI client can design it."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:649
+msgid "Design a dark testimonial carousel with 3 columns and autoplay. Show me the settings first."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:650
+msgid "Which settings can I change on the Real Testimonials grid block?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:651
+msgid "Plan a minimal, light slider for customer reviews using the block catalog."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:678
+#: assets/admin/toolsCatalog.js:1915
+msgid "Validate Block Attributes (Builder)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:679
+msgid "Checks block settings your AI wrote, lists every dropped setting with its reason, and returns the final settings the block would get."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:681
+msgid "Check these carousel settings and tell me which ones Real Testimonials would drop."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:682
+msgid "Validate a 4-column grid design with rounded cards and soft shadows."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:683
+msgid "Fix any invalid values in my slider settings and validate them again."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:694
+#: assets/admin/toolsCatalog.js:815
+#: assets/admin/toolsCatalog.js:988
+msgid "Dark Theme & Colors"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:711
+msgid "Responsive 3-Column Slider"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:735
+#: assets/admin/toolsCatalog.js:2008
+msgid "Insert Block (Builder, Protected)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:736
+msgid "Saves the built block into a new draft page, or into an existing page after you confirm a preview."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:738
+msgid "Build a dark testimonial carousel with autoplay and save it as a new draft page called \"Customer Love\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:739
+msgid "Add a 3-column testimonial grid at the end of my Testimonials page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:740
+msgid "Restyle the testimonial slider on my About page with a light, minimal look."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:751
+msgid "New Draft Page (Basic)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:761
+#: assets/admin/toolsCatalog.js:940
+#: assets/admin/toolsCatalog.js:2146
+msgid "Autoplay Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:775
+#: assets/admin/toolsCatalog.js:948
+msgid "Four-Column Grid"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:790
+#: assets/admin/toolsCatalog.js:956
+msgid "Short Review Form"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:803
+#: assets/admin/toolsCatalog.js:964
+msgid "5-Star Bento"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:834
+msgid "With Custom Styling"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:846
+#: assets/admin/toolsCatalog.js:2053
+msgid "Append to Existing Page (Preview)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:873
+#: assets/admin/toolsCatalog.js:2079
+msgid "List Ready Patterns (Builder)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:874
+msgid "Lists ready-made testimonial designs from the Ready Patterns library. On Free, Pro designs are shown as needing Pro."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:876
+msgid "Show me ready-made testimonial carousel designs for a real estate site."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:877
+msgid "Which testimonial grid patterns can I use without Pro?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:878
+msgid "Find a ready testimonial design for an online store."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:903
+#: assets/admin/toolsCatalog.js:2109
+msgid "Insert Ready Pattern (Builder, Protected)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:904
+msgid "Inserts a ready-made design into a new draft page, or into an existing page after you confirm a preview."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:906
+msgid "Insert the \"Grid – Design 01\" pattern into a new draft page called \"Reviews\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:907
+msgid "Add a ready-made testimonial carousel to the end of my Home page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:908
+msgid "Pick a fitting testimonial pattern for my agency site and put it on the About page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:928
+msgid "Build Testimonial Block (Prompt)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:929
+msgid "Guided prompt template directing an AI assistant to construct and insert a testimonial block."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:931
+msgid "Build a 3-column carousel testimonial block with customer ratings and dark cards."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:932
+msgid "Create a modern testimonial grid with customer avatars and verified badges."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:933
+msgid "Design a clean testimonial slider section and insert it into a new draft page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:972
+msgid "Autoplay Slider"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:980
+msgid "Wall of Love"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1017
+msgid "Reports environment, active API provider, and weather entry counts."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1019
+msgid "What weather views and templates exist on this site?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1020
+msgid "Check our Location Weather plugin status and capabilities."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1021
+msgid "How many weather widgets are created in Location Weather?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1026
+msgid "Check Capabilities"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1049
+msgid "List Weather Templates"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1050
+msgid "Lists saved weather entries with their location, layout view, and shortcodes."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1052
+msgid "List all configured weather locations and their shortcode IDs."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1053
+msgid "Show weather views displaying London or New York forecasts."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1054
+msgid "Find the weather template ID used for the header widget."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1063
+msgid "Latest 5 Templates"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1067
+msgid "All Templates"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1090
+msgid "Get Weather Template"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1091
+msgid "Retrieves specific weather entry configuration: units, forecast days, and display options."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1093
+msgid "Get full layout and forecast settings for weather template #15."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1094
+msgid "Inspect the temperature units and display elements for weather view #3."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1095
+msgid "What location is configured in weather template ID 8?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1117
+msgid "Find Weather Blocks"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1118
+msgid "Scans site content to locate where weather blocks or shortcodes are embedded."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1120
+msgid "Which pages or templates contain Location Weather blocks?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1121
+msgid "Find where weather shortcode [location-weather id=\"2\"] is placed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1122
+msgid "Audit all pages showing current weather forecast widgets."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1145
+msgid "Reads global weather settings: active API provider, cache duration, and custom CSS flags."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1147
+msgid "Check the weather data cache expiration time in settings."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1148
+msgid "Which weather API service is active (OpenWeatherMap or WeatherAPI)?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1149
+msgid "Are custom scripts enabled in Location Weather settings?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1161
+msgid "Get Cloud Status (Pro)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1163
+msgid "Checks Styble Cloud connection mode, weather AI assistant, and capabilities."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1165
+msgid "Is Styble Cloud connected for enhanced weather forecasts?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1166
+msgid "Check if the Weather AI Assistant is enabled on this site."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1167
+msgid "What cloud weather capabilities are active?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1172
+msgid "Check Cloud & AI Assistant"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1190
+msgid "Create Weather View"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1191
+msgid "Creates a new weather template entry with location coordinates or city name, units, and layout."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1193
+msgid "Create a new weather template for Tokyo with Celsius units and vertical card layout."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1194
+msgid "Add a new draft weather view for London, GB."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1195
+msgid "Create a weather widget showing San Francisco forecast in Fahrenheit."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1206
+msgid "Metric (Celsius)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1216
+msgid "Imperial (Fahrenheit)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1238
+msgid "Update View Settings"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1239
+msgid "Modifies location, display toggles, temperature units, or view layout for an existing template."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1241
+msgid "Update weather template #12 to display humidity and wind speed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1242
+msgid "Change the city of weather view 5 to Berlin, DE and switch units to metric."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1243
+msgid "Set layout of weather template #8 to horizontal card."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1265
+msgid "Duplicate View"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1266
+msgid "Clones an existing weather template into a new draft view."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1268
+msgid "Duplicate weather template #3 so I can test different display options."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1269
+msgid "Clone the header weather view into a new draft."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1270
+msgid "Make a copy of template 15 titled \"Sidebar Weather\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1287
+msgid "Delete Weather Template (Protected)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1288
+msgid "Moves template to trash or permanently deletes it. Permanent deletion requires two-step WriteGuard confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1290
+msgid "Permanently delete weather template #9 with two-step confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1291
+msgid "Move weather template #22 to trash."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1292
+msgid "Preview permanent deletion of weather template ID 7."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1316
+msgid "Clear Cache (Protected for Global)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1317
+msgid "Purges cached weather API transients for a single template, or globally with WriteGuard confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1319
+msgid "Clear cached weather data for template ID 4 to fetch live conditions."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1320
+msgid "Purge all site-wide weather cache transients with two-step confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1321
+msgid "Preview clearing global weather cache."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1329
+msgid "Single Template Cache"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1333
+msgid "Global Site-Wide Cache (Preview Step)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1348
+msgid "Inspects user identity, site environment, carousel and template counts, license state, and callable tools."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1350
+msgid "Check our WP Carousel setup and summarize how many carousels and templates we have."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1351
+msgid "What tools and permissions are available for WP Carousel on this site?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1352
+msgid "Show our WP Carousel environment details and license status."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1357
+msgid "Full Context Overview"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1409
+msgid "List Carousels"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1410
+msgid "Retrieves paginated classic carousels with title, type, status, shortcode, and timestamps."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1412
+msgid "List all active carousels on the site with their shortcodes."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1413
+msgid "Show me the 5 most recently created image carousels."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1414
+msgid "Find carousels matching \"Hero Banner\" or \"Products\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1422
+msgid "First 5 Carousels"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1426
+msgid "Published Only"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1450
+msgid "Get Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1451
+msgid "Retrieves full configuration, layout options, and responsive settings for a classic carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1453
+msgid "Inspect the settings and image sources of carousel ID 101."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1454
+msgid "What autoplay and speed settings are configured on carousel 101?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1455
+msgid "Show full configuration details for carousel #101."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1462
+msgid "Inspect Carousel #101"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1487
+msgid "Finds images (or videos) already in the media library by title, alt text or file name, or checks a list of ids, and returns each id with its size and address. Use the ids as carousel or gallery slides. Only items you are allowed to see are listed."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1489
+msgid "Find our product photos in the media library and list their ids for a new carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1490
+msgid "Show me the 10 most recently uploaded images; I want some of them in the homepage slider."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1491
+msgid "Check that ids 120, 121 and 130 are images before you add them to the gallery."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1492
+msgid "Find every image with \"team\" in its name for an \"Our Team\" carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1533
+msgid "Duplicate Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1534
+msgid "Duplicates an existing classic carousel and all its layout/shortcode options into a new draft."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1536
+msgid "Duplicate carousel #101 with the title \"Summer Campaign Carousel\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1537
+msgid "Create a draft copy of carousel ID 42 to use as a template."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1538
+msgid "Duplicate the hero carousel so we can customize it for mobile."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1546
+msgid "Duplicate #101 as Draft"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1570
+msgid "Update Carousel Settings"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1571
+msgid "Updates title, status, source type, or options of an existing classic carousel. Only settings the carousel already has can change, each in its own shape; gallery images are media library ids. Anything refused is listed under dropped."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1573
+msgid "Change the title of carousel 101 to \"Homepage Featured Slider\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1574
+msgid "Enable autoplay and set speed to 3500ms on carousel #101."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1575
+msgid "Switch carousel 101 status from draft to publish."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1576
+msgid "Replace the images of carousel 101 with the product photos you found in the media library."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1589
+msgid "Update Autoplay & Speed"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1596
+msgid "Publish Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1623
+msgid "Downloads up to 5 https images (JPEG, PNG, GIF, WebP) into the media library and returns their ids, for carousel and gallery slides. Private and local addresses are refused, files are checked by their content, and an address imported before is reused. Part of the opt-in Media Import toolset (off by default, because this site then fetches addresses from the internet). Import only images you have the right to use."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1625
+msgid "Import these 4 product shots from our CDN and build a carousel with them."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1626
+msgid "Add the five photos from this press kit to the media library and put them in the gallery carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1628
+msgid "Import our partner logos from their websites for a logo slider."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1649
+msgid "Import Two Slides"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1693
+msgid "Delete Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1694
+msgid "Moves a classic carousel to trash or permanently deletes it with Level 1 confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1696
+msgid "Move unused carousel #105 to trash."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1697
+msgid "Permanently delete carousel #105 using two-step confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1698
+msgid "Trash the old draft carousel ID 99."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1706
+msgid "Move to Trash"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1710
+msgid "Permanent Delete Preview"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1723
+msgid "List Templates"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1724
+msgid "Retrieves paginated saved block carousel templates with title, status, and shortcodes."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1726
+msgid "List all saved block carousel templates created with the builder."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1727
+msgid "Find any draft carousel templates that need attention."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1728
+msgid "Show the latest 10 saved templates."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1736
+msgid "First 10 Templates"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1759
+msgid "Get Template"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1760
+msgid "Retrieves the complete block structure, inner blocks, and content of a saved carousel template."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1762
+msgid "Inspect the block tree and attributes inside saved template ID 201."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1763
+msgid "Show the layout and inner block content of carousel template 201."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1764
+msgid "Check the content and shortcode of template #201."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1771
+msgid "Inspect Template #201"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1787
+msgid "Find Carousel Blocks"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1788
+msgid "Scans published posts and pages to locate embedded carousel blocks and shortcodes."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1790
+msgid "Where is carousel ID 101 embedded across our pages and posts?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1791
+msgid "Find all pages that include a WP Carousel block."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1792
+msgid "Search for posts using the [sp_wpcarousel] shortcode."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1799
+msgid "Find All Carousel Embeds"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1803
+msgid "Find Carousel #101 Embeds"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1831
+msgid "Returns global carousel asset enqueueing rules, active modules, and masked license state."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1833
+msgid "Check whether Swiper CSS/JS and FontAwesome enqueueing are enabled."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1834
+msgid "What WP Carousel modules (AI Builder, Lightbox) are currently active?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1835
+msgid "Show the global settings and masked license status for WP Carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1840
+msgid "Global Settings & Modules"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1868
+msgid "Returns the settings a carousel block accepts, with design rules and examples, so your AI client can design it."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1870
+msgid "What blocks and layout settings can WP Carousel build with AI?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1871
+msgid "Show me the allowed options and design rules for building a standard carousel."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1872
+msgid "Inspect the accepted attributes for the full-width slider block."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1879
+msgid "Standard Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1883
+#: assets/admin/toolsCatalog.js:1949
+msgid "Full-Width Slider"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1887
+msgid "Thumbnails Slider"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1891
+#: assets/admin/toolsCatalog.js:1965
+msgid "Tiles Grid"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1916
+msgid "Checks block settings written by an AI, lists dropped keys with reasons, and returns the final patch."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1918
+msgid "Validate these carousel block attributes and check for any dropped keys."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1919
+msgid "Check a 4-column responsive slider configuration with dark styling."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1920
+msgid "Fix any invalid settings in my carousel design and validate again."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:1937
+msgid "Responsive 3-Column Carousel"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2009
+msgid "Saves a configured block into a new draft page, or into an existing page after WriteGuard confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2011
+msgid "Build a 3-column hero carousel and save it as a new draft page titled \"Product Showcase\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2012
+msgid "Insert a full-width image slider at the end of my Home page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2013
+msgid "Update the existing carousel block on my About page with responsive columns."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2028
+msgid "New Draft Page (Hero Carousel)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2043
+msgid "Full-Width Slider (Draft)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2080
+msgid "Lists ready-made carousel designs from the pattern library. On Free, Pro designs are marked as requiring Pro."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2082
+msgid "Show me ready-made carousel patterns for an eCommerce store."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2083
+msgid "Which carousel and slider patterns are available in the Free edition?"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2084
+msgid "Find modern 3D carousel and thumbnail slider pattern designs."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2110
+msgid "Inserts a ready-made pattern into a new draft page, or into an existing page after confirmation."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2112
+msgid "Insert pattern #101 into a new draft page called \"Client Showcase\"."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2113
+msgid "Add a ready-made hero carousel pattern to the top of my Landing page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2114
+msgid "Pick a clean modern carousel pattern and create a draft page for it."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2134
+msgid "Build Carousel (Prompt)"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2135
+msgid "Guided prompt template directing an AI assistant to construct and insert a carousel block."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2137
+msgid "Build a 3-column responsive carousel with autoplay and light cards."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2138
+msgid "Create a full-width hero slider with smooth navigation dots."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2139
+msgid "Design a masonry image gallery and insert it into a new draft page."
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2154
+msgid "Full-Width Hero Slider"
+msgstr ""
+
+#: assets/admin/toolsCatalog.js:2162
+msgid "Tiles Grid Showcase"
+msgstr ""
+
+#: assets/admin/ToolTester.js:235
+msgid "Try a tool"
+msgstr ""
+
+#: assets/admin/ToolTester.js:237
+msgid "Calls a tool the way an AI client would and shows the raw answer. Use the username and password above. A tool that changes data will change it."
+msgstr ""
+
+#: assets/admin/ToolTester.js:248
+#: assets/admin/ToolTester.js:267
+msgid "Product"
+msgstr ""
+
+#: assets/admin/ToolTester.js:294
+msgid "Reload tools"
+msgstr ""
+
+#: assets/admin/ToolTester.js:295
+msgid "Load tools"
+msgstr ""
+
+#. translators: %s: product name
+#: assets/admin/ToolTester.js:305
+#, js-format
+msgid "Click \"Load tools\" above to connect and explore live tools & starters for %s."
+msgstr ""
+
+#: assets/admin/ToolTester.js:319
+msgid "This product offers no tools."
+msgstr ""
+
+#: assets/admin/ToolTester.js:326
+msgid "Tool"
+msgstr ""
+
+#. translators: %s: prompt name
+#: assets/admin/ToolTester.js:338
+#, js-format
+msgid "%s (Prompt)"
+msgstr ""
+
+#: assets/admin/ToolTester.js:357
+msgid "Arguments (JSON)"
+msgstr ""
+
+#: assets/admin/ToolTester.js:361
+msgid "Sample JSON auto-filled"
+msgstr ""
+
+#: assets/admin/ToolTester.js:375
+msgid "Reset to sample"
+msgstr ""
+
+#: assets/admin/ToolTester.js:383
+msgid "Try a starter / preset:"
+msgstr ""
+
+#: assets/admin/ToolTester.js:436
+msgid "Working…"
+msgstr ""
+
+#: assets/admin/ToolTester.js:438
+msgid "Run prompt"
+msgstr ""
+
+#: assets/admin/ToolTester.js:439
+msgid "Run tool"
+msgstr ""
+
+#. translators: 1: HTTP status code, 2: milliseconds.
+#: assets/admin/ToolTester.js:450
+#, js-format
+msgid "HTTP %1$d · %2$d ms"
+msgstr ""
+
+#: assets/admin/ToolTester.js:461
+msgid "The tool reported that its call failed. Its message is below."
+msgstr ""

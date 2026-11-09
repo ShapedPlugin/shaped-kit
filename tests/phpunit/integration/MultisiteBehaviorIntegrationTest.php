@@ -171,7 +171,7 @@ class MultisiteBehaviorIntegrationTest extends WP_UnitTestCase {
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			define( 'WP_UNINSTALL_PLUGIN', true );
 		}
-		require dirname( __DIR__, 3 ) . '/uninstall.php';
+		require SHAPED_KIT_DIR . 'uninstall.php';
 
 		$this->assertSame( array(), $this->left_behind(), 'main site: nothing left behind' );
 		if ( $sub_id ) {
@@ -213,7 +213,7 @@ class MultisiteBehaviorIntegrationTest extends WP_UnitTestCase {
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			define( 'WP_UNINSTALL_PLUGIN', true );
 		}
-		require dirname( __DIR__, 3 ) . '/uninstall.php';
+		require SHAPED_KIT_DIR . 'uninstall.php';
 
 		remove_filter( 'sites_clauses', $cap, 10 );
 

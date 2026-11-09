@@ -4,7 +4,7 @@
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.9%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
-[![MCP Adapter](https://img.shields.io/badge/MCP%20Adapter-v0.7.0-green.svg)](https://github.com/WordPress/mcp-adapter)
+[![MCP Adapter](https://img.shields.io/badge/MCP%20Adapter-v0.7.1-green.svg)](https://github.com/WordPress/mcp-adapter)
 [![License: GPLv2+](https://img.shields.io/badge/License-GPL%20v2%2B-orange.svg)](LICENSE)
 
 Shaped Kit is the free companion plugin for ShapedPlugin products. It lets AI clients such as Claude, Cursor and Copilot work with ShapedPlugin products on a WordPress site through the Model Context Protocol (MCP).
@@ -98,7 +98,7 @@ Products can serve MCP prompts (`prompts/list`, `prompts/get`) that guide the AI
 
 ### 8. MCP adapter and safe loading
 
-- Bundles the official [`WordPress/mcp-adapter`](https://github.com/WordPress/mcp-adapter), pinned to 0.7.0, as an unmodified copy.
+- Bundles the official [`WordPress/mcp-adapter`](https://github.com/WordPress/mcp-adapter), pinned to 0.7.1, as an unmodified copy.
 - Steps aside when another plugin already supplies an adapter, so two copies never load.
 - The adapter's shared default server stays off.
 - WordPress 6.9 or newer is required for MCP. On older versions the Kit skips MCP without errors.

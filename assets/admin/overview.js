@@ -148,6 +148,26 @@ export const notices = ( overview ) => {
 				adapter.version || __( 'unknown', 'shaped-kit' )
 			),
 		} );
+	} else if ( adapter.outdated === true ) {
+		const source = adapter.source || {};
+		const who =
+			source.type === 'plugin'
+				? source.display_name || source.name
+				: __( 'Another plugin', 'shaped-kit' );
+
+		found.push( {
+			tone: 'warn',
+			text: sprintf(
+				/* translators: 1: name of the plugin that loads the older MCP adapter, 2: its adapter version, 3: the adapter version Shaped Kit bundles. */
+				__(
+					'%1$s loads an older copy of the MCP adapter (%2$s). Shaped Kit bundles %3$s, but WordPress can run only one copy, so your products use %2$s. Update %1$s, or ask its developer to update the adapter it bundles.',
+					'shaped-kit'
+				),
+				who,
+				adapter.version,
+				adapter.bundled_version
+			),
+		} );
 	}
 
 	if (

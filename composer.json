@@ -26,11 +26,13 @@
         "test:integration:ci": "SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration-ci --fail-on-skipped",
         "test:multisite:ci": "WP_MULTISITE=1 SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration-ci --fail-on-skipped",
         "test:package":"rm -rf \"${TMPDIR:-/tmp}/shaped-kit-package\" && mkdir -p \"${TMPDIR:-/tmp}/shaped-kit-package\" && unzip -q shaped-kit.zip -d \"${TMPDIR:-/tmp}/shaped-kit-package\" && SHAPED_KIT_PLUGIN_DIR=\"${TMPDIR:-/tmp}/shaped-kit-package/shaped-kit\" SHAPED_KIT_PHPUNIT_BOOTSTRAP=integration tools/phpunit/vendor/bin/phpunit -c phpunit.xml.dist --testsuite integration",
+        "i18n:pot": "wp i18n make-pot . languages/shaped-kit.pot --slug=shaped-kit --domain=shaped-kit --exclude=libs,node_modules,vendor,tests,tools,templates,build,docs,.wordpress,.wordpress-tests-lib,assets/admin/*.test.js --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/ShapedPlugin/shaped-kit/issues\"}'",
         "lint": "tools/phpcs/vendor/bin/phpcs",
         "lint:fix": "tools/phpcs/vendor/bin/phpcbf"
     },
     "scripts-descriptions": {
         "tools:install": "Install the isolated PHPUnit and PHPCS toolchains under tools/.",
+        "i18n:pot": "Regenerate languages/shaped-kit.pot from the PHP and dashboard sources (needs WP-CLI). Run before a release.",
         "test": "Run the loader scripts, the unit suite, the integration suite and the same integration suite on a real multisite.",
         "test:scripts": "Run the dependency-free loader tests (fresh PHP process per scenario).",
         "test:unit": "Run the PHPUnit unit suite (no WordPress).",

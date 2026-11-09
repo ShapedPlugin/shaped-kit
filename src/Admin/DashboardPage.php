@@ -86,6 +86,10 @@ final class DashboardPage {
 			true
 		);
 
+		// The dashboard's strings use @wordpress/i18n. Core looks for shaped-kit-{locale}-shaped-kit-admin.json in
+		// this folder first (l10n.php:1222-1227), then in wp-content/languages/plugins (from :1234).
+		wp_set_script_translations( self::SCRIPT_HANDLE, 'shaped-kit', SHAPED_KIT_DIR . 'languages' );
+
 		// The stylesheet is optional: it exists only once the build has styles. WordPress swaps in the
 		// -rtl copy by itself on right-to-left sites (class-wp-styles.php), so only the one file is named.
 		if ( is_readable( dirname( $asset_file ) . '/style-index.css' ) ) {

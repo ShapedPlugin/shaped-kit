@@ -139,6 +139,59 @@ describe( 'notices', () => {
 		expect( found[ 0 ].text ).toMatch( /Abilities API/ );
 	} );
 
+	test( 'an older copy from another plugin is named with both versions', () => {
+		const found = notices(
+			overview( {
+				adapter: adapter( {
+					version: '0.4.1',
+					bundled_version: '0.7.1',
+					outdated: true,
+					source: {
+						type: 'plugin',
+						name: 'some-seo-plugin',
+						display_name: 'Some SEO Plugin',
+					},
+				} ),
+			} )
+		);
+
+		expect( found ).toHaveLength( 1 );
+		expect( found[ 0 ].tone ).toBe( 'warn' );
+		expect( found[ 0 ].text ).toBe(
+			'Some SEO Plugin loads an older copy of the MCP adapter (0.4.1). Shaped Kit bundles 0.7.1, but WordPress can run only one copy, so your products use 0.4.1. Update Some SEO Plugin, or ask its developer to update the adapter it bundles.'
+		);
+	} );
+
+	test( 'an older copy is not reported twice when it is also too old to use', () => {
+		const found = notices(
+			overview( {
+				adapter: adapter( {
+					version: '0.0.9',
+					bundled_version: '0.7.1',
+					compatible: false,
+					outdated: true,
+				} ),
+			} )
+		);
+
+		expect( found ).toHaveLength( 1 );
+		expect( found[ 0 ].tone ).toBe( 'bad' );
+	} );
+
+	test( 'the note waits for the server to say the copy is older', () => {
+		expect(
+			notices(
+				overview( {
+					adapter: adapter( {
+						version: '0.4.1',
+						bundled_version: '0.7.1',
+						source: { type: 'plugin', name: 'mcp-adapter' },
+					} ),
+				} )
+			)
+		).toEqual( [] );
+	} );
+
 	test( 'no adapter is a warning that names the effect', () => {
 		const found = notices(
 			overview( { adapter: adapter( { loaded: false } ) } )

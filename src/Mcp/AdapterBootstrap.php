@@ -65,7 +65,16 @@ final class AdapterBootstrap {
 
 		// Autoloads too, so a copy another plugin has registered but not yet used still counts.
 		if ( class_exists( self::ADAPTER_CLASS ) ) {
-			return false;
+			// A plugin that loads before the Kit (a must-use or network-active one) may only have
+			// registered an autoloader, and starts its copy only when its own feature is on. Nothing
+			// would then fire mcp_adapter_init, and no product endpoint would exist.
+			self::watch_for_unstarted_adapter();
+
+			// That autoloader can resolve to the Kit's own files when they are the newest copy. Then
+			// the Kit is the supplier, and its copy loads the usual way below.
+			if ( ! self::loaded_from_bundled_copy() ) {
+				return false;
+			}
 		}
 
 		$file_exists = 'file_exists';
@@ -110,6 +119,96 @@ final class AdapterBootstrap {
 		remove_filter( 'mcp_adapter_create_default_server', array( __CLASS__, 'filter_default_server' ), 5 );
 
 		return false;
+	}
+
+	/**
+	 * Check, just before the adapter would initialise, that some plugin started the loaded copy.
+	 *
+	 * Every adapter copy's instance() adds init() on rest_api_init at 15, or on init at 20 under
+	 * WP-CLI. The check runs one priority earlier, after any plugin that starts its copy on an
+	 * earlier rest_api_init priority, so a copy someone else starts stays theirs.
+	 *
+	 * @return void
+	 */
+	private static function watch_for_unstarted_adapter() {
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			add_action( 'init', array( __CLASS__, 'start_unstarted_adapter' ), 19 );
+			return;
+		}
+
+		add_action( 'rest_api_init', array( __CLASS__, 'start_unstarted_adapter' ), 14 );
+	}
+
+	/**
+	 * Start a loaded adapter copy that no plugin started, with its shared default server off.
+	 *
+	 * Starting a copy is what turns the adapter on, so the Kit does it with the default server off,
+	 * as when it supplies the adapter itself (FR-S1). A copy that is already started, reports no
+	 * compatible version, or has an unknown shape is left alone.
+	 *
+	 * @return bool Whether this call started the copy.
+	 */
+	public static function start_unstarted_adapter() {
+		if ( ! class_exists( self::ADAPTER_CLASS, false ) || ! method_exists( self::ADAPTER_CLASS, 'instance' ) ) {
+			return false;
+		}
+
+		if ( self::adapter_started() ) {
+			return false;
+		}
+
+		$version_constant = self::ADAPTER_CLASS . '::VERSION';
+		$version          = defined( $version_constant ) ? (string) constant( $version_constant ) : null;
+
+		if ( ! self::version_compatible( $version ) ) {
+			return false;
+		}
+
+		add_filter( 'mcp_adapter_create_default_server', array( __CLASS__, 'filter_default_server' ), 5 );
+
+		call_user_func( array( self::ADAPTER_CLASS, 'instance' ) );
+
+		return true;
+	}
+
+	/**
+	 * Whether the loaded adapter copy already has its singleton, read without starting it.
+	 *
+	 * Every released copy holds it in a private static `$instance`, unset until instance() runs.
+	 * A copy without that property is treated as started, so the Kit never starts a shape it
+	 * cannot read.
+	 *
+	 * @return bool
+	 */
+	private static function adapter_started() {
+		try {
+			$property = new \ReflectionProperty( self::ADAPTER_CLASS, 'instance' );
+		} catch ( \ReflectionException $e ) {
+			return true;
+		}
+
+		if ( ! $property->isStatic() ) {
+			return true;
+		}
+
+		$property->setAccessible( true );
+
+		return $property->isInitialized() && null !== $property->getValue();
+	}
+
+	/**
+	 * Whether the loaded adapter class is the Kit's own bundled file.
+	 *
+	 * @return bool
+	 */
+	private static function loaded_from_bundled_copy() {
+		$file = ( new \ReflectionClass( self::ADAPTER_CLASS ) )->getFileName();
+
+		return self::SOURCE_KIT === self::classify_source(
+			self::real_path( (string) $file ),
+			self::real_path( self::bundled_dir() ),
+			self::real_path( WP_PLUGIN_DIR )
+		);
 	}
 
 	/**
@@ -159,6 +258,55 @@ final class AdapterBootstrap {
 		);
 
 		return $status;
+	}
+
+	/**
+	 * The version of the adapter copy the Kit bundles, read from its source so it stays right after the
+	 * folder is replaced, and without loading the class (another copy may be the one that runs).
+	 *
+	 * @return string Empty when the file is missing or reports no version.
+	 */
+	public static function bundled_version() {
+		$file = self::bundled_dir() . self::ADAPTER_MARKER;
+
+		if ( ! is_readable( $file ) ) {
+			return '';
+		}
+
+		$source = (string) file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- a local file in the Kit's own folder.
+
+		return 1 === preg_match( "/const\s+VERSION\s*=\s*'([^']+)'/", $source, $matches ) ? $matches[1] : '';
+	}
+
+	/**
+	 * Whether the dashboard should say that another plugin's adapter copy is older than the bundled one.
+	 *
+	 * WordPress can run only one copy, so an older copy loaded by another plugin is the one every product
+	 * uses. A plugin that is itself an adapter (the official standalone plugin, in any folder) is never
+	 * reported: it updates on its own. The Kit's own copy is never older than itself.
+	 *
+	 * @param string      $source_type   'shaped-kit', 'plugin', 'unknown' or 'none'.
+	 * @param string      $source_folder Plugin folder for 'plugin', else ''.
+	 * @param string|null $version       Version of the copy that runs.
+	 * @param string      $bundled       Version of the bundled copy.
+	 * @param callable    $file_exists   Filesystem check, injectable for tests.
+	 * @return bool
+	 */
+	public static function is_outdated( $source_type, $source_folder, $version, $bundled, $file_exists = 'file_exists' ) {
+		if ( ! in_array( $source_type, array( 'plugin', 'unknown' ), true ) ) {
+			return false;
+		}
+
+		// An empty bundled version needs no check of its own: no version compares below ''.
+		if ( ! is_string( $version ) || '' === $version ) {
+			return false;
+		}
+
+		if ( 'plugin' === $source_type && '' !== (string) $source_folder && call_user_func( $file_exists, rtrim( WP_PLUGIN_DIR, '/\\' ) . '/' . $source_folder . '/' . self::ADAPTER_MARKER ) ) {
+			return false;
+		}
+
+		return version_compare( $version, (string) $bundled, '<' );
 	}
 
 	/**

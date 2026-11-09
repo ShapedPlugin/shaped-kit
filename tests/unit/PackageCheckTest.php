@@ -61,6 +61,7 @@ $good_files = array_merge(
 		'build/admin/index.js',
 		'build/admin/index.asset.php',
 		'build/admin/style-index.css',
+		'languages/shaped-kit.pot',
 	),
 	$src,
 	$libs
@@ -106,6 +107,8 @@ $check( 'and as a gap in the bundled adapter', $has( $found, 'The bundled adapte
 $check( 'a class in src/ left out of the zip', $has( $problems( array_values( array_diff( $good_files, array( 'src/Mcp/ProductRegistry.php' ) ) ) ), 'In src/ on disk but not in the zip: src/Mcp/ProductRegistry.php' ), true );
 $check( 'an adapter file left out (not a required one)', $has( $problems( array_values( array_diff( $good_files, array( 'libs/mcp-adapter/README.md' ) ) ) ), 'The bundled adapter is missing a file: libs/mcp-adapter/README.md' ), true );
 $check( 'an extra file in the adapter folder', $has( $problems( array_merge( $good_files, array( 'libs/mcp-adapter/patched.php' ) ) ), 'has a file the source does not' ), true );
+
+$check( 'a package without its translation template is reported', $has( $problems( array_values( array_diff( $good_files, array( 'languages/shaped-kit.pot' ) ) ) ), 'Missing: languages/shaped-kit.pot' ), true );
 
 $no_license = array_values( array_diff( $good_files, array( 'LICENSE' ) ) );
 $check( 'a package without its licence is reported', $has( $problems( $no_license ), 'Missing: LICENSE' ), true );
