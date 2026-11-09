@@ -340,15 +340,18 @@ class McpController {
 
 		$adapter = AdapterBootstrap::status();
 		$source  = self::describe_source( $adapter['source'], $adapter['loaded'] );
+		$bundled = AdapterBootstrap::bundled_version();
 
 		return array(
 			'kit_version'         => SHAPED_KIT_VERSION,
 			'wordpress_supported' => AdapterBootstrap::wordpress_supported( (string) $wp_version ),
 			'adapter'             => array(
-				'loaded'     => $adapter['loaded'],
-				'compatible' => $adapter['compatible'],
-				'version'    => $adapter['version'],
-				'source'     => $source,
+				'loaded'          => $adapter['loaded'],
+				'compatible'      => $adapter['compatible'],
+				'version'         => $adapter['version'],
+				'source'          => $source,
+				'bundled_version' => $bundled,
+				'outdated'        => AdapterBootstrap::is_outdated( $source['type'], $source['name'], $adapter['version'], $bundled ),
 			),
 			'abilities_api'       => $adapter['abilities_api'],
 			'products'            => ProductRegistry::all(),

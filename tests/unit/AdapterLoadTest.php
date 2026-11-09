@@ -49,7 +49,31 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 		$GLOBALS['argv'] = $scenario['cli_argv'];
 	}
 
-	if ( ! empty( $scenario['preloaded'] ) ) {
+	$GLOBALS['adapter_started'] = 0;
+
+	if ( ! empty( $scenario['autoload_own'] ) ) {
+		// Another plugin's autoloader that resolves the adapter class to the Kit's own bundled file.
+		spl_autoload_register(
+			function ( $name ) {
+				if ( 'WP\MCP\Core\McpAdapter' === $name ) {
+					require SHAPED_KIT_DIR . 'libs/mcp-adapter/includes/Core/McpAdapter.php';
+				}
+			}
+		);
+	}
+
+	if ( ! empty( $scenario['preloaded'] ) && in_array( $scenario['preloaded'], array( 'unstarted', 'started', 'unstarted-no-version', 'no-singleton' ), true ) ) {
+		// A copy with the singleton every released adapter has: instance() sets it once.
+		$version  = 'unstarted-no-version' === $scenario['preloaded'] ? '' : 'const VERSION = "0.1.0";';
+		$property = 'no-singleton' === $scenario['preloaded'] ? '' : 'private static self $instance;';
+		$body     = 'no-singleton' === $scenario['preloaded']
+			? '++$GLOBALS["adapter_started"]; return new self();'
+			: 'if ( ! isset( self::$instance ) ) { self::$instance = new self(); ++$GLOBALS["adapter_started"]; } return self::$instance;';
+		eval( 'namespace WP\MCP\Core; final class McpAdapter { ' . $version . ' ' . $property . ' public static function instance(): self { ' . $body . ' } }' ); // phpcs:ignore Squiz.PHP.Eval -- simulates another plugin's copy.
+		if ( 'started' === $scenario['preloaded'] ) {
+			\WP\MCP\Core\McpAdapter::instance();
+		}
+	} elseif ( ! empty( $scenario['preloaded'] ) ) {
 		if ( 'no-version' === $scenario['preloaded'] ) {
 			eval( 'namespace WP\MCP\Core; class McpAdapter {}' ); // phpcs:ignore Squiz.PHP.Eval -- a copy that reports no version.
 		} else {
@@ -67,6 +91,10 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 		unset( $GLOBALS['filters'][ $hook ] );
 		return true;
 	}
+	function add_action( $hook, $callback, $priority = 10 ) {
+		$GLOBALS['actions'][ $hook ] = array( $callback, $priority );
+		return true;
+	}
 	function apply_filters( $hook, $value ) {
 		return $value;
 	}
@@ -82,15 +110,31 @@ if ( isset( $argv[1] ) && '--child' === $argv[1] ) {
 
 	require __DIR__ . '/../../src/Mcp/AdapterBootstrap.php';
 
-	$loaded = \ShapedKit\Mcp\AdapterBootstrap::maybe_load();
+	$GLOBALS['actions'] = array();
+
+	$loaded            = \ShapedKit\Mcp\AdapterBootstrap::maybe_load();
+	$filter_registered = isset( $GLOBALS['filters']['mcp_adapter_create_default_server'] );
+
+	// What the late check registered, and what it does when its hook fires.
+	$watch          = null;
+	$started_before = $GLOBALS['adapter_started'];
+	foreach ( array( 'rest_api_init', 'init' ) as $hook ) {
+		if ( isset( $GLOBALS['actions'][ $hook ] ) ) {
+			$watch = $hook . '@' . $GLOBALS['actions'][ $hook ][1];
+			$GLOBALS['actions'][ $hook ][0]();
+		}
+	}
 
 	echo json_encode(
 		array(
-			'loaded'            => $loaded,
-			'entry_required'    => $GLOBALS['entry_required'],
-			'filter_registered' => isset( $GLOBALS['filters']['mcp_adapter_create_default_server'] ),
-			'default_server'    => \ShapedKit\Mcp\AdapterBootstrap::filter_default_server( true ),
-			'status'            => \ShapedKit\Mcp\AdapterBootstrap::status(),
+			'loaded'             => $loaded,
+			'entry_required'     => $GLOBALS['entry_required'],
+			'filter_registered'  => $filter_registered,
+			'default_server'     => \ShapedKit\Mcp\AdapterBootstrap::filter_default_server( true ),
+			'status'             => \ShapedKit\Mcp\AdapterBootstrap::status(),
+			'watch'              => $watch,
+			'started_by_watch'   => $GLOBALS['adapter_started'] - $started_before,
+			'filter_after_watch' => isset( $GLOBALS['filters']['mcp_adapter_create_default_server'] ),
 		)
 	);
 	exit( 0 );
@@ -104,7 +148,14 @@ $root = sys_get_temp_dir() . '/shaped-kit-load-test-' . getmypid();
 $entry_with_class    = "<?php\nnamespace WP\\MCP\\Core;\n\$GLOBALS['entry_required'] = true;\nclass McpAdapter { const VERSION = '0.7.0'; }\n";
 $entry_without_class = "<?php\n\$GLOBALS['entry_required'] = true;\n";
 
+// The Kit's copy when another plugin's autoloader already resolved the class to it: the entry
+// starts the loaded class, as the real one does through Plugin::instance().
+$own_class = "<?php\nnamespace WP\\MCP\\Core;\nfinal class McpAdapter { const VERSION = '0.7.1'; private static self \$instance; public static function instance(): self { if ( ! isset( self::\$instance ) ) { self::\$instance = new self(); ++\$GLOBALS['adapter_started']; } return self::\$instance; } }\n";
+$own_entry = "<?php\n\$GLOBALS['entry_required'] = true;\n\\WP\\MCP\\Core\\McpAdapter::instance();\n";
+
 $tree = array(
+	'kit-auto/libs/mcp-adapter/mcp-adapter.php'           => $own_entry,
+	'kit-auto/libs/mcp-adapter/includes/Core/McpAdapter.php' => $own_class,
 	'kit-ok/libs/mcp-adapter/mcp-adapter.php'             => $entry_with_class,
 	'kit-noclass/libs/mcp-adapter/mcp-adapter.php'        => $entry_without_class,
 	'kit-missing/shaped-kit.php'                          => "<?php\n",
@@ -196,6 +247,61 @@ foreach ( $scenarios as $label => $case ) {
 		. json_encode( $expected ) . "\n      got " . ( null === $actual ? trim( (string) $output ) : json_encode( $actual ) ) . "\n";
 }
 
+// A copy that is loaded before the Kit but never started (a must-use or network-active plugin that
+// starts its copy only when its own feature is on): the Kit starts it just before the adapter would
+// initialise, with the shared default server off. A copy someone else started stays theirs.
+// Columns: [loaded, entry_required, watch hook, started by the watch, default-server filter after].
+$watch_scenarios = array(
+	'an unstarted copy is started by the late check, default server off' => array( array( 'preloaded' => 'unstarted' ), array( false, false, 'rest_api_init@14', 1, true ) ),
+	'under wp-cli the late check runs on init'             => array(
+		array(
+			'preloaded' => 'unstarted',
+			'cli'       => array( array( 'cache', 'flush' ), array() ),
+		),
+		array( false, false, 'init@19', 1, true ),
+	),
+	'a copy another plugin started is left alone'          => array( array( 'preloaded' => 'started' ), array( false, false, 'rest_api_init@14', 0, false ) ),
+	'an unstarted copy with no version is not started'     => array( array( 'preloaded' => 'unstarted-no-version' ), array( false, false, 'rest_api_init@14', 0, false ) ),
+	'a copy without the singleton property is not started' => array( array( 'preloaded' => 'no-singleton' ), array( false, false, 'rest_api_init@14', 0, false ) ),
+	'the Kit\'s own copy resolved by another autoloader loads as usual' => array(
+		array(
+			'kit'          => 'kit-auto',
+			'autoload_own' => true,
+		),
+		array( true, true, 'rest_api_init@14', 0, true ),
+	),
+	'the disable constant also stops the late check'       => array(
+		array(
+			'preloaded' => 'unstarted',
+			'disable'   => true,
+		),
+		array( false, false, null, 0, false ),
+	),
+	'nothing is watched when the Kit supplies the adapter' => array( array(), array( true, true, null, 0, true ) ),
+);
+
+foreach ( $watch_scenarios as $label => $case ) {
+	list( $overrides, $expected ) = $case;
+
+	$command = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( __FILE__ ) . ' --child '
+		. escapeshellarg( json_encode( array_merge( $base, $overrides ) ) ) . ' ' . escapeshellarg( $root ) . ' 2>&1';
+	$output  = shell_exec( $command );
+	$result  = json_decode( (string) $output, true );
+
+	$actual = is_array( $result ) && array_key_exists( 'watch', $result )
+		? array( $result['loaded'], $result['entry_required'], $result['watch'], $result['started_by_watch'], $result['filter_after_watch'] )
+		: null;
+
+	if ( $actual === $expected ) {
+		echo "ok    {$label}\n";
+		continue;
+	}
+
+	++$failures;
+	echo "FAIL  {$label}\n      expected [loaded, entry_required, watch, started_by_watch, filter_after_watch] = "
+		. json_encode( $expected ) . "\n      got " . ( null === $actual ? trim( (string) $output ) : json_encode( $actual ) ) . "\n";
+}
+
 // What `status()` reports for an adapter another plugin loaded: its version, and whether products
 // accept it. Each runs in a fresh process, because the class cannot be undefined.
 $version_scenarios = array(
@@ -236,6 +342,6 @@ foreach ( $items as $item ) {
 }
 rmdir( $root );
 
-echo "\n" . ( count( $scenarios ) + count( $version_scenarios ) ) . " scenarios, {$failures} failed\n";
+echo "\n" . ( count( $scenarios ) + count( $watch_scenarios ) + count( $version_scenarios ) ) . " scenarios, {$failures} failed\n";
 
 exit( $failures > 0 ? 1 : 0 );

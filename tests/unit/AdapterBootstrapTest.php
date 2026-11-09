@@ -211,6 +211,25 @@ $check( 'a sibling of the plugins dir is not a plugin', AdapterBootstrap::classi
 $check( 'mu-plugins', AdapterBootstrap::classify_source( '/srv/wp/wp-content/mu-plugins/x' . $class, $bundled, $plugins ), 'unknown' );
 $check( 'no file (internal class)', AdapterBootstrap::classify_source( '', $bundled, $plugins ), 'unknown' );
 
+echo "-- is_outdated (the dashboard's older-copy note)\n";
+define( 'WP_PLUGIN_DIR', $plugins );
+$none = $exists_in( array() );
+$check( 'another plugin bundles an older copy', AdapterBootstrap::is_outdated( 'plugin', 'some-seo-plugin', '0.4.1', '0.7.1', $none ), true );
+$check( 'a copy outside the plugins folder is older', AdapterBootstrap::is_outdated( 'unknown', '', '0.5.0', '0.7.1', $none ), true );
+$check( 'the same version is not older', AdapterBootstrap::is_outdated( 'plugin', 'some-seo-plugin', '0.7.1', '0.7.1', $none ), false );
+$check( 'a newer copy is not older', AdapterBootstrap::is_outdated( 'plugin', 'some-seo-plugin', '0.10.0', '0.7.1', $none ), false );
+$check( 'the standalone adapter plugin is never reported', AdapterBootstrap::is_outdated( 'plugin', 'mcp-adapter', '0.6.1', '0.7.1', $exists_in( array( $standalone_marker ) ) ), false );
+$check( 'a renamed standalone adapter plugin is never reported', AdapterBootstrap::is_outdated( 'plugin', 'wp-mcp-adapter', '0.6.1', '0.7.1', $exists_in( array( $renamed_marker ) ) ), false );
+$check( 'the Kit\'s own copy is never reported', AdapterBootstrap::is_outdated( 'shaped-kit', 'shaped-kit', '0.7.0', '0.7.1', $none ), false );
+$check( 'nothing loaded is not reported', AdapterBootstrap::is_outdated( 'none', '', null, '0.7.1', $none ), false );
+$check( 'a copy that reports no version is left to the compatibility notice', AdapterBootstrap::is_outdated( 'plugin', 'some-seo-plugin', null, '0.7.1', $none ), false );
+$check( 'an unreadable bundled version reports nothing', AdapterBootstrap::is_outdated( 'plugin', 'some-seo-plugin', '0.4.1', '', $none ), false );
+
+echo "-- bundled_version\n";
+define( 'SHAPED_KIT_DIR', dirname( __DIR__, 2 ) . '/' );
+$header = preg_match( '/^\s*\*\s*Version:\s*(\S+)/m', (string) file_get_contents( SHAPED_KIT_DIR . 'libs/mcp-adapter/mcp-adapter.php' ), $m ) ? $m[1] : 'missing';
+$check( 'matches the bundled plugin header\'s Version', AdapterBootstrap::bundled_version(), $header );
+
 echo "\n{$total} cases, {$failures} failed\n";
 
 exit( $failures > 0 ? 1 : 0 );
