@@ -187,7 +187,7 @@ const SharedProductSettingsTab = ( {
 		<div className="shaped-kit-shared-settings-tab" style={ { maxWidth: '840px', margin: '0' } }>
 			<div style={ { marginBottom: '24px' } }>
 				<h3 style={ { margin: '0 0 6px', fontSize: '18px', fontWeight: 600 } }>
-					{ sprintf( __( 'MCP for AI Agents (%s)', 'shaped-kit' ), name ) }
+					{ sprintf( /* translators: %s: product name. */ __( 'MCP for AI Agents (%s)', 'shaped-kit' ), name ) }
 				</h3>
 				<p style={ { margin: 0, color: '#646970', fontSize: '13px', lineHeight: 1.5 } }>
 					{ sprintf(

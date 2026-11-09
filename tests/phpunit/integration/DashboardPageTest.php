@@ -117,8 +117,14 @@ final class DashboardPageTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'shapedKitAdmin', $data );
 		$this->assertMatchesRegularExpression( '#"restUrl":"[^"]*shaped-kit(\\\\/|/)v1(\\\\/|/)mcp"#', $data, 'Pretty or plain permalinks, the address ends in the route.' );
 		$this->assertMatchesRegularExpression( '#"storeRestUrl":"[^"]*shaped-kit(\\\\/|/)v1(\\\\/|/)store"#', $data, 'The address ends in /store.' );
-		$this->assertSame( array( 'wp-element' ), wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->deps );
+		// The build's own dependencies, plus wp-i18n, which core adds for a script with translations (class-wp-scripts.php:726-727).
+		$this->assertSame( array( 'wp-element', 'wp-i18n' ), wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->deps );
 		$this->assertSame( 'abc123', wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->ver );
+
+		// The dashboard's strings are translated from the Kit's own languages folder: the Kit is not served from
+		// wordpress.org, so no language pack would ever arrive for it.
+		$this->assertSame( 'shaped-kit', wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->textdomain );
+		$this->assertSame( SHAPED_KIT_DIR . 'languages', wp_scripts()->registered[ DashboardPage::SCRIPT_HANDLE ]->translations_path );
 	}
 
 	public function test_nothing_loads_on_any_other_admin_page(): void {

@@ -51,7 +51,7 @@ This file is tracked in a public repository. Never put local paths, keys, licens
 - **WordPress 6.9+ for all MCP capabilities.** Older versions skip gracefully (`AdapterBootstrap::wordpress_supported()`).
 - **REST only.** Every Kit backend route is `register_rest_route` with an explicit `permission_callback` (typically `manage_options`) and, for browser callers, a nonce (`wp-api-fetch` handles cookie auth). No new `wp_ajax_*` handlers.
 - **Admin UI is a React mount point.** `src/Admin/DashboardPage.php` renders only the wrapper `#shaped-kit-dashboard`; PHP renders no other markup. JS lives in `assets/admin/`, never under `src/`.
-- **`libs/mcp-adapter/` is an unmodified upstream copy** of `WordPress/mcp-adapter`, currently pinned to 0.7.0. Replace it on upgrade, never patch it. All workarounds, compatibility handling and step-aside logic live in `src/Mcp/AdapterBootstrap.php`. A new adapter release is run through the adapter matrix before it is trusted (PRD E93).
+- **`libs/mcp-adapter/` is an unmodified upstream copy** of `WordPress/mcp-adapter`, currently pinned to 0.7.1. Replace it on upgrade, never patch it. All workarounds, compatibility handling and step-aside logic live in `src/Mcp/AdapterBootstrap.php`. A new adapter release is run through the adapter matrix before it is trusted (PRD E93).
 - **Isolation of plugin state.**
   - The Kit never writes another plugin's options.
   - MCP on/off switches go through product-registered handlers (`shaped_kit/mcp_toggle_handlers`).
@@ -82,6 +82,7 @@ Always use the Kit's own isolated toolchains (`tools/phpunit`, `tools/phpcs`), n
 | `npm run test:js` | Jest unit tests for the React dashboard (`assets/admin/**/*.test.js`) |
 | `npm run build` | Compile the admin bundle to `build/admin/` |
 | `composer lint` / `lint:fix` | WPCS + PHPCompatibilityWP 10.0.0-alpha2 (the stable 9.3.5 cannot see PHP 8 syntax) |
+| `composer i18n:pot` | Regenerate `languages/shaped-kit.pot` (needs WP-CLI). Run when strings change; the release zip must carry it |
 | `npm run package:verify` | Check the release zip against the strict allow/denylist |
 
 The integration suite uses `.wordpress/` (core 7.1.3) and `.wordpress-tests-lib/` (wordpress-develop 7.1.3, with a machine-local `wp-tests-config.php`), both gitignored. Its database is `shaped_kit_tests` on Local's MySQL socket. The test library drops and recreates every table in that database on each run, so never point it at `local`.

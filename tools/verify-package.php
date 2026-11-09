@@ -39,6 +39,7 @@ function shaped_kit_required_files() {
 		'libs/mcp-adapter/mcp-adapter.php',
 		'libs/mcp-adapter/includes/Core/McpAdapter.php',
 		'libs/mcp-adapter/vendor/autoload.php',
+		'languages/shaped-kit.pot',
 	);
 }
 
@@ -49,7 +50,7 @@ function shaped_kit_required_files() {
  * @return string[]
  */
 function shaped_kit_allowed_top_level() {
-	return array( 'shaped-kit.php', 'uninstall.php', 'LICENSE', 'src', 'libs', 'build', 'package.json', 'README.md' );
+	return array( 'shaped-kit.php', 'uninstall.php', 'LICENSE', 'src', 'libs', 'build', 'languages', 'package.json', 'README.md' );
 }
 
 /**

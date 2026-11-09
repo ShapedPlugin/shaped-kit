@@ -70,7 +70,7 @@ const versionLabel = ( item ) => {
 	const rep = item.representative;
 
 	if ( ! item.isInstalled ) {
-		return sprintf( __( 'v%s', 'shaped-kit' ), rep.stable_version );
+		return sprintf( /* translators: %s: version number. */ __( 'v%s', 'shaped-kit' ), rep.stable_version );
 	}
 
 	const installed = item.isProInstalled
@@ -78,11 +78,11 @@ const versionLabel = ( item ) => {
 		: item.free?.active_version || rep.active_version;
 	const current = installed || rep.stable_version;
 	const base = item.isProInstalled
-		? sprintf( __( 'Pro v%s', 'shaped-kit' ), current )
-		: sprintf( __( 'v%s', 'shaped-kit' ), current );
+		? sprintf( /* translators: %s: installed Pro version number. */ __( 'Pro v%s', 'shaped-kit' ), current )
+		: sprintf( /* translators: %s: version number. */ __( 'v%s', 'shaped-kit' ), current );
 
 	if ( item.hasUpdate && item.updateVersion && item.updateVersion !== current ) {
-		return sprintf( __( '%1$s → v%2$s', 'shaped-kit' ), base, item.updateVersion );
+		return sprintf( /* translators: 1: installed version label, 2: version number of the available update. */ __( '%1$s → v%2$s', 'shaped-kit' ), base, item.updateVersion );
 	}
 
 	return base;
@@ -97,7 +97,7 @@ const versionLabel = ( item ) => {
  */
 const aiToolsLabel = ( item ) =>
 	item.mcpEnabled
-		? sprintf( __( 'AI tools · %d ›', 'shaped-kit' ), item.mcpCount )
+		? sprintf( /* translators: %d: number of AI tools the product offers. */ __( 'AI tools · %d ›', 'shaped-kit' ), item.mcpCount )
 		: __( 'AI tools · off ›', 'shaped-kit' );
 
 /**
@@ -126,13 +126,13 @@ const safeAdminPath = ( path ) =>
  */
 const blockerLabel = ( rep, isInstalled ) => {
 	if ( ! isInstalled && rep.needs_php ) {
-		return sprintf( __( 'Needs PHP %s', 'shaped-kit' ), rep.needs_php );
+		return sprintf( /* translators: %s: required PHP version. */ __( 'Needs PHP %s', 'shaped-kit' ), rep.needs_php );
 	}
 	if ( ! isInstalled && rep.needs_wp ) {
-		return sprintf( __( 'Needs WordPress %s', 'shaped-kit' ), rep.needs_wp );
+		return sprintf( /* translators: %s: required WordPress version. */ __( 'Needs WordPress %s', 'shaped-kit' ), rep.needs_wp );
 	}
 	if ( Array.isArray( rep.unmet_plugins ) && rep.unmet_plugins.length ) {
-		return sprintf( __( 'Needs %s', 'shaped-kit' ), rep.unmet_plugins.join( ', ' ) );
+		return sprintf( /* translators: %s: comma-separated names of required plugins that are not active. */ __( 'Needs %s', 'shaped-kit' ), rep.unmet_plugins.join( ', ' ) );
 	}
 	return '';
 };
@@ -574,7 +574,7 @@ const StorePanel = () => {
 					) }
 					{ catalog?.catalog_source !== 'builtin' && catalog?.synced_label && (
 						<span className="shaped-kit-sync-time">
-							{ sprintf( __( '· synced %s', 'shaped-kit' ), catalog.synced_label ) }
+							{ sprintf( /* translators: %s: when the product list was last synced, for example "5 minutes ago". */ __( '· synced %s', 'shaped-kit' ), catalog.synced_label ) }
 						</span>
 					) }
 				</div>
@@ -602,7 +602,7 @@ const StorePanel = () => {
 						className={ `shaped-kit-tab-btn ${ activeTab === 'all' ? 'is-active' : '' }` }
 						onClick={ () => setActiveTab( 'all' ) }
 					>
-						{ sprintf( __( 'All %d', 'shaped-kit' ), totalCount ) }
+						{ sprintf( /* translators: %d: number of products. */ __( 'All %d', 'shaped-kit' ), totalCount ) }
 					</button>
 					<button
 						type="button"
@@ -611,7 +611,7 @@ const StorePanel = () => {
 						className={ `shaped-kit-tab-btn ${ activeTab === 'installed' ? 'is-active' : '' }` }
 						onClick={ () => setActiveTab( 'installed' ) }
 					>
-						{ sprintf( __( 'Installed %d', 'shaped-kit' ), installedCount ) }
+						{ sprintf( /* translators: %d: number of installed products. */ __( 'Installed %d', 'shaped-kit' ), installedCount ) }
 					</button>
 					<button
 						type="button"
@@ -620,7 +620,7 @@ const StorePanel = () => {
 						className={ `shaped-kit-tab-btn ${ activeTab === 'updates' ? 'is-active' : '' }` }
 						onClick={ () => setActiveTab( 'updates' ) }
 					>
-						{ sprintf( __( 'Updates %d', 'shaped-kit' ), updatesCount ) }
+						{ sprintf( /* translators: %d: number of products with an update. */ __( 'Updates %d', 'shaped-kit' ), updatesCount ) }
 					</button>
 					<button
 						type="button"
@@ -629,7 +629,7 @@ const StorePanel = () => {
 						className={ `shaped-kit-tab-btn ${ activeTab === 'ai_tools' ? 'is-active' : '' }` }
 						onClick={ () => setActiveTab( 'ai_tools' ) }
 					>
-						{ sprintf( __( 'AI tools %d', 'shaped-kit' ), aiToolsCount ) }
+						{ sprintf( /* translators: %d: number of products with AI tools. */ __( 'AI tools %d', 'shaped-kit' ), aiToolsCount ) }
 					</button>
 				</div>
 
@@ -740,7 +740,7 @@ const StorePanel = () => {
 													<button
 														type="button"
 														className="shaped-kit-fact-action-link"
-														aria-label={ sprintf( __( 'Install Pro for %s', 'shaped-kit' ), rep.name ) }
+														aria-label={ sprintf( /* translators: %s: product name. */ __( 'Install Pro for %s', 'shaped-kit' ), rep.name ) }
 														onClick={ () => setProModalProduct( item.pro ) }
 													>
 														{ __( 'Install Pro', 'shaped-kit' ) }
@@ -754,7 +754,7 @@ const StorePanel = () => {
 													<button
 														type="button"
 														className="shaped-kit-fact-action-link"
-														aria-label={ sprintf( __( 'Try the beta of %s', 'shaped-kit' ), rep.name ) }
+														aria-label={ sprintf( /* translators: %s: product name. */ __( 'Try the beta of %s', 'shaped-kit' ), rep.name ) }
 														onClick={ () => setBetaModalProduct( item.betaProduct ) }
 													>
 														{ __( 'Try beta', 'shaped-kit' ) }
@@ -768,7 +768,7 @@ const StorePanel = () => {
 													<a
 														className="shaped-kit-fact-ai"
 														href={ `admin.php?page=shaped-kit&connect=${ encodeURIComponent( item.family ) }` }
-														aria-label={ sprintf( __( 'Set up AI tools for %s', 'shaped-kit' ), rep.name ) }
+														aria-label={ sprintf( /* translators: %s: product name. */ __( 'Set up AI tools for %s', 'shaped-kit' ), rep.name ) }
 													>
 														{ aiToolsLabel( item ) }
 													</a>
@@ -804,7 +804,7 @@ const StorePanel = () => {
 											<a
 												href="update-core.php"
 												className="button button-secondary is-update"
-												aria-label={ sprintf( __( 'View updates for %s', 'shaped-kit' ), rep.name ) }
+												aria-label={ sprintf( /* translators: %s: product name. */ __( 'View updates for %s', 'shaped-kit' ), rep.name ) }
 											>
 												{ __( 'View updates', 'shaped-kit' ) }
 											</a>
@@ -814,7 +814,7 @@ const StorePanel = () => {
 											<button
 												type="button"
 												className="button button-secondary"
-												aria-label={ sprintf( __( 'Install %s', 'shaped-kit' ), rep.name ) }
+												aria-label={ sprintf( /* translators: %s: product name. */ __( 'Install %s', 'shaped-kit' ), rep.name ) }
 												onClick={ () => handleInstallFree( item.free?.slug || rep.slug ) }
 												disabled={ isBusy || ! rep.can_install }
 											>
@@ -826,7 +826,7 @@ const StorePanel = () => {
 											<button
 												type="button"
 												className="button button-secondary"
-												aria-label={ sprintf( __( 'Activate %s', 'shaped-kit' ), rep.name ) }
+												aria-label={ sprintf( /* translators: %s: product name. */ __( 'Activate %s', 'shaped-kit' ), rep.name ) }
 												onClick={ () => handleActivate( rep.slug ) }
 												disabled={ isBusy }
 											>
@@ -838,7 +838,7 @@ const StorePanel = () => {
 											<a
 												href="plugins.php"
 												className="button button-secondary"
-												aria-label={ sprintf( __( 'Manage %s on the Plugins screen', 'shaped-kit' ), rep.name ) }
+												aria-label={ sprintf( /* translators: %s: product name. */ __( 'Manage %s on the Plugins screen', 'shaped-kit' ), rep.name ) }
 											>
 												{ __( 'Plugins', 'shaped-kit' ) }
 											</a>
@@ -848,7 +848,7 @@ const StorePanel = () => {
 											<a
 												href={ item.settingsPath }
 												className="button button-secondary"
-												aria-label={ sprintf( __( 'Settings for %s', 'shaped-kit' ), rep.name ) }
+												aria-label={ sprintf( /* translators: %s: product name. */ __( 'Settings for %s', 'shaped-kit' ), rep.name ) }
 											>
 												{ __( 'Settings', 'shaped-kit' ) }
 											</a>
@@ -871,7 +871,7 @@ const StorePanel = () => {
 					onClose={ busySlug === proModalProduct.slug ? null : closeProModal }
 				>
 					<h3 id="shaped-kit-pro-modal-title" style={ { margin: '0 0 8px', fontSize: '18px' } }>
-						{ sprintf( __( 'Install %s', 'shaped-kit' ), proModalProduct.name ) }
+						{ sprintf( /* translators: %s: product name. */ __( 'Install %s', 'shaped-kit' ), proModalProduct.name ) }
 					</h3>
 					<p style={ { color: '#646970', fontSize: '13px', margin: '0 0 16px' } }>
 						{ __( 'Paste your license key to verify and install your Pro plugin over secure HTTPS directly from ShapedPlugin.', 'shaped-kit' ) }
@@ -920,7 +920,7 @@ const StorePanel = () => {
 					onClose={ busySlug === betaModalProduct.slug ? null : closeBetaModal }
 				>
 					<h3 id="shaped-kit-beta-modal-title" style={ { margin: '0 0 8px', fontSize: '18px', color: '#b32d2e' } }>
-						⚠️ { sprintf( __( 'Install Beta: %s', 'shaped-kit' ), betaModalProduct.beta_version ) }
+						⚠️ { sprintf( /* translators: %s: beta version number. */ __( 'Install Beta: %s', 'shaped-kit' ), betaModalProduct.beta_version ) }
 					</h3>
 					<p style={ { color: '#50575e', fontSize: '13px', lineHeight: '1.4', margin: '0 0 14px' } }>
 						{ __( 'Beta versions contain early preview features. They are strictly excluded from automated WordPress background updates. Note: database downgrades to older versions are not supported.', 'shaped-kit' ) }

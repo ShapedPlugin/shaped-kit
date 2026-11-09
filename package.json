@@ -18,7 +18,8 @@
 		"uninstall.php",
 		"src",
 		"libs",
-		"build"
+		"build",
+		"languages"
 	],
 	"devDependencies": {
 		"@wordpress/scripts": "^30.25.0"

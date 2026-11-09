@@ -10,6 +10,7 @@
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       shaped-kit
+ * Domain Path:       /languages
  *
  * @package ShapedKit
  */
@@ -46,6 +47,17 @@ spl_autoload_register(
 \ShapedKit\Rest\McpController::register();
 \ShapedKit\Rest\StoreController::register();
 \ShapedKit\Store\SelfUpdater::register();
+
+// The Kit is not served from wordpress.org, so its translations live in its own languages folder. Core
+// registers the Domain Path header for site-activated plugins (wp-settings.php:586-592) but not for
+// network-activated ones (:524-539), so the path is set here as well. Core only records it and loads
+// the file just in time (l10n.php:999-1025).
+add_action(
+	'init',
+	static function () {
+		load_plugin_textdomain( 'shaped-kit', false, dirname( plugin_basename( SHAPED_KIT_FILE ) ) . '/languages' );
+	}
+);
 
 // Audit logging subsystem: table migration, event listening, and 90-day pruning.
 register_activation_hook( SHAPED_KIT_FILE, array( \ShapedKit\Audit\LogTable::class, 'install' ) );
